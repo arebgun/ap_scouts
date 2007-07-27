@@ -2,7 +2,7 @@
  ============================================================================
  Name        : robotic_swarm.cpp
  Author      : Anton Rebguns
- Version     : 0.0.4
+ Version     : 0.0.5
  Copyright   : Copyright(c) 2007
  Description : Robotic swarm simulator (OpenGL)
  ============================================================================
@@ -17,6 +17,21 @@
 
 #include "GL/gl.h"
 #include "GL/glut.h"
+
+/*************** TEMPORARY *************************/
+
+double ppHat;
+int yy;
+int kk;
+int nn;
+
+int increments[6] = { 1, 5, 10, 20, 50, 100 };
+int cur_inc_index = 0;
+
+char *selections[2] = { "AGENT", "OBSTACLE" };
+int cur_sel_index = 0;
+
+/***************************************************/
 
 typedef enum e_viewmode
 {
@@ -381,7 +396,120 @@ int create_goal( void )
 	return 0;
 }
 
-int create_agents( void )
+void deploy_agent( Agent *agent )
+{
+	float quadrant_width = params.world_width / 3.0f;
+	float quadrant_height = params.world_height / 3.0f;
+
+	float offset_x;
+	float offset_y;
+	
+	/*
+	 *		 ------------- 
+	 * 		| NW | N | NE |
+	 * 		|-------------
+	 * 		| N  | C | E  |
+	 * 		|-------------
+	 * 		| SW | S | SE |
+	 * 		 -------------
+	 */
+	switch ( params.deployment_quadrant )
+	{
+		case NW:
+			offset_x = 10.0f;
+			offset_y = params.world_height - params.deployment_height - 10.0f;
+			break;
+			
+		case N:
+			offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
+			offset_y = params.world_height - params.deployment_height - 10.0f;
+			break;
+			
+		case NE:
+			offset_x = params.world_width - params.deployment_width - 10.0f;
+			offset_y = params.world_height - params.deployment_height - 10.0f;
+			break;
+			
+		case W:
+			offset_x = 10.0f;
+			offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
+			break;
+			
+		case C:
+			offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
+			offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
+			break;
+			
+		case E:
+			offset_x = params.world_width - params.deployment_width - 10.0f;
+			offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
+			break;
+			
+		case SW:
+			offset_x = 10.0f;
+			offset_y = 10.0f;
+			break;
+			
+		case S:
+			offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
+			offset_y = 10.0f;
+			break;
+			
+		case SE:
+			offset_x = params.world_width - params.deployment_width - 10.0f;
+			offset_y = 10.0f;
+			break;
+			
+		default:
+			offset_x = 10.0f;
+			offset_y = 10.0f;
+	}
+	
+	agent->i_position.x = rand() % params.deployment_width + offset_x;
+	agent->i_position.y = rand() % params.deployment_height + offset_y;
+	
+	agent->position.x = agent->i_position.x;
+	agent->position.y = agent->i_position.y;
+}
+
+Agent *create_agent( int id )
+{
+	Agent *agent = ( Agent * ) malloc( sizeof( Agent ) );
+	
+	if ( agent == NULL )
+	{
+		printf( "Error while allocating memory for an agent!" );
+		return NULL;
+	}
+	
+	agent->id = id;
+	agent->mass = 1.0f;
+	agent->goal_reached = false;
+	agent->radius = 3.0f;
+	agent->velocity.x = 0.0f;
+	agent->velocity.y = 0.0f;
+	
+	deploy_agent( agent );
+	
+	memcpy( agent->color, agent_color, 3 * sizeof( float ) );
+	
+	/*************************************************/
+	printf( "****** AGENT %d *****\n", agent->id );
+	printf( "mass\t\t%f\n", agent->mass );
+	printf( "goal\t\t%d\n", agent->goal_reached );
+	printf( "radius\t\t%f\n", agent->radius );
+	printf( "x\t\t%f\n", agent->position.x );
+	printf( "y\t\t%f\n", agent->position.y );
+	printf( "vx\t\t%f\n", agent->velocity.x );
+	printf( "vy\t\t%f\n", agent->velocity.y );
+	printf( "***********************" );
+	printf( "\n\n" );
+	/*************************************************/
+	
+	return agent;
+}
+
+int create_swarm( void )
 {
 	/******************** Initialize agents ******************************/
 	agents = ( Agent ** ) calloc( params.agent_number, sizeof( Agent * ) );
@@ -400,111 +528,15 @@ int create_agents( void )
 	
 	for ( i = 0; i < params.agent_number; i++ )
 	{
-		agents[i] = ( Agent * ) malloc( sizeof( Agent ) );
+		agents[i] = create_agent( i );
 		
 		if ( agents[i] == NULL )
 		{
 			printf( "Error while allocating memory for agent %d!", i );
 			return -1;
 		}
-		
-		agents[i]->id = i;
-		agents[i]->mass = 1.0f;
-		agents[i]->goal_reached = false;
-		agents[i]->radius = 3.0f;
-		
-		float quadrant_width = params.world_width / 3.0f;
-		float quadrant_height = params.world_height / 3.0f;
-
-		float offset_x;
-		float offset_y;
-		
-		/*
-		 *		 ------------- 
-		 * 		| NW | N | NE |
-		 * 		|-------------
-		 * 		| N  | C | E  |
-		 * 		|-------------
-		 * 		| SW | S | SE |
-		 * 		 -------------
-		 */
-		switch ( params.deployment_quadrant )
-		{
-			case NW:
-				offset_x = 10.0f;
-				offset_y = params.world_height - params.deployment_height - 10.0f;
-				break;
-				
-			case N:
-				offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
-				offset_y = params.world_height - params.deployment_height - 10.0f;
-				break;
-				
-			case NE:
-				offset_x = params.world_width - params.deployment_width - 10.0f;
-				offset_y = params.world_height - params.deployment_height - 10.0f;
-				break;
-				
-			case W:
-				offset_x = 10.0f;
-				offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
-				break;
-				
-			case C:
-				offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
-				offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
-				break;
-				
-			case E:
-				offset_x = params.world_width - params.deployment_width - 10.0f;
-				offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
-				break;
-				
-			case SW:
-				offset_x = 10.0f;
-				offset_y = 10.0f;
-				break;
-				
-			case S:
-				offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
-				offset_y = 10.0f;
-				break;
-				
-			case SE:
-				offset_x = params.world_width - params.deployment_width - 10.0f;
-				offset_y = 10.0f;
-				break;
-				
-			default:
-				offset_x = 10.0f;
-				offset_y = 10.0f;
-		}
-		
-		agents[i]->i_position.x = rand() % params.deployment_width + offset_x;
-		agents[i]->i_position.y = rand() % params.deployment_height + offset_y;
-		
-		agents[i]->position.x = agents[i]->i_position.x;
-		agents[i]->position.y = agents[i]->i_position.y;
-		
-		agents[i]->velocity.x = 0.0f;
-		agents[i]->velocity.y = 0.0f;
-		
-		memcpy( agents[i]->color, agent_color, 3 * sizeof( float ) );
-		
-		/*************************************************/
-		printf( "****** AGENT %d *****\n", agents[i]->id );
-		printf( "mass\t\t%f\n", agents[i]->mass );
-		printf( "goal\t\t%d\n", agents[i]->goal_reached );
-		printf( "radius\t\t%f\n", agents[i]->radius );
-		printf( "x\t\t%f\n", agents[i]->position.x );
-		printf( "y\t\t%f\n", agents[i]->position.y );
-		printf( "vx\t\t%f\n", agents[i]->velocity.x );
-		printf( "vy\t\t%f\n", agents[i]->velocity.y );
-		printf( "***********************" );
-		printf( "\n\n" );
-		/*************************************************/
 	}
-	
+
 	return 0;
 }
 
@@ -608,7 +640,7 @@ int initialize_simulation( char *p_filename )
 	
 	// Create simulation objects
 	if ( create_goal() != 0 ) { return -1; }
-	if ( create_agents() != 0 ) { return -1; }
+	if ( create_swarm() != 0 ) { return -1; }
 	if ( create_obstacles() != 0 ) { return -1; }
 	
 	return 0;
@@ -656,22 +688,45 @@ bool agent_reached_goal( Agent *agent )
     return false;
 }
 
-//void change_agent_number( int agent_number )
-//{
-//	if ( agent_number == params.agent_number ) { return; }
-//	int delta = agent_number - params.agent_number;
-//	
-//	// Add agents
-//	if ( delta > 0 )
-//	{
-//		int i;
-//		
-//		for ( i = params.agent_number; i < delta; i++ )
-//		{
-//			
-//		}
-//	}
-//}
+int change_agent_number( int agent_number )
+{
+	if ( agent_number == params.agent_number ) { return 0; }
+	
+	int i;	
+	int delta = agent_number - params.agent_number;
+	
+	if ( delta > 0 )
+	{
+		agents = ( Agent ** ) realloc( agents, agent_number * sizeof( Agent * ) );
+		
+		if ( agents == NULL )
+		{
+			printf( "Error while expanding memory for agents array!" );
+			return -1;
+		}
+		
+		for ( i = params.agent_number; i < agent_number; i++ )
+		{
+			agents[i] = create_agent( i );
+		}
+		
+		params.agent_number = agent_number;
+	}
+	else if ( abs( delta ) < params.agent_number )
+	{
+		agents = ( Agent ** ) realloc( agents, agent_number * sizeof( Agent * ) );
+		
+		if ( agents == NULL )
+		{
+			printf( "Error while shrinking memory for agents array!" );
+			return -1;
+		}
+		
+		params.agent_number = agent_number;
+	}
+	
+	return 0;
+}
 
 float calculate_newtonian_force( Vector2f agent_pos, float agent_mass, Vector2f obj_pos, float obj_mass )
 {
@@ -777,10 +832,10 @@ double beta_distribution( double z, double w )
 
 double f( double t, double p )
 {
-	double pHat = 0.7;
-	int y = params.agent_number;
-	int n = params.agent_number;
-	int k = 20;
+	double pHat = ppHat;
+	int y = yy;
+	int n = nn;
+	int k = kk;
 	
 	double alpha = 1.0;
 	double beta = 1.0;
@@ -975,6 +1030,11 @@ void draw_instructions( void )
 		sprintf( label, "STOPPED" );
 		draw_string( label );
 	}
+	
+	glColor3f( 0.0f, 0.0f, 0.0f );
+	glRasterPos2i( params.world_width - 400, -help_area_height + line_offset );
+	sprintf( label, "Current %s number increment/decrement is [%d]", selections[cur_sel_index], increments[cur_inc_index] );
+	draw_string( label );
 }
 
 void display( void )
@@ -1019,6 +1079,28 @@ void process_normal_keys( unsigned char key, int x, int y )
 		restart_simulation();
 		glutPostRedisplay();
 	}
+	else if ( key == 'i' )
+	{
+		int mod = glutGetModifiers();
+		
+		if ( mod == GLUT_ACTIVE_ALT )
+		{
+			++cur_inc_index;
+			cur_inc_index %= 6;
+		}
+		
+		glutPostRedisplay();
+	}
+	else if ( key == 'a' )
+	{
+		cur_sel_index = 0;		// AGENT
+		glutPostRedisplay();
+	}
+	else if ( key == 'o' )
+	{
+		cur_sel_index = 1;		// OBSTACLE
+		glutPostRedisplay();
+	}
 }
 
 void process_special_keys( int key, int x, int y )
@@ -1037,6 +1119,30 @@ void process_special_keys( int key, int x, int y )
 				glutPostRedisplay();
 			}
 			break;
+		
+		case GLUT_KEY_UP:
+			if ( cur_sel_index == 0 )
+			{
+				if ( change_agent_number( params.agent_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+			}
+			else
+			{
+				// change obstacle number
+			}
+			glutPostRedisplay();
+			break;
+			
+		case GLUT_KEY_DOWN:
+			if ( cur_sel_index == 0 )
+			{
+				if ( change_agent_number( params.agent_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+			}
+			else
+			{
+				// change obstacle number
+			}
+			glutPostRedisplay();
+			break;
 	}
 }
 
@@ -1049,6 +1155,106 @@ void run_gui( int time )
 	}
 	
 	glutTimerFunc( params.timer_delay_ms, run_gui, stats.timeStep );
+}
+
+void run_cli( void )
+{
+    int time_limit = 1000;
+    int trial_number = 10;
+    int runs_number = 1000;
+
+    printf( "timeLimit   = %d\n", time_limit );
+    printf( "agentNumber = %d\n", params.agent_number );
+    printf( "trialNumber = %d\n", trial_number );
+    printf( "runsNumber  = %d\n", runs_number );
+
+    int trial;
+    
+    for ( trial = trial_number; trial >= 1; trial-- )
+    {
+    	printf( "\nTrial %d\n", trial );
+        int sample_size = trial * 10;
+        printf( "\tsampleSize = %d\n", sample_size );
+
+        // set agent number in simualtion to k (sample size)
+        restart_simulation();
+        change_agent_number( sample_size );
+
+        // initialize agents position
+        srand( ( unsigned int ) time( NULL ) );
+        
+        int i;
+        
+        for ( i = 0; i < params.agent_number; i++ )
+        {
+            deploy_agent( agents[i] );
+        }
+
+        int t = 0;
+
+        while ( stats.reach_ratio != 1.0f && t < time_limit )
+        {
+            move_agents();
+            t++;
+        }
+
+        double small_p_hat = stats.reach_ratio;
+        printf( "\tsmallPHat  = %.2f\n", small_p_hat );
+
+        int y = 50;
+        double y_ratio = ( double ) y / params.agent_number;
+
+        printf( "\ty = %d\n", y );
+        printf( "\tyRatio = %.2f\n", y_ratio );
+        printf( "\n" );
+
+        // more than y robots made it to the goal
+        int success_total = 0;
+        int run;
+
+        for ( run = 1; run <= runs_number; run++ )
+        {
+        	printf( "\tRun %d\n", run );
+            
+            restart_simulation();
+            change_agent_number( params.agent_number );
+            
+            srand( ( unsigned int ) time( NULL ) );
+            
+            int i;
+            
+            for ( i = 0; i < params.agent_number; i++ )
+            {
+                deploy_agent( agents[i] );
+            }
+
+            t = 0;
+
+            while ( stats.reach_ratio != 1.0f && t < time_limit )
+            {
+                move_agents();
+                t++;
+            }
+
+            printf( "\t\treachRatio = %.2f\n", stats.reach_ratio );
+
+            if ( stats.reach_ratio > y_ratio ) { success_total++; }
+
+            printf( "\t\tsuccessTotal = %d\n", success_total );
+        }
+
+		ppHat = small_p_hat;
+		yy = y;
+		kk = sample_size;
+		nn = params.agent_number;
+		
+		double estimated_p = success_total / ( ( double ) runs_number );
+		double predicted_p = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 500.0, 500.0 );
+		
+		printf( "\testimatedP = %.5f\n", estimated_p );
+		printf( "\tpredictedP = %.5f\n", predicted_p );
+		printf( "\tr. error  = %.2f\n", abs( predicted_p - estimated_p ) / estimated_p );
+	}
 }
 
 int main ( int argc, char **argv )
@@ -1102,99 +1308,14 @@ int main ( int argc, char **argv )
 	
 	    glutMainLoop();
 	}
+	else if ( mode == CLI )
+	{
+		run_cli();
+	}
 	else
 	{
-//        int time_limit = 1000;
-//        int trial_number = 10;
-//        int runs_number = 1000;
-//
-//        printf( "timeLimit   = %d\n", time_limit );
-//        printf( "agentNumber = %d\n", params.agent_number );
-//        printf( "trialNumber = %d\n", trial_number );
-//        printf( "runsNumber  = %d\n", runs_number );
-//
-//        int trial;
-//        
-//        for ( trial = trial_number; trial >= 1; trial-- )
-//        {
-//        	printf( "\nTrial %d\n", trial );
-//            int sample_size = trial * 10;
-//            printf( "\tsampleSize = %d\n", sample_size );
-//
-//            // set agent number in simualtion to k (sample size)
-//            restart_simulation();
-//            change_agent_number( sample_size );
-//
-//            // initialize agents position
-//            for ( Agent agent : controller.getWorld().getAgents() )
-//            {
-//                agent.setX( random() * 100 + 350 );
-//                agent.setY( random() * 100 + 350 );
-//            }
-//
-//            int time = 0;
-//
-//            while ( stats.reach_ratio != 1.0f && time < time_limit )
-//            {
-//                move_agents();
-//                time++;
-//            }
-//
-//            double small_p_hat = stats.reach_ratio;
-//            printf( "\tsmallPHat  = %.2f\n", small_p_hat );
-//
-//            int y = 50;
-//            double y_ratio = ( double ) y / params.agent_number;
-//
-//            printf( "\ty = %d\n", y );
-//            printf( "\tyRatio = %.2f\n", y_ratio );
-//            printf( "\n" );
-//
-//            // more than y robots made it to the goal
-//            int success_total = 0;
-//            int run;
-//
-//            for ( run = 1; run <= runs_number; run++ )
-//            {
-//            	printf( "\tRun %d\n", run );
-//                
-//                restart_simulation();
-//                controller.setAgentNumber( agentNumber );
-//                controller.getParams().setAgentNumber( agentNumber );
-//
-//                for ( Agent agent : controller.getWorld().getAgents() )
-//                {
-//                    agent.setX( random() * 100 + 350 );
-//                    agent.setY( random() * 100 + 350 );
-//                }
-//
-//                time = 0;
-//
-//                while ( stats.reach_ratio != 1.0f && time < timeLimit )
-//                {
-//                    move_agents();
-//                    time++;
-//                }
-//
-//                printf( "\t\treachRatio = %.2f\n", stats.reach_ratio );
-//
-//                if ( stats.reach_ratio > y_ratio ) { success_total++; }
-//
-//                printf( "\t\tsuccessTotal = %d\n", success_total );
-//            }
-//
-//            ppHat = smallPHat;
-//            yy = y;
-//            kk = sampleSize;
-//            nn = agentNumber;
-//
-//            double estimated_p = success_total / ( ( double ) runs_number );
-//            double predicted_p = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 500.0, 500.0 );
-//
-//            printf( "\testimatedP = %.5f\n", estimated_p );
-//            printf( "\tpredictedP = %.5f\n", predicted_p );
-//            printf( "\tr. error  = %.2f\n", abs( predicted_p - estimated_p ) / estimated_p );
-//        }
+		printf( "Unknown view mode [%d], exiting!", mode );
+		return EXIT_FAILURE;
 	}
 	
     /******************** Free used memory ****************/
