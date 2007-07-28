@@ -540,7 +540,45 @@ int create_swarm( void )
 	return 0;
 }
 
-int create_obstacles( void )
+Obstacle *create_obstacle( int id, bool random_radius, float radius_range )
+{
+	Obstacle *obstacle = ( Obstacle * ) malloc( sizeof( Obstacle ) );
+	
+	if ( obstacle == NULL )
+	{
+		printf( "Error while allocating memory for obstacle!" );
+		return NULL;
+	}
+	
+	obstacle->id = id;
+	obstacle->mass = params.obstacle_mass;
+			
+	if ( random_radius )
+	{
+		float random = ( float ) rand() / ( float ) RAND_MAX;
+		obstacle->radius = random * radius_range + params.obstacle_radius_min;
+	} 
+	else { obstacle->radius = params.obstacle_radius; }
+	
+	obstacle->position.x = rand() % ( params.world_width - 20 ) + 10;
+	obstacle->position.y = rand() % ( params.world_height - 20 ) + 10;
+	
+	memcpy( obstacle->color, obstacle_color, 3 * sizeof( float ) );
+	
+	/********************************************************/
+	printf( "****** OBSTACLE %d ******\n", obstacle->id );
+	printf( "mass\t\t%f\n", obstacle->mass );
+	printf( "radius\t\t%f\n", obstacle->radius );
+	printf( "x\t\t%f\n", obstacle->position.x );
+	printf( "y\t\t%f\n", obstacle->position.y );
+	printf( "***************************" );
+	printf( "\n\n" );
+	/********************************************************/
+	
+	return obstacle;
+}
+
+int create_obstacle_course( void )
 {
 	/******************** Initialize obstacles ***************************/
 	obstacles = ( Obstacle ** ) calloc( params.obstacle_number, sizeof( Obstacle * ) );
@@ -555,45 +593,20 @@ int create_obstacles( void )
 	if ( params.obstacle_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
 	else { srand( params.obstacle_random_seed ); }
 	
-	bool random_radii = ( params.obstacle_radius == 0 ) ? true : false;
+	bool random_radius = ( params.obstacle_radius == 0 ) ? true : false;
 	float radius_range = params.obstacle_radius_max - params.obstacle_radius_min;
 
 	int i;
 	
 	for ( i = 0; i < params.obstacle_number; i++ )
 	{
-		obstacles[i] = ( Obstacle * ) malloc( sizeof( Obstacle ) );
+		obstacles[i] = create_obstacle( i, random_radius, radius_range );
 		
 		if ( obstacles[i] == NULL )
 		{
 			printf( "Error while allocating memory for obstacle %d!", i );
 			return -1;
 		}
-		
-		obstacles[i]->id = i;
-		obstacles[i]->mass = params.obstacle_mass;
-				
-		if ( random_radii )
-		{
-			float random = ( float ) rand() / ( float ) RAND_MAX;
-			obstacles[i]->radius = random * radius_range + params.obstacle_radius_min;
-		} 
-		else { obstacles[i]->radius = params.obstacle_radius; }
-		
-		obstacles[i]->position.x = rand() % ( params.world_width - 20 ) + 10;
-		obstacles[i]->position.y = rand() % ( params.world_height - 20 ) + 10;
-		
-		memcpy( obstacles[i]->color, obstacle_color, 3 * sizeof( float ) );
-		
-		/********************************************************/
-		printf( "****** OBSTACLE %d ******\n", obstacles[i]->id );
-		printf( "mass\t\t%f\n", obstacles[i]->mass );
-		printf( "radius\t\t%f\n", obstacles[i]->radius );
-		printf( "x\t\t%f\n", obstacles[i]->position.x );
-		printf( "y\t\t%f\n", obstacles[i]->position.y );
-		printf( "***************************" );
-		printf( "\n\n" );
-		/********************************************************/
 	}
 
 	return 0;
@@ -641,7 +654,7 @@ int initialize_simulation( char *p_filename )
 	// Create simulation objects
 	if ( create_goal() != 0 ) { return -1; }
 	if ( create_swarm() != 0 ) { return -1; }
-	if ( create_obstacles() != 0 ) { return -1; }
+	if ( create_obstacle_course() != 0 ) { return -1; }
 	
 	return 0;
 }
@@ -723,6 +736,49 @@ int change_agent_number( int agent_number )
 		}
 		
 		params.agent_number = agent_number;
+	}
+	
+	return 0;
+}
+
+int change_obstacle_number( int obstacle_number )
+{
+	if ( obstacle_number == params.obstacle_number ) { return 0; }
+	
+	int i;	
+	int delta = obstacle_number - params.obstacle_number;
+	
+	if ( delta > 0 )
+	{
+		obstacles = ( Obstacle ** ) realloc( obstacles, obstacle_number * sizeof( Obstacle * ) );
+		
+		if ( obstacles == NULL )
+		{
+			printf( "Error while expanding memory for obstacles array!" );
+			return -1;
+		}
+		
+		bool random_radius = ( params.obstacle_radius == 0 ) ? true : false;
+		float radius_range = params.obstacle_radius_max - params.obstacle_radius_min;
+		
+		for ( i = params.obstacle_number; i < obstacle_number; i++ )
+		{
+			obstacles[i] = create_obstacle( i, random_radius, radius_range );
+		}
+		
+		params.obstacle_number = obstacle_number;
+	}
+	else if ( abs( delta ) < params.obstacle_number )
+	{
+		obstacles = ( Obstacle ** ) realloc( obstacles, obstacle_number * sizeof( Obstacle * ) );
+		
+		if ( agents == NULL )
+		{
+			printf( "Error while shrinking memory for obstacles array!" );
+			return -1;
+		}
+		
+		params.obstacle_number = obstacle_number;
 	}
 	
 	return 0;
@@ -1016,6 +1072,16 @@ void draw_instructions( void )
 	sprintf( label, "'PageDown' -- Decrease timer delay (faster)" );
 	draw_string( label );
 	
+	line = 1;
+	
+	glRasterPos2i( screen_offset + 250, -3 * screen_offset - line * line_offset );
+	sprintf( label, "'I' -- Change object increment/decrement" );
+	draw_string( label );
+	
+	glRasterPos2i( screen_offset + 250, -3 * screen_offset - ( ++line * line_offset ) );
+	sprintf( label, "'A' -- Selects agent # to be incremented/decremented" );
+	draw_string( label );
+	
 	if ( running )
 	{
 		glColor3f( 0.0f, 0.5f, 0.0f );
@@ -1032,8 +1098,8 @@ void draw_instructions( void )
 	}
 	
 	glColor3f( 0.0f, 0.0f, 0.0f );
-	glRasterPos2i( params.world_width - 400, -help_area_height + line_offset );
-	sprintf( label, "Current %s number increment/decrement is [%d]", selections[cur_sel_index], increments[cur_inc_index] );
+	glRasterPos2i( params.world_width - 170, -help_area_height + line_offset );
+	sprintf( label, "%s [%3d]", selections[cur_sel_index], increments[cur_inc_index] );
 	draw_string( label );
 }
 
@@ -1081,14 +1147,8 @@ void process_normal_keys( unsigned char key, int x, int y )
 	}
 	else if ( key == 'i' )
 	{
-		int mod = glutGetModifiers();
-		
-		if ( mod == GLUT_ACTIVE_ALT )
-		{
-			++cur_inc_index;
-			cur_inc_index %= 6;
-		}
-		
+		++cur_inc_index;
+		cur_inc_index %= 6;
 		glutPostRedisplay();
 	}
 	else if ( key == 'a' )
@@ -1127,7 +1187,7 @@ void process_special_keys( int key, int x, int y )
 			}
 			else
 			{
-				// change obstacle number
+				if ( change_obstacle_number( params.obstacle_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
 			}
 			glutPostRedisplay();
 			break;
@@ -1139,7 +1199,7 @@ void process_special_keys( int key, int x, int y )
 			}
 			else
 			{
-				// change obstacle number
+				if ( change_obstacle_number( params.obstacle_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
 			}
 			glutPostRedisplay();
 			break;
