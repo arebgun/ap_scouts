@@ -1336,6 +1336,11 @@ void process_normal_keys( unsigned char key, int x, int y )
 		if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
 		glutPostRedisplay();
 	}
+	else if ( key == 'q' )
+	{
+		free_memory();
+		exit( EXIT_SUCCESS );
+	}
 }
 
 void process_special_keys( int key, int x, int y )
