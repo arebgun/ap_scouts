@@ -612,11 +612,167 @@ int create_obstacle_course( void )
 	return 0;
 }
 
+void free_memory( void )
+{
+    /******************** Free used memory ****************/
+    int i;
+    
+    if ( goal != NULL ) { free( goal ); }
+    
+    for ( i = 0; i < params.agent_number; i++ )
+    {
+    	if ( agents[i] != NULL ) { free( agents[i] ); }
+    }
+    
+    if ( agents != NULL ) { free( agents ); }
+    
+    for ( i = 0; i < params.obstacle_number; i++ )
+    {
+    	if ( obstacles[i] != NULL ) { free( obstacles[i] ); }
+    }
+    
+    if ( agents != NULL ) { free( obstacles ); }
+    /*******************************************************/
+}
+
 void reset_statistics( void )
 {
 	stats.timeStep = 0;
 	stats.reach_ratio = 0.0f;
 	stats.reached_goal = 0;
+}
+
+int save_scenario( char *filename )
+{
+	FILE *scenario;
+	scenario = fopen( filename, "w" );
+	
+	if ( scenario != NULL )
+	{
+		// World parameters
+		fprintf( scenario, "%d %d %d\n", params.world_width, params.world_height, params.timer_delay_ms );
+		
+		// Goal parameters
+		fprintf( scenario, "%d %f %f %d\n", params.goal_random_seed, params.goal_width, params.goal_mass, params.goal_quadrant );
+		
+		// Agent parameters
+		fprintf( scenario, "%d %d ", params.agent_random_seed, params.agent_number );
+		fprintf( scenario, "%d %d %d\n", params.deployment_width, params.deployment_height, params.deployment_quadrant );
+		
+		// Obstacle parameters
+		fprintf( scenario, "%d %d %f ", params.obstacle_random_seed, params.obstacle_number, params.obstacle_mass );
+		fprintf( scenario, "%f %f %f\n", params.obstacle_radius, params.obstacle_radius_min, params.obstacle_radius_max );
+
+		// Physics parameters
+		fprintf( scenario, "%f %f %f\n", params.max_V, params.G, params.p );
+		
+		// Statistics
+		fprintf( scenario, "%d %d %f\n", stats.timeStep, stats.reached_goal, stats.reach_ratio );
+		
+		/******************************* Current values for all objects **********************************************/
+		fprintf( scenario, "%d %f %f %f %f\n", goal->id, goal->mass, goal->width, goal->position.x, goal->position.y );
+		
+		int i;
+		
+		for ( i = 0; i < params.agent_number; i++ )
+		{
+			Agent *a = agents[i];
+			
+			fprintf( scenario, "%d %f %f %d ", a->id, a->mass, a->radius, a->goal_reached );
+			fprintf( scenario, "%f %f ", a->i_position.x, a->i_position.y );
+			fprintf( scenario, "%f %f ", a->position.x, a->position.y );
+			fprintf( scenario, "%f %f\n", a->velocity.x, a->velocity.y );
+		}
+		
+		for ( i = 0; i < params.obstacle_number; i++ )
+		{
+			Obstacle *o = obstacles[i];
+			
+			fprintf( scenario, "%d %f %f ", o->id, o->mass, o->radius );
+			fprintf( scenario, "%f %f\n", o->position.x, o->position.y );
+		}
+		/************************************************************************************************************/
+	}
+	else
+	{
+		printf( "Scenario file [%s] could not be created!", filename );
+		return -1;
+	}
+	
+	fclose( scenario );
+	
+	return 0;
+}
+
+int load_scenario( char *filename )
+{
+	FILE *scenario;
+	scenario = fopen( filename, "r" );
+	
+	if ( scenario != NULL )
+	{
+		running = false;
+		
+		// World parameters
+		fscanf( scenario, "%d %d %d", &params.world_width, &params.world_height, &params.timer_delay_ms );
+
+		// Goal parameters
+		fscanf( scenario, "%d %f %f %d", &params.goal_random_seed, &params.goal_width, &params.goal_mass, ( int * ) &params.goal_quadrant );
+
+		// Agent parameters
+		fscanf( scenario, "%d %d", &params.agent_random_seed, &params.agent_number );
+		fscanf( scenario, "%d %d %d", &params.deployment_width, &params.deployment_height, ( int * ) &params.deployment_quadrant );
+
+		// Obstacle parameters
+		fscanf( scenario, "%d %d %f", &params.obstacle_random_seed, &params.obstacle_number, &params.obstacle_mass );
+		fscanf( scenario, "%f %f %f", &params.obstacle_radius, &params.obstacle_radius_min, &params.obstacle_radius_max );
+
+		// Physics parameters
+		fscanf( scenario, "%f %f %f", &params.max_V, &params.G, &params.p );
+		
+		// Statistics
+		fscanf( scenario, "%d %d %f", &stats.timeStep, &stats.reached_goal, &stats.reach_ratio );
+		
+		/******************************* Current values for all objects **********************************************/
+		free_memory();
+		
+		// Create simulation objects
+		if ( create_goal() != 0 ) { return -1; }
+		if ( create_swarm() != 0 ) { return -1; }
+		if ( create_obstacle_course() != 0 ) { return -1; }
+		
+		fscanf( scenario, "%d %f %f %f %f", &(goal->id), &(goal->mass), &(goal->width), &(goal->position.x), &(goal->position.y) );
+
+		int i;
+		
+		for ( i = 0; i < params.agent_number; i++ )
+		{
+			Agent *a = agents[i];
+
+			fscanf( scenario, "%d %f %f %d", &(a->id), &(a->mass), &(a->radius), ( int * ) &(a->goal_reached) );
+			fscanf( scenario, "%f %f", &(a->i_position.x), &(a->i_position.y) );
+			fscanf( scenario, "%f %f", &(a->position.x), &(a->position.y) );
+			fscanf( scenario, "%f %f", &(a->velocity.x), &(a->velocity.y) );
+		}
+
+		for ( i = 0; i < params.obstacle_number; i++ )
+		{
+			Obstacle *o = obstacles[i];
+			
+			fscanf( scenario, "%d %f %f", &(o->id), &(o->mass), &(o->radius) );
+			fscanf( scenario, "%f %f", &(o->position.x), &(o->position.y) );
+		}
+		/************************************************************************************************************/
+	}
+	else
+	{
+		printf( "Scenario file [%s] not found!", filename );
+		return -1;
+	}
+	
+	fclose( scenario );
+	
+	return 0;
 }
 
 int initialize_simulation( char *p_filename )
@@ -1074,13 +1230,22 @@ void draw_instructions( void )
 	
 	line = 1;
 	
-	glRasterPos2i( screen_offset + 250, -3 * screen_offset - line * line_offset );
+	glRasterPos2i( screen_offset + 300, -3 * screen_offset - line * line_offset );
 	sprintf( label, "'I' -- Change object increment/decrement" );
 	draw_string( label );
 	
-	glRasterPos2i( screen_offset + 250, -3 * screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
 	sprintf( label, "'A' -- Selects agent # to be incremented/decremented" );
 	draw_string( label );
+	
+	glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
+	sprintf( label, "'UP' -- Increments # of objects" );
+	draw_string( label );
+	
+	glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
+	sprintf( label, "'DOWN' -- Decrements # of objects" );
+	draw_string( label );
+
 	
 	if ( running )
 	{
@@ -1159,6 +1324,16 @@ void process_normal_keys( unsigned char key, int x, int y )
 	else if ( key == 'o' )
 	{
 		cur_sel_index = 1;		// OBSTACLE
+		glutPostRedisplay();
+	}
+	else if ( key == 'd')
+	{
+		if ( save_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
+		glutPostRedisplay();
+	}
+	else if ( key =='l' )
+	{
+		if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
 		glutPostRedisplay();
 	}
 }
@@ -1378,25 +1553,7 @@ int main ( int argc, char **argv )
 		return EXIT_FAILURE;
 	}
 	
-    /******************** Free used memory ****************/
-    int i;
-    
-    if ( goal != NULL ) { free( goal ); }
-    
-    for ( i = 0; i < params.agent_number; i++ )
-    {
-    	if ( agents[i] != NULL ) { free( agents[i] ); }
-    }
-    
-    if ( agents != NULL ) { free( agents ); }
-    
-    for ( i = 0; i < params.obstacle_number; i++ )
-    {
-    	if ( obstacles[i] != NULL ) { free( obstacles[i] ); }
-    }
-    
-    if ( agents != NULL ) { free( obstacles ); }
-    /*******************************************************/
+	free_memory();
     
 	return EXIT_SUCCESS;
 }
