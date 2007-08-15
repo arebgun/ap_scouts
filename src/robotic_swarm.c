@@ -19,18 +19,10 @@
 #include "GL/glut.h"
 
 /*************** TEMPORARY *************************/
-
 double ppHat;
 int yy;
 int kk;
 int nn;
-
-int increments[6] = { 1, 5, 10, 20, 50, 100 };
-int cur_inc_index = 0;
-
-char *selections[2] = { "AGENT", "OBSTACLE" };
-int cur_sel_index = 0;
-
 /***************************************************/
 
 typedef enum e_viewmode
@@ -168,6 +160,12 @@ Obstacle **obstacles = NULL;
 Goal *goal = NULL;
 
 bool running;
+
+int increments[6] = { 1, 5, 10, 20, 50, 100 };
+int cur_inc_index = 0;
+
+char *selections[2] = { "AGENT", "OBSTACLE" };
+int cur_sel_index = 0;
 
 /**
  * \fn int read_config_file( char *p_filename )
@@ -631,7 +629,7 @@ void free_memory( void )
     	if ( obstacles[i] != NULL ) { free( obstacles[i] ); }
     }
     
-    if ( agents != NULL ) { free( obstacles ); }
+    if ( obstacles != NULL ) { free( obstacles ); }
     /*******************************************************/
 }
 
