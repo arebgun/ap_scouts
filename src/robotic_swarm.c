@@ -118,7 +118,9 @@ typedef struct s_params
 	Quadrant goal_quadrant;
 	
 	unsigned int agent_random_seed;
-	int agent_number;	
+	int agent_number;
+	float agent_radius;
+	float agent_mass;
 	int deployment_width;
 	int deployment_height;
 	Quadrant deployment_quadrant;	
@@ -228,6 +230,14 @@ int read_config_file( char *p_filename )
 			else if ( strcmp( "agent_number", parameter ) == 0 )
 			{
 				params.agent_number = atoi( value );
+			}
+			else if ( strcmp( "agent_radius", parameter ) == 0 )
+			{
+				params.agent_radius = atof( value );
+			}
+			else if ( strcmp( "agent_mass", parameter ) == 0 )
+			{
+				params.agent_mass = atof( value );
 			}
 			else if ( strcmp( "deployment_width", parameter ) == 0 )
 			{
@@ -497,9 +507,9 @@ Agent *create_agent( int id )
 	}
 	
 	agent->id = id;
-	agent->mass = 1.0f;
+	agent->mass = params.agent_mass;
 	agent->goal_reached = false;
-	agent->radius = 3.0f;
+	agent->radius = params.agent_radius;
 	agent->velocity.x = 0.0f;
 	agent->velocity.y = 0.0f;
 	
@@ -876,8 +886,6 @@ bool agent_reached_goal( Agent *agent )
 
 int change_agent_number( int agent_number )
 {
-	if ( agent_number == params.agent_number ) { return 0; }
-	
 	int i;	
 	int delta = agent_number - params.agent_number;
 	
@@ -898,7 +906,7 @@ int change_agent_number( int agent_number )
 		
 		params.agent_number = agent_number;
 	}
-	else if ( abs( delta ) < params.agent_number )
+	else if ( delta < 0 && abs( delta ) < params.agent_number )
 	{
 		agents = ( Agent ** ) realloc( agents, agent_number * sizeof( Agent * ) );
 		
@@ -910,14 +918,16 @@ int change_agent_number( int agent_number )
 		
 		params.agent_number = agent_number;
 	}
+	else
+	{
+		return 0;
+	}
 	
 	return 0;
 }
 
 int change_obstacle_number( int obstacle_number )
 {
-	if ( obstacle_number == params.obstacle_number ) { return 0; }
-	
 	int i;	
 	int delta = obstacle_number - params.obstacle_number;
 	
@@ -941,7 +951,7 @@ int change_obstacle_number( int obstacle_number )
 		
 		params.obstacle_number = obstacle_number;
 	}
-	else if ( abs( delta ) < params.obstacle_number )
+	else if ( delta< 0 && abs( delta ) < params.obstacle_number )
 	{
 		obstacles = ( Obstacle ** ) realloc( obstacles, obstacle_number * sizeof( Obstacle * ) );
 		
@@ -952,6 +962,10 @@ int change_obstacle_number( int obstacle_number )
 		}
 		
 		params.obstacle_number = obstacle_number;
+	}
+	else
+	{
+		return 0;
 	}
 	
 	return 0;
@@ -1005,8 +1019,8 @@ void move_agents( void )
         /******************************************************************************************/
         
         // update agent velocity vector
-        agent->velocity.x += force_x;
-        agent->velocity.y += force_y;
+        agent->velocity.x += force_x / agent->mass;
+        agent->velocity.y += force_y / agent->mass;
         
         float velocity_magnitude = sqrt( pow( agent->velocity.x, 2 ) + pow( agent->velocity.y, 2 ) );
         
@@ -1382,9 +1396,13 @@ void process_special_keys( int key, int x, int y )
 			{
 				if ( change_agent_number( params.agent_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
 			}
-			else
+			else if ( cur_sel_index == 1 )
 			{
 				if ( change_obstacle_number( params.obstacle_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+			}
+			else
+			{
+				printf( "Unknown object index [%d]", cur_sel_index );
 			}
 			glutPostRedisplay();
 			break;
@@ -1394,9 +1412,13 @@ void process_special_keys( int key, int x, int y )
 			{
 				if ( change_agent_number( params.agent_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
 			}
-			else
+			else if ( cur_sel_index == 1 )
 			{
 				if ( change_obstacle_number( params.obstacle_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+			}
+			else
+			{
+				printf( "Unknown object index [%d]", cur_sel_index );
 			}
 			glutPostRedisplay();
 			break;
@@ -1531,6 +1553,8 @@ int main ( int argc, char **argv )
 	printf( "goal_quadrant = %d\n", params.goal_quadrant );
 	printf( "agent_random_seed = %d\n", params.agent_random_seed );
 	printf( "agent_number = %d\n", params.agent_number );
+	printf( "agent_radius = %.2f\n", params.agent_radius );
+	printf( "agent_mass = %.2f\n", params.agent_mass );
 	printf( "deployment_width = %d\n", params.deployment_width );
 	printf( "deployment_height = %d\n", params.deployment_height );
 	printf( "deployment_quadrant = %d\n", params.deployment_quadrant );
@@ -1543,6 +1567,9 @@ int main ( int argc, char **argv )
 	printf( "max_V = %.2f\n", params.max_V );
 	printf( "G = %.2f\n", params.G );
 	printf( "p = %.2f\n", params.p );
+	printf( "time_limit = %d\n", params.time_limit );
+	printf( "trials_number = %d\n", params.trials_number );
+	printf( "runs_number = %d\n", params.runs_number );
 	/*****************************************************************/
 	
 	if ( mode == GUI )
