@@ -134,6 +134,10 @@ typedef struct s_params
 	float G;		// Gravitational force
 	float p;		// power to which distance is raised to
 	
+	int time_limit;
+	int trials_number;
+	int runs_number;
+	
 } Parameters;
 
 typedef struct s_statistics
@@ -272,6 +276,18 @@ int read_config_file( char *p_filename )
 			else if ( strcmp( "p", parameter ) == 0 )
 			{
 				params.p = atof( value );
+			}
+			else if ( strcmp( "time_limit", parameter ) == 0 )
+			{
+				params.time_limit = atoi( value );
+			}
+			else if ( strcmp( "trials_number", parameter ) == 0 )
+			{
+				params.trials_number = atoi( value );
+			}
+			else if ( strcmp( "runs_number", parameter ) == 0 )
+			{
+				params.runs_number = atoi( value );
 			}
 			else
 			{
@@ -798,6 +814,9 @@ int initialize_simulation( char *p_filename )
 	params.max_V = 0.5f;
 	params.G = 1000.0f;
 	params.p = 2.0f;
+	params.time_limit = 1000;
+	params.runs_number = 10;
+	params.trials_number = 1000;
 	
 	// Reset statistics
 	reset_statistics();
@@ -1397,18 +1416,14 @@ void run_gui( int time )
 
 void run_cli( void )
 {
-    int time_limit = 1000;
-    int trial_number = 10;
-    int runs_number = 1000;
-
-    printf( "timeLimit   = %d\n", time_limit );
+    printf( "timeLimit   = %d\n", params.time_limit );
     printf( "agentNumber = %d\n", params.agent_number );
-    printf( "trialNumber = %d\n", trial_number );
-    printf( "runsNumber  = %d\n", runs_number );
+    printf( "trialNumber = %d\n", params.trials_number );
+    printf( "runsNumber  = %d\n", params.runs_number );
 
     int trial;
     
-    for ( trial = trial_number; trial >= 1; trial-- )
+    for ( trial = params.trials_number; trial >= 1; trial-- )
     {
     	printf( "\nTrial %d\n", trial );
         int sample_size = trial * 10;
@@ -1430,7 +1445,7 @@ void run_cli( void )
 
         int t = 0;
 
-        while ( stats.reach_ratio != 1.0f && t < time_limit )
+        while ( stats.reach_ratio != 1.0f && t < params.time_limit )
         {
             move_agents();
             t++;
@@ -1450,7 +1465,7 @@ void run_cli( void )
         int success_total = 0;
         int run;
 
-        for ( run = 1; run <= runs_number; run++ )
+        for ( run = 1; run <= params.runs_number; run++ )
         {
         	printf( "\tRun %d\n", run );
             
@@ -1468,7 +1483,7 @@ void run_cli( void )
 
             t = 0;
 
-            while ( stats.reach_ratio != 1.0f && t < time_limit )
+            while ( stats.reach_ratio != 1.0f && t < params.time_limit )
             {
                 move_agents();
                 t++;
@@ -1486,12 +1501,13 @@ void run_cli( void )
 		kk = sample_size;
 		nn = params.agent_number;
 		
-		double estimated_p = success_total / ( ( double ) runs_number );
+		double estimated_p = success_total / ( ( double ) params.runs_number );
 		double predicted_p = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 500.0, 500.0 );
+		double relative_error = abs( predicted_p - estimated_p ) / estimated_p;
 		
 		printf( "\testimatedP = %.5f\n", estimated_p );
 		printf( "\tpredictedP = %.5f\n", predicted_p );
-		printf( "\tr. error  = %.2f\n", abs( predicted_p - estimated_p ) / estimated_p );
+		printf( "\tr. error  = %.5f\n",  relative_error );
 	}
 }
 
