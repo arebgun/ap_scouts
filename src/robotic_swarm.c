@@ -918,6 +918,18 @@ int change_agent_number( int agent_number )
 		
 		params.agent_number = agent_number;
 	}
+	else if ( delta < 0 && abs( delta ) > params.agent_number )
+	{
+		agents = ( Agent ** ) realloc( agents, sizeof( Agent * ) );
+		
+		if ( agents == NULL )
+		{
+			printf( "Error while shrinking memory for agents array!" );
+			return -1;
+		}
+		
+		params.agent_number = 1;
+	}
 	else
 	{
 		return 0;
@@ -951,7 +963,7 @@ int change_obstacle_number( int obstacle_number )
 		
 		params.obstacle_number = obstacle_number;
 	}
-	else if ( delta< 0 && abs( delta ) < params.obstacle_number )
+	else if ( delta < 0 && abs( delta ) < params.obstacle_number )
 	{
 		obstacles = ( Obstacle ** ) realloc( obstacles, obstacle_number * sizeof( Obstacle * ) );
 		
@@ -962,6 +974,18 @@ int change_obstacle_number( int obstacle_number )
 		}
 		
 		params.obstacle_number = obstacle_number;
+	}
+	else if ( delta < 0 && abs( delta ) > params.obstacle_number )
+	{
+		obstacles = ( Obstacle ** ) realloc( obstacles, sizeof( Obstacle * ) );
+		
+		if ( agents == NULL )
+		{
+			printf( "Error while shrinking memory for obstacles array!" );
+			return -1;
+		}
+		
+		params.obstacle_number = 1;
 	}
 	else
 	{
