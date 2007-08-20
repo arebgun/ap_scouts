@@ -930,10 +930,6 @@ int change_agent_number( int agent_number )
 		
 		params.agent_number = 1;
 	}
-	else
-	{
-		return 0;
-	}
 	
 	return 0;
 }
@@ -986,10 +982,6 @@ int change_obstacle_number( int obstacle_number )
 		}
 		
 		params.obstacle_number = 1;
-	}
-	else
-	{
-		return 0;
 	}
 	
 	return 0;
@@ -1059,7 +1051,7 @@ void move_agents( void )
         agent->position.x += agent->velocity.x;
         agent->position.y += agent->velocity.y;
         
-        if ( agent_reached_goal( agent ) && !agent->goal_reached )
+        if ( !agent->goal_reached && agent_reached_goal( agent ) )
         {
         	agent->goal_reached = true;
         	stats.reached_goal++;
