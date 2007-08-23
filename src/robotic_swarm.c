@@ -106,6 +106,13 @@ typedef enum e_quadrant
 	
 } Quadrant;
 
+typedef enum e_force_law
+{
+	NEWTONIAN,
+	LENNARD_JONES,
+	
+} Force_Law;
+
 typedef struct s_params
 {
 	int world_width;
@@ -131,6 +138,14 @@ typedef struct s_params
 	float obstacle_radius_min;
 	float obstacle_radius_max;
 	float obstacle_mass;
+	
+	bool enable_agent_goal_f;
+	bool enable_agent_obstacle_f;
+	bool enable_agent_agent_f;
+	
+	float R;
+	float range_coefficient;
+	Force_Law force_law;
 	
 	float max_V;	// Maximum agent velocity 
 	float G;		// Gravitational force
@@ -274,6 +289,30 @@ int read_config_file( char *p_filename )
 			else if ( strcmp( "obstacle_mass", parameter ) == 0 )
 			{
 				params.obstacle_mass = atof( value );
+			}
+			else if ( strcmp( "enable_agent_goal_f", parameter ) == 0 )
+			{
+				params.enable_agent_goal_f = atoi( value );
+			}
+			else if ( strcmp( "enable_agent_obstacle_f", parameter ) == 0 )
+			{
+				params.enable_agent_obstacle_f = atoi( value );
+			}
+			else if ( strcmp( "enable_agent_agent_f", parameter ) == 0 )
+			{
+				params.enable_agent_agent_f = atoi( value );
+			}
+			else if ( strcmp( "R", parameter ) == 0 )
+			{
+				params.R = atof( value );
+			}
+			else if ( strcmp( "range_coefficient", parameter ) == 0 )
+			{
+				params.range_coefficient = atof( value );
+			}
+			else if ( strcmp( "force_law", parameter ) == 0 )
+			{
+				params.force_law = atoi( value );
 			}
 			else if ( strcmp( "max_V", parameter ) == 0 )
 			{
@@ -821,6 +860,12 @@ int initialize_simulation( char *p_filename )
 	params.obstacle_number = 20;
 	params.obstacle_radius = 3.0f;
 	params.obstacle_mass = 1.0f;
+	params.enable_agent_goal_f = 1;
+	params.enable_agent_obstacle_f = 1;
+	params.enable_agent_agent_f = 0;
+	params.R = 50.0f;
+	params.range_coefficient = 1.5f;
+	params.force_law = 0;
 	params.max_V = 0.5f;
 	params.G = 1000.0f;
 	params.p = 2.0f;
@@ -918,7 +963,7 @@ int change_agent_number( int agent_number )
 		
 		params.agent_number = agent_number;
 	}
-	else if ( delta < 0 && abs( delta ) > params.agent_number )
+	else if ( delta < 0 && abs( delta ) >= params.agent_number )
 	{
 		agents = ( Agent ** ) realloc( agents, sizeof( Agent * ) );
 		
@@ -971,7 +1016,7 @@ int change_obstacle_number( int obstacle_number )
 		
 		params.obstacle_number = obstacle_number;
 	}
-	else if ( delta < 0 && abs( delta ) > params.obstacle_number )
+	else if ( delta < 0 && abs( delta ) >= params.obstacle_number )
 	{
 		obstacles = ( Obstacle ** ) realloc( obstacles, sizeof( Obstacle * ) );
 		
@@ -998,6 +1043,13 @@ float calculate_newtonian_force( Vector2f agent_pos, float agent_mass, Vector2f 
     return f;
 }
 
+float calculate_lj_force( Vector2f agent_pos, float agent_mass, Vector2f obj_pos, float obj_mass )
+{
+	// TODO: Insert Lennard-Jones force law calculation here
+	
+	return 0.0f;
+}
+
 void move_agents( void )
 {
 	int i, j;
@@ -1012,27 +1064,89 @@ void move_agents( void )
 		float force_x = 0.0f;
 		float force_y = 0.0f;
 		
-		for ( j = 0; j < params.obstacle_number; j++ )
+		/************************** Calculate force between an obstacle and an agent *********************/
+		if ( params.enable_agent_obstacle_f )
 		{
-			Obstacle *obs = obstacles[j];
-			Vector2f obs_pos = obs->position;
-			
-			/****************** Calculate force between an obstacle and an agent ********************/
-			float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
-	        float net_force = -calculate_newtonian_force( agent_pos, agent->mass, obs_pos, obs->mass );
-
-	        force_x += net_force * cos( angle_to_obstacle );
-	        force_y += net_force * sin( angle_to_obstacle );
-	        /****************************************************************************************/
-		}
+			for ( j = 0; j < params.obstacle_number; j++ )
+			{
+				Obstacle *obs = obstacles[j];
+				Vector2f obs_pos = obs->position;
+				
+				float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
+				float net_force = 0.0f;
+				
+				switch( params.force_law )
+				{
+					case NEWTONIAN:
+						net_force = -calculate_newtonian_force( agent_pos, agent->mass, obs_pos, obs->mass );
+						break;
+						
+					case LENNARD_JONES:
+						net_force = -calculate_lj_force( agent_pos, agent->mass, obs_pos, obs->mass );
+						break;
+				}
 		
-		/****************** Calculate force between the goal and an agent *************************/
-		float angle_to_goal = atan2( goal_pos.y - agent_pos.y, goal_pos.x - agent_pos.x );
-        float net_force = calculate_newtonian_force( agent_pos, agent->mass, goal_pos, goal->mass );
-
-        force_x += net_force * cos( angle_to_goal );
-        force_y += net_force * sin( angle_to_goal );
-        /******************************************************************************************/
+		        force_x += net_force * cos( angle_to_obstacle );
+		        force_y += net_force * sin( angle_to_obstacle );
+			}
+		}
+        /*************************************************************************************************/
+		
+		/************************** Calculate force between agents *************************************************/
+		if ( params.enable_agent_agent_f )
+		{
+			for ( j = 0; j < params.agent_number; j++ )
+			{
+				Agent *agent2 = agents[j];
+				Vector2f agent2_pos = agent2->position;
+				
+				float angle_to_agent2 = atan2( agent2_pos.y - agent_pos.y, agent2_pos.x - agent_pos.x );
+				float distance = sqrt( pow( agent_pos.x - agent2_pos.x, 2 ) + pow( agent_pos.y - agent2_pos.y, 2 ) );
+		        float net_force = 0.0f;
+	
+		        if ( distance <= params.range_coefficient * params.R )
+		        {
+					switch( params.force_law )
+					{
+						case NEWTONIAN:
+							net_force = calculate_newtonian_force( agent_pos, agent->mass, agent2_pos, agent2->mass );
+							break;
+							
+						case LENNARD_JONES:
+							net_force = calculate_lj_force( agent_pos, agent->mass, agent2_pos, agent2->mass );
+							break;
+					}
+					
+		        	if ( distance < params.R ) { net_force = -net_force; }
+	        	}
+		        
+		        force_x += net_force * cos( angle_to_agent2 );
+		        force_y += net_force * sin( angle_to_agent2 );
+			}
+		}
+		/***********************************************************************************************************/
+		
+		/********************** Calculate force between the goal and an agent *************************/
+		if ( params.enable_agent_goal_f )
+		{
+			float angle_to_goal = atan2( goal_pos.y - agent_pos.y, goal_pos.x - agent_pos.x );
+			float net_force = 0.0f;
+			
+			switch( params.force_law )
+			{
+				case NEWTONIAN:
+					net_force = calculate_newtonian_force( agent_pos, agent->mass, goal_pos, goal->mass );
+					break;
+					
+				case LENNARD_JONES:
+					net_force = calculate_lj_force( agent_pos, agent->mass, goal_pos, goal->mass );
+					break;
+			}
+	
+	        force_x += net_force * cos( angle_to_goal );
+	        force_y += net_force * sin( angle_to_goal );
+		}
+        /**********************************************************************************************/
         
         // update agent velocity vector
         agent->velocity.x += force_x / agent->mass;
@@ -1068,8 +1182,8 @@ double gammaln( double xx )
 	int j;
 	double x, y, tmp, ser;
 	double cof[6] = { 76.18009172947146,     -86.50532032941677,
-	                 24.01409824083091,     -1.231739572450155,
-	                 0.1208650973866179e-2, -0.5395239384953e-5 };
+	                  24.01409824083091,     -1.231739572450155,
+	                  0.1208650973866179e-2, -0.5395239384953e-5 };
 	
 	y = x = xx;
 	tmp = x + 5.5;
@@ -1454,6 +1568,16 @@ void run_gui( int time )
 
 void run_cli( void )
 {
+	/************************** TEMPORARY ****************************************/
+	ppHat = 0.3;
+	yy = 10;
+	nn = 10;
+	kk = 10;
+	
+	double predicted_p = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 500.0, 500.0 );
+	printf( "\tpredictedP = %.5f\n", predicted_p );
+	/*****************************************************************************/
+	
     printf( "timeLimit   = %d\n", params.time_limit );
     printf( "agentNumber = %d\n", params.agent_number );
     printf( "trialNumber = %d\n", params.trials_number );
