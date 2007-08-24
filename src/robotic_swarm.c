@@ -166,6 +166,7 @@ typedef struct s_statistics
 } Statistics;
 
 int help_area_height = 100;
+int stats_area_width = 150;
 
 GLfloat agent_color[3] = { 0.0f, 0.2f, 1.0f };
 GLfloat goal_color[3] = { 1.0f, 0.0f, 0.2f };
@@ -719,7 +720,7 @@ int save_scenario( char *filename )
 		fprintf( scenario, "%d %f %f %d\n", params.goal_random_seed, params.goal_width, params.goal_mass, params.goal_quadrant );
 		
 		// Agent parameters
-		fprintf( scenario, "%d %d ", params.agent_random_seed, params.agent_number );
+		fprintf( scenario, "%d %d %f %f ", params.agent_random_seed, params.agent_number, params.agent_radius, params.agent_mass );
 		fprintf( scenario, "%d %d %d\n", params.deployment_width, params.deployment_height, params.deployment_quadrant );
 		
 		// Obstacle parameters
@@ -727,7 +728,12 @@ int save_scenario( char *filename )
 		fprintf( scenario, "%f %f %f\n", params.obstacle_radius, params.obstacle_radius_min, params.obstacle_radius_max );
 
 		// Physics parameters
+		fprintf( scenario, "%d %d %d\n", params.enable_agent_goal_f, params.enable_agent_obstacle_f, params.enable_agent_agent_f );
+		fprintf( scenario, "%f %f %d\n", params.R, params.range_coefficient, params.force_law );
 		fprintf( scenario, "%f %f %f\n", params.max_V, params.G, params.p );
+		
+		// Batch parameters
+		fprintf( scenario, "%d %d %d\n", params.time_limit, params.trials_number, params.runs_number );
 		
 		// Statistics
 		fprintf( scenario, "%d %d %f\n", stats.timeStep, stats.reached_goal, stats.reach_ratio );
@@ -783,7 +789,7 @@ int load_scenario( char *filename )
 		fscanf( scenario, "%d %f %f %d", &params.goal_random_seed, &params.goal_width, &params.goal_mass, ( int * ) &params.goal_quadrant );
 
 		// Agent parameters
-		fscanf( scenario, "%d %d", &params.agent_random_seed, &params.agent_number );
+		fscanf( scenario, "%d %d %f %f", &params.agent_random_seed, &params.agent_number, &params.agent_radius, &params.agent_mass );
 		fscanf( scenario, "%d %d %d", &params.deployment_width, &params.deployment_height, ( int * ) &params.deployment_quadrant );
 
 		// Obstacle parameters
@@ -791,7 +797,12 @@ int load_scenario( char *filename )
 		fscanf( scenario, "%f %f %f", &params.obstacle_radius, &params.obstacle_radius_min, &params.obstacle_radius_max );
 
 		// Physics parameters
+		fscanf( scenario, "%d %d %d", ( int * ) &params.enable_agent_goal_f, ( int * ) &params.enable_agent_obstacle_f, ( int * ) &params.enable_agent_agent_f );
+		fscanf( scenario, "%f %f %d", &params.R, &params.range_coefficient, ( int * ) &params.force_law );
 		fscanf( scenario, "%f %f %f", &params.max_V, &params.G, &params.p );
+		
+		// Batch parameters
+		fscanf( scenario, "%d %d %d", &params.time_limit, &params.trials_number, &params.runs_number );
 		
 		// Statistics
 		fscanf( scenario, "%d %d %f", &stats.timeStep, &stats.reached_goal, &stats.reach_ratio );
@@ -912,7 +923,7 @@ void initialize_graphics( void )
 
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
-    glOrtho( 0.0, params.world_width, -help_area_height, params.world_height, 0.0, 100.0 );
+    glOrtho( -stats_area_width, params.world_width, -help_area_height, params.world_height, 0.0, 100.0 );
 }
 
 bool agent_reached_goal( Agent *agent )
@@ -1046,8 +1057,16 @@ float calculate_newtonian_force( Vector2f agent_pos, float agent_mass, Vector2f 
 float calculate_lj_force( Vector2f agent_pos, float agent_mass, Vector2f obj_pos, float obj_mass )
 {
 	// TODO: Insert Lennard-Jones force law calculation here
+	float f = 0.0f;
+	float distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
 	
-	return 0.0f;
+	float epsilon = 16.5;
+	float sigma = params.R / 3.0f;
+	
+	// Lennard-Jones potential
+	if ( distance_to_obj != 0 ) { f = -24 * epsilon * ( pow( sigma / distance_to_obj, 12 ) - pow( sigma / distance_to_obj, 6 ) ); }
+	
+	return f;
 }
 
 void move_agents( void )
@@ -1064,7 +1083,7 @@ void move_agents( void )
 		float force_x = 0.0f;
 		float force_y = 0.0f;
 		
-		/************************** Calculate force between an obstacle and an agent *********************/
+		/************************** Calculate force between an obstacle and an agent ***********************/
 		if ( params.enable_agent_obstacle_f )
 		{
 			for ( j = 0; j < params.obstacle_number; j++ )
@@ -1090,7 +1109,7 @@ void move_agents( void )
 		        force_y += net_force * sin( angle_to_obstacle );
 			}
 		}
-        /*************************************************************************************************/
+        /****************************************************************************************************/
 		
 		/************************** Calculate force between agents *************************************************/
 		if ( params.enable_agent_agent_f )
@@ -1292,14 +1311,17 @@ void draw_goal( Goal *goal )
 
 void draw_agent( Agent *agent )
 {
-	/*************** Draw an agent ***********************/
-	glPointSize( agent->radius );
-	glColor3fv( agent->color );
-
-	glBegin( GL_POINTS );
-		glVertex2f( agent->position.x, agent->position.y );
-	glEnd();
-	/*****************************************************/
+	if ( agent->position.x >= 0.0f && agent->position.y >= 0.0f )
+	{
+		/*************** Draw an agent ***********************/
+		glPointSize( agent->radius );
+		glColor3fv( agent->color );
+	
+		glBegin( GL_POINTS );
+			glVertex2f( agent->position.x, agent->position.y );
+		glEnd();
+		/*****************************************************/
+	}
 }
 
 void draw_obstacle( Obstacle *obstacle )
@@ -1321,45 +1343,53 @@ void draw_params_stats( void )
 	char label[100];
 	int line = 1;
 	int line_offset = 13;
-	int screen_offset = 10;
+	int screen_offset_x = 10 - stats_area_width;
+	int screen_offset_y = 10;
 	
 	glColor3f( 0.7f, 0.0f, 0.6f );
 	
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - line * line_offset );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - line * line_offset );
 	sprintf( label, "Agent #: %d", params.agent_number );
 	draw_string( label );
 	
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
 	sprintf( label, "Obstacle #: %d", params.obstacle_number );
 	draw_string( label );
 
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
 	sprintf( label, "Timer Delay: %d", params.timer_delay_ms );
 	draw_string( label );
 	
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
 	sprintf( label, "Max Velocity: %.2f", params.max_V );
 	draw_string( label );
 	
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
 	sprintf( label, "G Force: %.2f", params.G );
 	draw_string( label );
 	
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
 	sprintf( label, "p Power: %.2f", params.p );
 	draw_string( label );
 	
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
 	sprintf( label, "Reached Goal #: %d", stats.reached_goal );
 	draw_string( label );
 	
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
 	sprintf( label, "Reach Ratio: %.2f%%", stats.reach_ratio * 100.0f );
 	draw_string( label );
 	
-	glRasterPos2i( screen_offset, params.world_height - screen_offset - ( ++line * line_offset ) );
+	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
 	sprintf( label, "Time Step: %d", stats.timeStep );
 	draw_string( label );
+	
+	glColor3f( 0.0f, 0.0f, 0.0f );
+	
+	glBegin( GL_LINES );
+		glVertex2f( 0.0f, 0.0f );
+		glVertex2f( 0.0f, params.world_height );
+	glEnd();
 }
 
 void draw_instructions( void )
@@ -1427,6 +1457,11 @@ void draw_instructions( void )
 	glRasterPos2i( params.world_width - 170, -help_area_height + line_offset );
 	sprintf( label, "%s [%3d]", selections[cur_sel_index], increments[cur_inc_index] );
 	draw_string( label );
+	
+	glBegin( GL_LINES );
+		glVertex2f( 0.0f, 0.0f );
+		glVertex2f( params.world_width, 0.0f );
+	glEnd();
 }
 
 void display( void )
@@ -1461,43 +1496,43 @@ void display( void )
 
 void process_normal_keys( unsigned char key, int x, int y )
 {
-	if ( key == 's' )
+	if ( key == 's' || key == 'S' )
 	{
 		running = !running;
 		glutPostRedisplay();
 	}
-	else if ( key == 'r' )
+	else if ( key == 'r' || key == 'R' )
 	{
 		restart_simulation();
 		glutPostRedisplay();
 	}
-	else if ( key == 'i' )
+	else if ( key == 'i' || key == 'I' )
 	{
 		++cur_inc_index;
 		cur_inc_index %= 6;
 		glutPostRedisplay();
 	}
-	else if ( key == 'a' )
+	else if ( key == 'a' || key == 'A' )
 	{
 		cur_sel_index = 0;		// AGENT
 		glutPostRedisplay();
 	}
-	else if ( key == 'o' )
+	else if ( key == 'o' || key == 'O' )
 	{
 		cur_sel_index = 1;		// OBSTACLE
 		glutPostRedisplay();
 	}
-	else if ( key == 'd')
+	else if ( key == 'd' || key == 'D' )
 	{
 		if ( save_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
 		glutPostRedisplay();
 	}
-	else if ( key =='l' )
+	else if ( key == 'l' || key == 'L' )
 	{
 		if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
 		glutPostRedisplay();
 	}
-	else if ( key == 'q' )
+	else if ( key == 'q' || key == 'Q' )
 	{
 		free_memory();
 		exit( EXIT_SUCCESS );
@@ -1716,7 +1751,7 @@ int main ( int argc, char **argv )
 	{
 	    glutInit( &argc, argv );
 	    glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB );
-	    glutInitWindowSize( params.world_width, params.world_height + help_area_height );
+	    glutInitWindowSize( params.world_width + stats_area_width, params.world_height + help_area_height );
 	    glutInitWindowPosition( 100, 100 );
 	    glutCreateWindow( "Robotic Swarm Simulation" );
 	    
