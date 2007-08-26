@@ -32,6 +32,14 @@ typedef enum e_viewmode
 	
 } Viewmode;
 
+typedef enum e_obj_type
+{
+	AGENT,
+	OBSTACLE,
+	GOAL,
+	
+} ObjectType;
+
 /**
  * \struct Vector2f
  * \brief  Represents a vector in 2D space.
@@ -111,7 +119,7 @@ typedef enum e_force_law
 	NEWTONIAN,
 	LENNARD_JONES,
 	
-} Force_Law;
+} ForceLaw;
 
 typedef struct s_params
 {
@@ -143,9 +151,13 @@ typedef struct s_params
 	bool enable_agent_obstacle_f;
 	bool enable_agent_agent_f;
 	
+	float max_f_agent_goal;
+	float max_f_agent_obstacle;
+	float max_f_agent_agent;
+	
 	float R;
 	float range_coefficient;
-	Force_Law force_law;
+	ForceLaw force_law;
 	
 	float max_V;	// Maximum agent velocity 
 	float G;		// Gravitational force
@@ -302,6 +314,18 @@ int read_config_file( char *p_filename )
 			else if ( strcmp( "enable_agent_agent_f", parameter ) == 0 )
 			{
 				params.enable_agent_agent_f = atoi( value );
+			}
+			else if ( strcmp( "max_f_agent_goal", parameter ) == 0 )
+			{
+				params.max_f_agent_goal = atof( value );
+			}
+			else if ( strcmp( "max_f_agent_obstacle", parameter ) == 0 )
+			{
+				params.max_f_agent_obstacle = atof( value );
+			}
+			else if ( strcmp( "max_f_agent_agent", parameter ) == 0 )
+			{
+				params.max_f_agent_agent = atof( value );
 			}
 			else if ( strcmp( "R", parameter ) == 0 )
 			{
@@ -729,6 +753,7 @@ int save_scenario( char *filename )
 
 		// Physics parameters
 		fprintf( scenario, "%d %d %d\n", params.enable_agent_goal_f, params.enable_agent_obstacle_f, params.enable_agent_agent_f );
+		fprintf( scenario, "%f %f %f\n", params.max_f_agent_goal, params.max_f_agent_obstacle, params.max_f_agent_agent );
 		fprintf( scenario, "%f %f %d\n", params.R, params.range_coefficient, params.force_law );
 		fprintf( scenario, "%f %f %f\n", params.max_V, params.G, params.p );
 		
@@ -798,6 +823,7 @@ int load_scenario( char *filename )
 
 		// Physics parameters
 		fscanf( scenario, "%d %d %d", ( int * ) &params.enable_agent_goal_f, ( int * ) &params.enable_agent_obstacle_f, ( int * ) &params.enable_agent_agent_f );
+		fscanf( scenario, "%f %f %f", &params.max_f_agent_goal, &params.max_f_agent_obstacle, &params.max_f_agent_agent );
 		fscanf( scenario, "%f %f %d", &params.R, &params.range_coefficient, ( int * ) &params.force_law );
 		fscanf( scenario, "%f %f %f", &params.max_V, &params.G, &params.p );
 		
@@ -874,6 +900,9 @@ int initialize_simulation( char *p_filename )
 	params.enable_agent_goal_f = 1;
 	params.enable_agent_obstacle_f = 1;
 	params.enable_agent_agent_f = 0;
+	params.max_f_agent_goal = 4.0f;
+	params.max_f_agent_obstacle = 14.0f;
+	params.max_f_agent_agent = 4.0f;
 	params.R = 50.0f;
 	params.range_coefficient = 1.5f;
 	params.force_law = 0;
@@ -1043,30 +1072,99 @@ int change_obstacle_number( int obstacle_number )
 	return 0;
 }
 
-float calculate_newtonian_force( Vector2f agent_pos, float agent_mass, Vector2f obj_pos, float obj_mass )
+float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 {
+	Vector2f agent_pos = agent->position;
+	Vector2f obj_pos;
+	float obj_mass;
+	
+	switch( obj_type )
+	{
+		case AGENT:
+			obj_pos = ( ( Agent * ) object )->position;
+			obj_mass = ( ( Agent * ) object )->mass;
+			break;
+			
+		case OBSTACLE:
+			obj_pos = ( ( Obstacle * ) object )->position;
+			obj_mass = ( ( Obstacle * ) object )->mass;
+			break;
+			
+		case GOAL:
+			obj_pos = ( ( Goal * ) object )->position;
+			obj_mass = ( ( Goal * ) object )->mass;
+			break;
+	}
+	
     float f = 0.0f;
     float distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
 
-    // Newtonian universal law of gravitaion
-    if ( distance_to_obj != 0 ) { f = params.G * agent_mass * obj_mass / pow( distance_to_obj, params.p ); }
-
+    if ( distance_to_obj != 0 )
+    {
+	    switch( params.force_law )
+		{
+			case NEWTONIAN:
+				f = params.G * agent->mass * obj_mass / pow( distance_to_obj, params.p );
+				
+				switch( obj_type )
+				{
+					case AGENT:
+					case GOAL:
+						break;
+						
+					case OBSTACLE:
+						f = -f;
+						break;
+				}
+				break;
+				
+			case LENNARD_JONES:
+				switch( obj_type )
+				{
+					float epsilon, sigma;
+					float c, d;
+					float lhs, rhs;
+					
+					// agent-agent interactions, repulsive and attractive components
+					case AGENT:
+						epsilon = 16.5f;
+						sigma = params.R / 3.0f;
+						c = 0.1f;
+						d = 0.1f;
+						
+						lhs = 2 * d * pow( params.R, 12 ) / pow( distance_to_obj, 13 );
+						rhs = c * pow( params.R, 5 ) / pow( distance_to_obj, 7 );
+						
+						f = 24.0f * epsilon * ( lhs - rhs );
+						break;
+						
+					// agent-obstacle interactions, repulsive component only
+					case OBSTACLE:
+						epsilon = 16.5f;
+						sigma = ( ( Obstacle * ) object )->radius;
+						c = 0.1f;
+						
+						rhs = 2 * c * pow( sigma, 12 ) / pow( distance_to_obj, 13 );
+						
+						f = -24.0f * epsilon * rhs;
+						break;
+						
+					// agent-goal interactions, attractive component only
+					case GOAL:
+						epsilon = 16.5f;
+						sigma = params.R * params.R * 5.0f;
+						d = 0.1f;
+						
+						lhs = d * pow( sigma, 6 ) / pow( distance_to_obj, 7 );
+						
+						f = 24.0f * epsilon * lhs;
+						break;
+				}
+				break;
+		}
+    }
+	
     return f;
-}
-
-float calculate_lj_force( Vector2f agent_pos, float agent_mass, Vector2f obj_pos, float obj_mass )
-{
-	// TODO: Insert Lennard-Jones force law calculation here
-	float f = 0.0f;
-	float distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
-	
-	float epsilon = 16.5;
-	float sigma = params.R / 3.0f;
-	
-	// Lennard-Jones potential
-	if ( distance_to_obj != 0 ) { f = -24 * epsilon * ( pow( sigma / distance_to_obj, 12 ) - pow( sigma / distance_to_obj, 6 ) ); }
-	
-	return f;
 }
 
 void move_agents( void )
@@ -1094,16 +1192,9 @@ void move_agents( void )
 				float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
 				float net_force = 0.0f;
 				
-				switch( params.force_law )
-				{
-					case NEWTONIAN:
-						net_force = -calculate_newtonian_force( agent_pos, agent->mass, obs_pos, obs->mass );
-						break;
-						
-					case LENNARD_JONES:
-						net_force = -calculate_lj_force( agent_pos, agent->mass, obs_pos, obs->mass );
-						break;
-				}
+				net_force = calculate_force( agent, obs, OBSTACLE );
+				
+				if ( net_force < -params.max_f_agent_obstacle ) { net_force = -params.max_f_agent_obstacle; }
 		
 		        force_x += net_force * cos( angle_to_obstacle );
 		        force_y += net_force * sin( angle_to_obstacle );
@@ -1125,18 +1216,11 @@ void move_agents( void )
 	
 		        if ( distance <= params.range_coefficient * params.R )
 		        {
-					switch( params.force_law )
-					{
-						case NEWTONIAN:
-							net_force = calculate_newtonian_force( agent_pos, agent->mass, agent2_pos, agent2->mass );
-							break;
-							
-						case LENNARD_JONES:
-							net_force = calculate_lj_force( agent_pos, agent->mass, agent2_pos, agent2->mass );
-							break;
-					}
+		        	net_force = calculate_force( agent, agent2, AGENT );
 					
 		        	if ( distance < params.R ) { net_force = -net_force; }
+					if ( net_force > params.max_f_agent_agent ) { net_force = params.max_f_agent_agent; }
+					if ( net_force < -params.max_f_agent_agent ) { net_force = -params.max_f_agent_agent; }
 	        	}
 		        
 		        force_x += net_force * cos( angle_to_agent2 );
@@ -1151,16 +1235,9 @@ void move_agents( void )
 			float angle_to_goal = atan2( goal_pos.y - agent_pos.y, goal_pos.x - agent_pos.x );
 			float net_force = 0.0f;
 			
-			switch( params.force_law )
-			{
-				case NEWTONIAN:
-					net_force = calculate_newtonian_force( agent_pos, agent->mass, goal_pos, goal->mass );
-					break;
-					
-				case LENNARD_JONES:
-					net_force = calculate_lj_force( agent_pos, agent->mass, goal_pos, goal->mass );
-					break;
-			}
+			net_force = calculate_force( agent, goal, GOAL );
+			
+			if ( net_force > params.max_f_agent_goal ) { net_force = params.max_f_agent_goal; }
 	
 	        force_x += net_force * cos( angle_to_goal );
 	        force_y += net_force * sin( angle_to_goal );
@@ -1604,108 +1681,121 @@ void run_gui( int time )
 void run_cli( void )
 {
 	/************************** TEMPORARY ****************************************/
-	ppHat = 0.3;
-	yy = 10;
 	nn = 10;
 	kk = 10;
 	
-	double predicted_p = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 500.0, 500.0 );
-	printf( "\tpredictedP = %.5f\n", predicted_p );
+	int i;
+	
+	printf( "y\t\tP(Y>=y|.7)\t\tP(Y>=y|.3)\n" );
+	
+	for ( i = 1; i <= 10; i++ )
+	{
+		yy = i;
+
+		ppHat = 1.0 - 0.3;
+		double predicted_p_03 = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 );
+		
+		ppHat = 1.0 - 0.7;
+		double predicted_p_07 = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 );
+
+		printf( "%d\t\t%f\t\t%f\n", yy, predicted_p_07, predicted_p_03 );
+	}
+	
 	/*****************************************************************************/
 	
-    printf( "timeLimit   = %d\n", params.time_limit );
-    printf( "agentNumber = %d\n", params.agent_number );
-    printf( "trialNumber = %d\n", params.trials_number );
-    printf( "runsNumber  = %d\n", params.runs_number );
-
-    int trial;
-    
-    for ( trial = params.trials_number; trial >= 1; trial-- )
-    {
-    	printf( "\nTrial %d\n", trial );
-        int sample_size = trial * 10;
-        printf( "\tsampleSize = %d\n", sample_size );
-
-        // set agent number in simualtion to k (sample size)
-        restart_simulation();
-        change_agent_number( sample_size );
-
-        // initialize agents position
-        srand( ( unsigned int ) time( NULL ) );
-        
-        int i;
-        
-        for ( i = 0; i < params.agent_number; i++ )
-        {
-            deploy_agent( agents[i] );
-        }
-
-        int t = 0;
-
-        while ( stats.reach_ratio != 1.0f && t < params.time_limit )
-        {
-            move_agents();
-            t++;
-        }
-
-        double small_p_hat = stats.reach_ratio;
-        printf( "\tsmallPHat  = %.2f\n", small_p_hat );
-
-        int y = 50;
-        double y_ratio = ( double ) y / params.agent_number;
-
-        printf( "\ty = %d\n", y );
-        printf( "\tyRatio = %.2f\n", y_ratio );
-        printf( "\n" );
-
-        // more than y robots made it to the goal
-        int success_total = 0;
-        int run;
-
-        for ( run = 1; run <= params.runs_number; run++ )
-        {
-        	printf( "\tRun %d\n", run );
-            
-            restart_simulation();
-            change_agent_number( params.agent_number );
-            
-            srand( ( unsigned int ) time( NULL ) );
-            
-            int i;
-            
-            for ( i = 0; i < params.agent_number; i++ )
-            {
-                deploy_agent( agents[i] );
-            }
-
-            t = 0;
-
-            while ( stats.reach_ratio != 1.0f && t < params.time_limit )
-            {
-                move_agents();
-                t++;
-            }
-
-            printf( "\t\treachRatio = %.2f\n", stats.reach_ratio );
-
-            if ( stats.reach_ratio > y_ratio ) { success_total++; }
-
-            printf( "\t\tsuccessTotal = %d\n", success_total );
-        }
-
-		ppHat = small_p_hat;
-		yy = y;
-		kk = sample_size;
-		nn = params.agent_number;
-		
-		double estimated_p = success_total / ( ( double ) params.runs_number );
-		double predicted_p = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 500.0, 500.0 );
-		double relative_error = abs( predicted_p - estimated_p ) / estimated_p;
-		
-		printf( "\testimatedP = %.5f\n", estimated_p );
-		printf( "\tpredictedP = %.5f\n", predicted_p );
-		printf( "\tr. error  = %.5f\n",  relative_error );
-	}
+//    printf( "timeLimit   = %d\n", params.time_limit );
+//    printf( "agentNumber = %d\n", params.agent_number );
+//    printf( "trialNumber = %d\n", params.trials_number );
+//    printf( "runsNumber  = %d\n", params.runs_number );
+//
+//    int trial;
+//    
+//    for ( trial = params.trials_number; trial >= 1; trial-- )
+//    {
+//    	printf( "\nTrial %d\n", trial );
+//        int sample_size = trial * 10;
+//        printf( "\tsampleSize = %d\n", sample_size );
+//
+//        // set agent number in simualtion to k (sample size)
+//        restart_simulation();
+//        change_agent_number( sample_size );
+//
+//        // initialize agents position
+//        srand( ( unsigned int ) time( NULL ) );
+//        
+//        int i;
+//        
+//        for ( i = 0; i < params.agent_number; i++ )
+//        {
+//            deploy_agent( agents[i] );
+//        }
+//
+//        int t = 0;
+//
+//        while ( stats.reach_ratio != 1.0f && t < params.time_limit )
+//        {
+//            move_agents();
+//            t++;
+//        }
+//
+//        double small_p_hat = stats.reach_ratio;
+//        printf( "\tsmallPHat  = %.2f\n", small_p_hat );
+//
+//        int y = 50;
+//        double y_ratio = ( double ) y / params.agent_number;
+//
+//        printf( "\ty = %d\n", y );
+//        printf( "\tyRatio = %.2f\n", y_ratio );
+//        printf( "\n" );
+//
+//        // more than y robots made it to the goal
+//        int success_total = 0;
+//        int run;
+//
+//        for ( run = 1; run <= params.runs_number; run++ )
+//        {
+//        	printf( "\tRun %d\n", run );
+//            
+//            restart_simulation();
+//            change_agent_number( params.agent_number );
+//            
+//            srand( ( unsigned int ) time( NULL ) );
+//            
+//            int i;
+//            
+//            for ( i = 0; i < params.agent_number; i++ )
+//            {
+//                deploy_agent( agents[i] );
+//            }
+//
+//            t = 0;
+//
+//            while ( stats.reach_ratio != 1.0f && t < params.time_limit )
+//            {
+//                move_agents();
+//                t++;
+//            }
+//
+//            printf( "\t\treachRatio = %.2f\n", stats.reach_ratio );
+//
+//            if ( stats.reach_ratio > y_ratio ) { success_total++; }
+//
+//            printf( "\t\tsuccessTotal = %d\n", success_total );
+//        }
+//
+//		ppHat = small_p_hat;
+//		yy = y;
+//		kk = sample_size;
+//		nn = params.agent_number;
+//		
+//		double estimated_p = success_total / ( ( double ) params.runs_number );
+//		double predicted_p = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 500.0, 500.0 );
+//		double relative_error = abs( predicted_p - estimated_p ) / estimated_p;
+//		
+//		printf( "\testimatedP = %.5f\n", estimated_p );
+//		printf( "\tpredictedP = %.5f\n", predicted_p );
+//		printf( "\tr. error  = %.5f\n",  relative_error );
+//	}
 }
 
 int main ( int argc, char **argv )
@@ -1739,6 +1829,15 @@ int main ( int argc, char **argv )
 	printf( "obstacle_radius_min = %.2f\n", params.obstacle_radius_min );
 	printf( "obstacle_radius_max = %.2f\n", params.obstacle_radius_max );
 	printf( "obstacle_mass = %.2f\n", params.obstacle_mass );
+	printf( "enable_agent_goal_f = %d\n", params.enable_agent_goal_f );
+	printf( "enable_agent_obstacle_f = %d\n", params.enable_agent_obstacle_f );
+	printf( "enable_agent_agent_f = %d\n", params.enable_agent_agent_f );
+	printf( "max_f_agent_goal = %.2f\n", params.max_f_agent_goal );
+	printf( "max_f_agent_obstacle = %.2f\n", params.max_f_agent_obstacle );
+	printf( "max_f_agent_agent = %.2f\n", params.max_f_agent_agent );
+	printf( "R = %.2f\n", params.R );
+	printf( "range_coefficient = %.2f\n", params.range_coefficient );
+	printf( "force_law = %d\n", params.force_law );
 	printf( "max_V = %.2f\n", params.max_V );
 	printf( "G = %.2f\n", params.G );
 	printf( "p = %.2f\n", params.p );
