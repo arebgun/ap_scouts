@@ -960,8 +960,8 @@ bool agent_reached_goal( Agent *agent )
     Vector2f goal_pos = goal->position;
     Vector2f agent_pos = agent->position;
 
-    if ( abs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
-         abs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
+    if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
+         fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
     {
             return true;
     }
@@ -1104,16 +1104,18 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 	    switch( params.force_law )
 		{
 			case NEWTONIAN:
-				f = params.G * agent->mass * obj_mass / pow( distance_to_obj, params.p );
-				
 				switch( obj_type )
 				{
 					case AGENT:
+						f = params.G * agent->mass * obj_mass / pow( distance_to_obj, params.p );
+						break;
+
 					case GOAL:
+						f = params.G * agent->mass * obj_mass / pow( distance_to_obj, params.p );
 						break;
 						
 					case OBSTACLE:
-						f = -f;
+						f = -( params.G * agent->mass * obj_mass / pow( distance_to_obj /*- ( ( Obstacle * ) object )->radius*/, params.p ) );
 						break;
 				}
 				break;
@@ -1144,7 +1146,7 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 						sigma = ( ( Obstacle * ) object )->radius;
 						c = 0.1f;
 						
-						rhs = 2 * c * pow( sigma, 12 ) / pow( distance_to_obj, 13 );
+						rhs = 2 * c * pow( sigma, 12 ) / pow( distance_to_obj/* - ( ( Obstacle * ) object )->radius*/, 13 );
 						
 						f = -24.0f * epsilon * rhs;
 						break;
@@ -1190,11 +1192,15 @@ void move_agents( void )
 				Vector2f obs_pos = obs->position;
 				
 				float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
+				//float distance = sqrt( pow( obs_pos.x - agent_pos.x, 2 ) + pow( obs_pos.y - agent_pos.y, 2 ) ) - obs->radius;
 				float net_force = 0.0f;
 				
-				net_force = calculate_force( agent, obs, OBSTACLE );
-				
-				if ( net_force < -params.max_f_agent_obstacle ) { net_force = -params.max_f_agent_obstacle; }
+		        //if ( distance <= params.range_coefficient * params.R )
+		        //{
+					net_force = calculate_force( agent, obs, OBSTACLE );
+					
+					if ( net_force < -params.max_f_agent_obstacle ) { net_force = -params.max_f_agent_obstacle; }
+		        //}
 		
 		        force_x += net_force * cos( angle_to_obstacle );
 		        force_y += net_force * sin( angle_to_obstacle );
@@ -1277,9 +1283,9 @@ double gammaln( double xx )
 {
 	int j;
 	double x, y, tmp, ser;
-	double cof[6] = { 76.18009172947146,     -86.50532032941677,
-	                  24.01409824083091,     -1.231739572450155,
-	                  0.1208650973866179e-2, -0.5395239384953e-5 };
+	static double cof[6] = { 76.18009172947146,     -86.50532032941677,
+	                         24.01409824083091,     -1.231739572450155,
+	                         0.1208650973866179e-2, -0.5395239384953e-5 };
 	
 	y = x = xx;
 	tmp = x + 5.5;
@@ -1294,7 +1300,7 @@ double gammaln( double xx )
 	return -tmp + log( 2.5066282746310005 * ser / x );
 }
     
-double beta_distribution( double z, double w )
+double beta_function( double z, double w )
 {
 	return exp( gammaln( z ) + gammaln( w ) - gammaln( z + w ) );
 }
@@ -1312,8 +1318,8 @@ double f( double t, double p )
 	double r = k * pHat + alpha;
 	double s = k * ( 1 - pHat ) + beta;
 	
-	double b1 = beta_distribution( r, s );
-	double b2 = beta_distribution( y, n - y + 1 );
+	double b1 = beta_function( r, s );
+	double b2 = beta_function( y, n - y + 1 );
 	double bb = b1 * b2;
 	
 	double C = pow( bb, -1 );
@@ -1362,6 +1368,28 @@ double calculate_predicted_p( double a, double b, double c, double d, double n, 
 	return ( result > 1.0 ) ? 1.0 : result; 
 }
 /****************************************************************************************/
+
+double approx_fac( int n )
+{
+	static double pi_o_3 = M_PI / 3.0;
+	static double pi_t_2 = 2.0 * M_PI;
+	
+	return sqrt( pi_t_2 * n + pi_o_3 ) * pow( n, n ) * pow( M_E, -n );
+}
+
+double fac( int n )
+{
+	double result = 1.0;
+	
+	int i;
+	
+	for ( i = 2; i <= n; i++ )
+	{
+		result *= i;
+	}
+	
+	return result;
+}
 
 void draw_string( char *s )
 {
@@ -1680,27 +1708,225 @@ void run_gui( int time )
 
 void run_cli( void )
 {
-	/************************** TEMPORARY ****************************************/
-	nn = 10;
-	kk = 10;
+//	/************************** TEMPORARY ****************************************/
+//	nn = 10;
+//	kk = 10;
+//	
+//	int i;
+//	
+//	printf( "y\t\tP(Y>=y|.7)\t\tP(Y>=y|.3)\n" );
+//	
+//	for ( i = 1; i <= 10; i++ )
+//	{
+//		yy = i;
+//
+//		ppHat = 1.0 - 0.3;
+//		double predicted_p_03 = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 1000.0, 1000.0 );
+//		
+//		ppHat = 1.0 - 0.7;
+//		double predicted_p_07 = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 1000.0, 1000.0 );
+//
+//		printf( "%d\t\t%f\t\t%f\n", yy, predicted_p_07, predicted_p_03 );
+//	}
 	
-	int i;
+//	nn = 1000;
+//	kk = 3;
+//	yy = 2;
+//	
+//	double ppp = 0.0;
+//	
+//	ppHat = 1.0;
+//	ppp += 429/1000.0 * calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 );
+//	
+//	printf( "ppp = %f\n", calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 ) );
+//	
+//	ppHat = 0.666667;
+//	ppp += 514/1000.0 * calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 );
+//	
+//	printf( "ppp = %f\n", calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 ) );
+//	
+//	ppHat = 0.0;
+//	ppp += 57/1000.0 * calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 );
+//	
+//	printf( "ppp = %f\n", calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 ) );
+//	exit(1);
 	
-	printf( "y\t\tP(Y>=y|.7)\t\tP(Y>=y|.3)\n" );
+	FILE *p_results;
+	p_results = fopen( "results", "w+" );
 	
-	for ( i = 1; i <= 10; i++ )
+	if ( p_results == NULL )
 	{
-		yy = i;
-
-		ppHat = 1.0 - 0.3;
-		double predicted_p_03 = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 );
-		
-		ppHat = 1.0 - 0.7;
-		double predicted_p_07 = calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 );
-
-		printf( "%d\t\t%f\t\t%f\n", yy, predicted_p_07, predicted_p_03 );
+		printf( "Error opening file results" );
+		exit( EXIT_FAILURE );
 	}
+
+	// Total number of agents 
+	int n[5] = { 100, 150, 200, 300, 500, };
+	double small_p = 0.0;
 	
+	int r;
+	
+	for ( r = 0; r < 5; r++ )
+	{
+		change_agent_number( n[r] );
+		
+		int i;
+
+		// Calculate ground truth #2 - big_P_prime
+		int big_P_prime[n[r] + 1];
+		
+		for ( i = 0; i <= n[r]; i++ )
+		{
+			big_P_prime[i] = 0;
+		}
+
+		for ( i = 0; i < 1000; i++ )
+		{
+			restart_simulation();
+			
+	        /******** initialize agents position *****************/
+	        srand( ( unsigned int ) time( NULL ) );
+	        
+	        int agent;
+	        
+	        for ( agent = 0; agent < params.agent_number; agent++ )
+	        {
+	            deploy_agent( agents[agent] );
+	        }
+	        /*****************************************************/
+	        
+	        while ( stats.reached_goal != params.agent_number && stats.timeStep < params.time_limit )
+	        {
+	            move_agents();
+	        }
+	        
+	        int j;
+	        
+	        for ( j = 0; j <= stats.reached_goal; j++ )
+	        {
+	        	++big_P_prime[j];
+	        }
+	        
+	        small_p += stats.reached_goal;
+	        
+	        printf( "i = %d\n", i );
+		}
+		
+		small_p /= n[r] * 1000.0;
+		
+		printf( "small_p = %f\n", small_p );
+		
+		for ( i = 0; i <= params.agent_number; i++ )
+		{
+			printf( "big_P_prime[%d] = %d\n", i, big_P_prime[i] );
+		}
+		/**********************************************************************/
+		
+		int k[5] = { 3, 5, 10, 15, n[r], };
+		
+		for ( i = 0; i < 5; i++ )
+		{
+			change_agent_number( k[i] );
+
+			int j;
+			int success_number[k[i] + 1];
+					
+			for ( j = 0; j <= k[i]; j++ )
+			{
+				success_number[j] = 0;
+			}
+			
+			for ( j = 0; j < 1000; j++ )
+			{
+				restart_simulation();
+				
+		        /******** initialize agents position *****************/
+		        srand( ( unsigned int ) time( NULL ) );
+		        
+		        int agent;
+		        
+		        for ( agent = 0; agent < params.agent_number; agent++ )
+		        {
+		            deploy_agent( agents[agent] );
+		        }
+		        /*****************************************************/
+		        
+		        while ( stats.reached_goal != params.agent_number && stats.timeStep < params.time_limit )
+		        {
+		            move_agents();
+		        }
+		        
+		        ++success_number[stats.reached_goal];
+		        
+		        printf( "j = %d, k[i] = %d\n", j, k[i] );
+			}
+			
+			nn = n[r];
+			kk = k[i];
+			
+			float pHats[k[i] + 1];
+			float p_hat_weighted = 0.0f;
+			int sum = 0;
+			
+			for ( j = 0; j <= k[i]; j++ )
+			{
+				printf( "success_number[%d] = %d\n", j, success_number[j] );
+				sum += success_number[j];
+				pHats[j] = ( float ) j / ( float ) k[i];
+				printf( "pHats[%d] = %f\n", j, pHats[j] );
+				p_hat_weighted += pHats[j] * success_number[j] / 1000.0f;
+			}
+			
+			printf( "total = %d\n", sum );
+			printf( "p_hat_weigted = %f\n", p_hat_weighted );
+
+			fprintf( p_results, "#small_p = %f\n", small_p );
+			fprintf( p_results, "#n\t\tk\t\ty\t\tbig_P\t\tbig_P_prime\t\tbig_P_hat\t\terror1\t\terror2\n" );
+			
+			int y;
+			
+			for ( y = 1; y <= nn; y++ )
+			{
+				yy = y;
+				
+				// Calculate ground truth #1, big_P
+				
+				double big_P = 0.0;
+				
+				for ( j = y; j <= nn; j++ )
+				{
+					//double n_choose_j = fac( nn ) / ( fac( j ) * fac( nn - j ) );
+					// exp( gammaln( n + 1 ) ) == fac( n )
+					double n_choose_j =  exp( gammaln( nn + 1 ) - gammaln( j + 1 ) - gammaln( nn - j + 1 ) );
+					big_P += n_choose_j * pow( small_p, j ) * pow( 1.0 - small_p, nn - j );
+				}
+				
+				double big_P_hat = 0.0;
+				
+				for ( j = 0; j <= k[i]; j++ )
+				{
+					ppHat = 1.0f - pHats[j];
+					float rate = success_number[j] / 1000.0f;
+					big_P_hat +=  rate * calculate_predicted_p( 0.0, 1.0, 0.0, 1.0, 100.0, 100.0 );
+					//printf( "%d/%d x P(Y>=y|%f) + ", success_number[j], 1000, ppHat );
+				}
+				
+				//printf("\n");
+				
+				double error1 = fabs( big_P_hat - big_P );			
+				double error2 = fabs( big_P_hat - big_P_prime[y] / 1000.0f );
+				
+				fprintf( p_results, "%d\t\t%d\t\t%d\t\t%f\t\t%f\t\t%f\t\t%f\t\t%f\n",
+						 n[r], k[i], y, big_P, big_P_prime[y] / 1000.0f, big_P_hat, error1, error2 );
+			}
+			
+			fprintf( p_results, "\n\n" );
+		}		
+	}
+			
+	fclose( p_results );
+		
+		
 	/*****************************************************************************/
 	
 //    printf( "timeLimit   = %d\n", params.time_limit );
