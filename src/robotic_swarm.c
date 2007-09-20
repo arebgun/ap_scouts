@@ -19,6 +19,8 @@
 #include "GL/glut.h"
 
 /*************** TEMPORARY *************************/
+double alpha;
+double beta;
 double ppHat;
 int yy;
 int kk;
@@ -164,8 +166,20 @@ typedef struct s_params
 	float p;		// power to which distance is raised to
 	
 	int time_limit;
-	int trials_number;
 	int runs_number;
+	
+	char *results_filename;
+	
+	int n_number;
+	int k_number;
+	int a_b_number;
+	int *n_array;
+	int *k_array;
+	double *alpha_array;
+	double *beta_array;
+	
+	double alpha;
+	double beta;
 	
 } Parameters;
 
@@ -355,13 +369,109 @@ int read_config_file( char *p_filename )
 			{
 				params.time_limit = atoi( value );
 			}
-			else if ( strcmp( "trials_number", parameter ) == 0 )
-			{
-				params.trials_number = atoi( value );
-			}
 			else if ( strcmp( "runs_number", parameter ) == 0 )
 			{
 				params.runs_number = atoi( value );
+			}
+			else if ( strcmp( "results_filename", parameter ) == 0 )
+			{
+				params.results_filename = strdup( value );
+			}
+			else if ( strcmp( "n_number", parameter ) == 0 )
+			{
+				params.n_number = atoi( value );
+			}
+			else if ( strcmp( "k_number", parameter ) == 0 )
+			{
+				params.k_number = atoi( value );
+			}
+			else if ( strcmp( "a_b_number", parameter ) == 0 )
+			{
+				params.a_b_number = atoi( value );
+			}
+			else if ( strcmp( "n_array", parameter ) == 0 )
+			{
+				params.n_array = ( int * ) calloc( params.n_number, sizeof( int ) );
+				
+				if ( params.n_array == NULL )
+				{
+					printf( "Error while allocating memory for n_array!" );
+					return -1;
+				}
+				
+				int i;
+				
+				params.n_array[0] = atoi( strtok( value, "," ) );
+				
+				for ( i = 1; i < params.n_number; i++ )
+				{
+					params.n_array[i] = atoi( strtok( NULL, "," ) );
+				}
+			}
+			else if ( strcmp( "k_array", parameter ) == 0 )
+			{
+				params.k_array = ( int * ) calloc( params.k_number + 1, sizeof( int ) );
+
+				if ( params.k_array == NULL )
+				{
+					printf( "Error while allocating memory for k_array!" );
+					return -1;
+				}
+				
+				int i;
+				
+				params.k_array[0] = atoi( strtok( value, "," ) );
+				
+				for ( i = 1; i < params.k_number; i++ )
+				{
+					params.k_array[i] = atoi( strtok( NULL, "," ) );
+				}
+			}
+			else if ( strcmp( "alpha_array", parameter ) == 0 )
+			{
+				params.alpha_array = ( double * ) calloc( params.a_b_number, sizeof( double ) );
+
+				if ( params.alpha_array == NULL )
+				{
+					printf( "Error while allocating memory for alpha_array!" );
+					return -1;
+				}
+				
+				int i;
+				
+				params.alpha_array[0] = atof( strtok( value, "," ) );
+				
+				for ( i = 1; i < params.a_b_number; i++ )
+				{
+					params.alpha_array[i] = atof( strtok( NULL, "," ) );
+				}
+			}
+			else if ( strcmp( "beta_array", parameter ) == 0 )
+			{
+				params.beta_array = ( double * ) calloc( params.a_b_number, sizeof( double ) );
+
+				if ( params.beta_array == NULL )
+				{
+					printf( "Error while allocating memory for beta_array!" );
+					return -1;
+				}
+				
+				int i;
+				
+				params.beta_array[0] = atof( strtok( value, "," ) );
+				
+				for ( i = 1; i < params.a_b_number; i++ )
+				{
+					params.beta_array[i] = atof( strtok( NULL, "," ) );
+				}
+			}
+			else if ( strcmp( "alpha", parameter ) == 0 )
+			{
+				params.alpha = atof( value );
+			}
+			else if ( strcmp( "beta", parameter ) == 0 )
+			{
+				params.beta = atof( value );
 			}
 			else
 			{
@@ -720,6 +830,8 @@ void free_memory( void )
     }
     
     if ( obstacles != NULL ) { free( obstacles ); }
+    if ( params.n_array != NULL ) { free( params.n_array ); }
+    if ( params.k_array != NULL ) { free( params.k_array ); }
     /*******************************************************/
 }
 
@@ -758,7 +870,7 @@ int save_scenario( char *filename )
 		fprintf( scenario, "%f %f %f\n", params.max_V, params.G, params.p );
 		
 		// Batch parameters
-		fprintf( scenario, "%d %d %d\n", params.time_limit, params.trials_number, params.runs_number );
+		fprintf( scenario, "%d %d\n", params.time_limit, params.runs_number );
 		
 		// Statistics
 		fprintf( scenario, "%d %d %f\n", stats.timeStep, stats.reached_goal, stats.reach_ratio );
@@ -828,7 +940,7 @@ int load_scenario( char *filename )
 		fscanf( scenario, "%f %f %f", &params.max_V, &params.G, &params.p );
 		
 		// Batch parameters
-		fscanf( scenario, "%d %d %d", &params.time_limit, &params.trials_number, &params.runs_number );
+		fscanf( scenario, "%d %d", &params.time_limit, &params.runs_number );
 		
 		// Statistics
 		fscanf( scenario, "%d %d %f", &stats.timeStep, &stats.reached_goal, &stats.reach_ratio );
@@ -911,7 +1023,8 @@ int initialize_simulation( char *p_filename )
 	params.p = 2.0f;
 	params.time_limit = 1000;
 	params.runs_number = 10;
-	params.trials_number = 1000;
+	params.alpha = 1.0;
+	params.beta = 1.0;
 	
 	// Reset statistics
 	reset_statistics();
@@ -1283,33 +1396,33 @@ void move_agents( void )
 
 double approximation( double a, double b, double ( *func ) ( double ) )
 {
-   double c = 0.5 * ( b - a );
-   double d = 0.5 * ( b + a );
+	double c = 0.5 * ( b - a );
+	double d = 0.5 * ( b + a );
    
-   return c * ( ( 5.0 / 9.0 ) * func( c * ( -( sqrt( 3.0 / 5.0 ) ) ) + d ) +
-  	      ( 8.0 / 9.0 ) * func( d ) + ( 5.0 / 9.0 ) * func( c * sqrt ( 3.0 / 5.0 ) + d ) );
+	return c * ( ( 5.0 / 9.0 ) * func( c * ( -( sqrt( 3.0 / 5.0 ) ) ) + d ) +
+		   ( 8.0 / 9.0 ) * func( d ) + ( 5.0 / 9.0 ) * func( c * sqrt ( 3.0 / 5.0 ) + d ) );
 }
 
 double gaussian_quadrature( double a, double b, int n, double ( *func ) ( double ) )
 {
-   double step = ( a + b ) / n;
-   double upper = a + step;
-   double lower = a;
-   double sum = 0;
+	double step = ( a + b ) / n;
+	double upper = a + step;
+	double lower = a;
+	double sum = 0;
 
-   int i;
+	int i;
    
-   for ( i = 0; i < n; i++ )
-   {
-      double temp = approximation( lower, upper, func );
+	for ( i = 0; i < n; i++ )
+	{
+		double temp = approximation( lower, upper, func );
 
-      lower = upper;
-      upper += step;
+		lower = upper;
+		upper += step;
 
-      sum += temp;
-   }
+		sum += temp;
+	}
    
-   return ( sum > 1.0 ) ? 1.0 : sum; 
+	return ( sum > 1.0 ) ? 1.0 : sum; 
 }
 
 double gammaln( double xx )
@@ -1348,16 +1461,15 @@ double incomplete_beta( double t )
 
 double f( double p )
 {
+	double a = alpha;
+	double b = beta;
 	double pHat = ppHat;
 	int y = yy;
 	int n = nn;
 	int k = kk;
 	
-	double alpha = 1.0;
-	double beta = 1.0;
-	
-	double r = k * pHat + alpha;
-	double s = k * ( 1 - pHat ) + beta;
+	double r = k * pHat + params.alpha;
+	double s = k * ( 1 - pHat ) + params.beta;
 	
 	double b1 = beta_function( r, s );
 	double b2 = beta_function( y, n - y + 1 );
@@ -1709,6 +1821,8 @@ void run_gui( int time )
 
 void output_simulation_parameters( FILE *output )
 {
+	fprintf( output, "\n\n" );
+	
 	fprintf( output, "# world_width = %d\n", params.world_width );
 	fprintf( output, "# world_height = %d\n", params.world_height );
 	fprintf( output, "# timer_delay_ms = %d\n", params.timer_delay_ms );
@@ -1742,44 +1856,80 @@ void output_simulation_parameters( FILE *output )
 	fprintf( output, "# G = %.2f\n", params.G );
 	fprintf( output, "# p = %.2f\n", params.p );
 	fprintf( output, "# time_limit = %d\n", params.time_limit );
-	fprintf( output, "# trials_number = %d\n", params.trials_number );
 	fprintf( output, "# runs_number = %d\n", params.runs_number );
+	fprintf( output, "# results_filename = %s\n", params.results_filename );
+	fprintf( output, "# n_number = %d\n", params.n_number );
+	fprintf( output, "# k_number = %d\n", params.k_number );
+	fprintf( output, "# a_b_number = %d\n", params.a_b_number );
+	fprintf( output, "# n_array = ");
+	
+	int i;
+	
+	for ( i = 0; i < params.n_number; i++ )
+	{
+		fprintf( output, "%d,", params.n_array[i] );
+	}
+	
+	fprintf( output, "\n# k_array = " );
+	
+	for ( i = 0; i < params.k_number; i++ )
+	{
+		fprintf( output, "%d,", params.k_array[i] );
+	}
+	
+	fprintf( output, "\n# alpha_array = " );
+	
+	for ( i = 0; i < params.a_b_number; i++ )
+	{
+		fprintf( output, "%.2f,", params.alpha_array[i] );
+	}
+
+	fprintf( output, "\n# beta_array = " );
+	
+	for ( i = 0; i < params.a_b_number; i++ )
+	{
+		fprintf( output, "%.2f,", params.beta_array[i] );
+	}
+
+	fprintf( output, "\n# alpha = %.2f\n", params.alpha );
+	fprintf( output, "# beta = %.2f\n", params.beta );
+	
+	fprintf( output, "\n\n" );
 }
 
 void run_cli( void )
 {
 	FILE *p_results;
-	p_results = fopen( "results", "w+" );
+	p_results = fopen( params.results_filename, "w+" );
 
 	if ( p_results == NULL )
 	{
-		printf( "Error opening file results" );
+		printf( "Error opening file [%s]!", params.results_filename );
 		exit( EXIT_FAILURE );
 	}
 	
 	output_simulation_parameters( p_results );
+	fflush( p_results );
 
-	// Total number of agents 
-	int n[5] = { 100, 150, 200, 300, 500, };
 	double small_p = 0.0;
 	
-	int r;
+	int n;
 	
-	for ( r = 0; r < 5; r++ )
+	for ( n = 0; n < params.n_number; n++ )
 	{
-		change_agent_number( n[r] );
+		change_agent_number( params.n_array[n] );
 		
 		int i;
 
-		// Calculate ground truth #2 - big_P_prime
-		int big_P_prime[n[r] + 1];
+		/***************** Calculate ground truth #2 - big_P_prime *********************************/
+		int big_P_prime[params.n_array[n] + 1];
 		
-		for ( i = 0; i <= n[r]; i++ )
+		for ( i = 0; i <= params.n_array[n]; i++ )
 		{
 			big_P_prime[i] = 0;
 		}
 
-		for ( i = 0; i < 1000; i++ )
+		for ( i = 0; i < params.runs_number; i++ )
 		{
 			restart_simulation();
 			
@@ -1808,10 +1958,10 @@ void run_cli( void )
 	        
 	        small_p += stats.reached_goal;
 	        
-	        printf( "i = %d\n", i );
+	        if ( i % 100 == 0 ) { printf( "i = %d\n", i ); }
 		}
 		
-		small_p /= n[r] * 1000.0;
+		small_p /= ( double ) ( params.n_array[n] * params.runs_number );
 		
 		printf( "small_p = %f\n", small_p );
 		
@@ -1819,23 +1969,23 @@ void run_cli( void )
 		{
 			printf( "big_P_prime[%d] = %d\n", i, big_P_prime[i] );
 		}
-		/**********************************************************************/
+		/*******************************************************************************************/
 		
-		int k[5] = { 3, 5, 10, 15, n[r], };
+		params.k_array[params.k_number] = params.n_array[n];
 		
 		for ( i = 0; i < 5; i++ )
 		{
-			change_agent_number( k[i] );
+			change_agent_number( params.k_array[i] );
 
 			int j;
-			int success_number[k[i] + 1];
+			int success_number[params.k_array[i] + 1];
 					
-			for ( j = 0; j <= k[i]; j++ )
+			for ( j = 0; j <= params.k_array[i]; j++ )
 			{
 				success_number[j] = 0;
 			}
 			
-			for ( j = 0; j < 1000; j++ )
+			for ( j = 0; j < params.runs_number; j++ )
 			{
 				restart_simulation();
 				
@@ -1857,28 +2007,21 @@ void run_cli( void )
 		        
 		        ++success_number[stats.reached_goal];
 		        
-		        printf( "j = %d, k[i] = %d\n", j, k[i] );
+		        if ( j % 100 == 0 ) { printf( "j = %d, params.k_array[i] = %d\n", j, params.k_array[i] ); }
 			}
 			
-			nn = n[r];
-			kk = k[i];
+			nn = params.n_array[n];
+			kk = params.k_array[i];
 			
-			float pHats[k[i] + 1];
-			float p_hat_weighted = 0.0f;
-			int sum = 0;
+			double pHats[params.k_array[i] + 1];
 			
-			for ( j = 0; j <= k[i]; j++ )
+			for ( j = 0; j <= params.k_array[i]; j++ )
 			{
 				printf( "success_number[%d] = %d\n", j, success_number[j] );
-				sum += success_number[j];
-				pHats[j] = ( float ) j / ( float ) k[i];
+				pHats[j] = ( double ) j / ( double ) params.k_array[i];
 				printf( "pHats[%d] = %f\n", j, pHats[j] );
-				p_hat_weighted += pHats[j] * success_number[j] / 1000.0f;
 			}
 			
-			printf( "total = %d\n", sum );
-			printf( "p_hat_weigted = %f\n", p_hat_weighted );
-
 			fprintf( p_results, "#small_p = %f\n", small_p );
 			fprintf( p_results, "#n\t\tk\t\ty\t\tbig_P\t\tbig_P_prime\t\tbig_P_hat\t\terror1\t\terror2\n" );
 			
@@ -1888,38 +2031,35 @@ void run_cli( void )
 			{
 				yy = y;
 				
-				// Calculate ground truth #1, big_P
-				
+				/*********************** Calculate ground truth #1, big_P **********************************/
 				double big_P = 0.0;
 				
 				for ( j = y; j <= nn; j++ )
 				{
-					//double n_choose_j = fac( nn ) / ( fac( j ) * fac( nn - j ) );
 					// exp( gammaln( n + 1 ) ) == fac( n )
 					double n_choose_j =  exp( gammaln( nn + 1 ) - gammaln( j + 1 ) - gammaln( nn - j + 1 ) );
 					big_P += n_choose_j * pow( small_p, j ) * pow( 1.0 - small_p, nn - j );
 				}
+				/*******************************************************************************************/
 				
 				double big_P_hat = 0.0;
 				
-				for ( j = 0; j <= k[i]; j++ )
+				for ( j = 0; j <= params.k_array[i]; j++ )
 				{
 					ppHat = pHats[j];
-					float rate = success_number[j] / 1000.0f;
+					double rate = ( double ) success_number[j] / ( double ) params.runs_number;
 					big_P_hat +=  rate * gaussian_quadrature( 0.0f, 1.0f, 100, f );
-					//printf( "%d/%d x P(Y>=y|%f) + ", success_number[j], 1000, ppHat );
 				}
 				
-				//printf("\n");
-				
 				double error1 = fabs( big_P_hat - big_P );			
-				double error2 = fabs( big_P_hat - big_P_prime[y] / 1000.0f );
+				double error2 = fabs( big_P_hat - ( double ) big_P_prime[y] / ( double ) params.runs_number );
 				
 				fprintf( p_results, "%d\t\t%d\t\t%d\t\t%f\t\t%f\t\t%f\t\t%f\t\t%f\n",
-						 n[r], k[i], y, big_P, big_P_prime[y] / 1000.0f, big_P_hat, error1, error2 );
+						 params.n_array[n], params.k_array[i], y, big_P, ( double ) big_P_prime[y] / ( double ) params.runs_number, big_P_hat, error1, error2 );
 			}
 			
 			fprintf( p_results, "\n\n" );
+			fflush( p_results );
 		}		
 	}
 			
