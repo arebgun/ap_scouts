@@ -178,9 +178,6 @@ typedef struct s_params
 	double *alpha_array;
 	double *beta_array;
 	
-	double alpha;
-	double beta;
-	
 } Parameters;
 
 typedef struct s_statistics
@@ -465,14 +462,6 @@ int read_config_file( char *p_filename )
 					params.beta_array[i] = atof( strtok( NULL, "," ) );
 				}
 			}
-			else if ( strcmp( "alpha", parameter ) == 0 )
-			{
-				params.alpha = atof( value );
-			}
-			else if ( strcmp( "beta", parameter ) == 0 )
-			{
-				params.beta = atof( value );
-			}
 			else
 			{
 				printf( "WARNING: Unknown parameter [%s]\n", parameter );
@@ -488,6 +477,81 @@ int read_config_file( char *p_filename )
 	fclose( p_config );
 	
 	return 0;
+}
+
+void output_simulation_parameters( FILE *output )
+{
+	fprintf( output, "\n\n" );
+	
+	fprintf( output, "# world_width = %d\n", params.world_width );
+	fprintf( output, "# world_height = %d\n", params.world_height );
+	fprintf( output, "# timer_delay_ms = %d\n", params.timer_delay_ms );
+	fprintf( output, "# goal_random_seed = %d\n", params.goal_random_seed );
+	fprintf( output, "# goal_width = %.2f\n", params.goal_width );
+	fprintf( output, "# goal_mass = %.2f\n", params.goal_mass );
+	fprintf( output, "# goal_quadrant = %d\n", params.goal_quadrant );
+	fprintf( output, "# agent_random_seed = %d\n", params.agent_random_seed );
+	fprintf( output, "# agent_number = %d\n", params.agent_number );
+	fprintf( output, "# agent_radius = %.2f\n", params.agent_radius );
+	fprintf( output, "# agent_mass = %.2f\n", params.agent_mass );
+	fprintf( output, "# deployment_width = %d\n", params.deployment_width );
+	fprintf( output, "# deployment_height = %d\n", params.deployment_height );
+	fprintf( output, "# deployment_quadrant = %d\n", params.deployment_quadrant );
+	fprintf( output, "# obstacle_random_seed = %d\n", params.obstacle_random_seed );
+	fprintf( output, "# obstacle_number = %d\n", params.obstacle_number );
+	fprintf( output, "# obstacle_radius = %.2f\n", params.obstacle_radius );
+	fprintf( output, "# obstacle_radius_min = %.2f\n", params.obstacle_radius_min );
+	fprintf( output, "# obstacle_radius_max = %.2f\n", params.obstacle_radius_max );
+	fprintf( output, "# obstacle_mass = %.2f\n", params.obstacle_mass );
+	fprintf( output, "# enable_agent_goal_f = %d\n", params.enable_agent_goal_f );
+	fprintf( output, "# enable_agent_obstacle_f = %d\n", params.enable_agent_obstacle_f );
+	fprintf( output, "# enable_agent_agent_f = %d\n", params.enable_agent_agent_f );
+	fprintf( output, "# max_f_agent_goal = %.2f\n", params.max_f_agent_goal );
+	fprintf( output, "# max_f_agent_obstacle = %.2f\n", params.max_f_agent_obstacle );
+	fprintf( output, "# max_f_agent_agent = %.2f\n", params.max_f_agent_agent );
+	fprintf( output, "# R = %.2f\n", params.R );
+	fprintf( output, "# range_coefficient = %.2f\n", params.range_coefficient );
+	fprintf( output, "# force_law = %d\n", params.force_law );
+	fprintf( output, "# max_V = %.2f\n", params.max_V );
+	fprintf( output, "# G = %.2f\n", params.G );
+	fprintf( output, "# p = %.2f\n", params.p );
+	fprintf( output, "# time_limit = %d\n", params.time_limit );
+	fprintf( output, "# runs_number = %d\n", params.runs_number );
+	fprintf( output, "# results_filename = %s\n", params.results_filename );
+	fprintf( output, "# n_number = %d\n", params.n_number );
+	fprintf( output, "# k_number = %d\n", params.k_number );
+	fprintf( output, "# a_b_number = %d\n", params.a_b_number );
+	fprintf( output, "# n_array = ");
+	
+	int i;
+	
+	for ( i = 0; i < params.n_number; i++ )
+	{
+		fprintf( output, "%d,", params.n_array[i] );
+	}
+	
+	fprintf( output, "\n# k_array = " );
+	
+	for ( i = 0; i < params.k_number; i++ )
+	{
+		fprintf( output, "%d,", params.k_array[i] );
+	}
+	
+	fprintf( output, "\n# alpha_array = " );
+	
+	for ( i = 0; i < params.a_b_number; i++ )
+	{
+		fprintf( output, "%.2f,", params.alpha_array[i] );
+	}
+
+	fprintf( output, "\n# beta_array = " );
+	
+	for ( i = 0; i < params.a_b_number; i++ )
+	{
+		fprintf( output, "%.2f,", params.beta_array[i] );
+	}
+
+	fprintf( output, "\n\n" );
 }
 
 int create_goal( void )
@@ -1023,8 +1087,6 @@ int initialize_simulation( char *p_filename )
 	params.p = 2.0f;
 	params.time_limit = 1000;
 	params.runs_number = 10;
-	params.alpha = 1.0;
-	params.beta = 1.0;
 	
 	// Reset statistics
 	reset_statistics();
@@ -1468,8 +1530,8 @@ double f( double p )
 	int n = nn;
 	int k = kk;
 	
-	double r = k * pHat + params.alpha;
-	double s = k * ( 1 - pHat ) + params.beta;
+	double r = k * pHat + a;
+	double s = k * ( 1 - pHat ) + b;
 	
 	double b1 = beta_function( r, s );
 	double b2 = beta_function( y, n - y + 1 );
@@ -1481,28 +1543,6 @@ double f( double p )
 }
 
 /****************************************************************************************/
-
-double approx_fac( int n )
-{
-	static double pi_o_3 = M_PI / 3.0;
-	static double pi_t_2 = 2.0 * M_PI;
-	
-	return sqrt( pi_t_2 * n + pi_o_3 ) * pow( n, n ) * pow( M_E, -n );
-}
-
-double fac( int n )
-{
-	double result = 1.0;
-	
-	int i;
-	
-	for ( i = 2; i <= n; i++ )
-	{
-		result *= i;
-	}
-	
-	return result;
-}
 
 void draw_string( char *s )
 {
@@ -1682,7 +1722,7 @@ void draw_instructions( void )
 	glEnd();
 }
 
-void display( void )
+void draw_all( void )
 {
 	int i;
 	
@@ -1819,86 +1859,11 @@ void run_gui( int time )
 	glutTimerFunc( params.timer_delay_ms, run_gui, stats.timeStep );
 }
 
-void output_simulation_parameters( FILE *output )
-{
-	fprintf( output, "\n\n" );
-	
-	fprintf( output, "# world_width = %d\n", params.world_width );
-	fprintf( output, "# world_height = %d\n", params.world_height );
-	fprintf( output, "# timer_delay_ms = %d\n", params.timer_delay_ms );
-	fprintf( output, "# goal_random_seed = %d\n", params.goal_random_seed );
-	fprintf( output, "# goal_width = %.2f\n", params.goal_width );
-	fprintf( output, "# goal_mass = %.2f\n", params.goal_mass );
-	fprintf( output, "# goal_quadrant = %d\n", params.goal_quadrant );
-	fprintf( output, "# agent_random_seed = %d\n", params.agent_random_seed );
-	fprintf( output, "# agent_number = %d\n", params.agent_number );
-	fprintf( output, "# agent_radius = %.2f\n", params.agent_radius );
-	fprintf( output, "# agent_mass = %.2f\n", params.agent_mass );
-	fprintf( output, "# deployment_width = %d\n", params.deployment_width );
-	fprintf( output, "# deployment_height = %d\n", params.deployment_height );
-	fprintf( output, "# deployment_quadrant = %d\n", params.deployment_quadrant );
-	fprintf( output, "# obstacle_random_seed = %d\n", params.obstacle_random_seed );
-	fprintf( output, "# obstacle_number = %d\n", params.obstacle_number );
-	fprintf( output, "# obstacle_radius = %.2f\n", params.obstacle_radius );
-	fprintf( output, "# obstacle_radius_min = %.2f\n", params.obstacle_radius_min );
-	fprintf( output, "# obstacle_radius_max = %.2f\n", params.obstacle_radius_max );
-	fprintf( output, "# obstacle_mass = %.2f\n", params.obstacle_mass );
-	fprintf( output, "# enable_agent_goal_f = %d\n", params.enable_agent_goal_f );
-	fprintf( output, "# enable_agent_obstacle_f = %d\n", params.enable_agent_obstacle_f );
-	fprintf( output, "# enable_agent_agent_f = %d\n", params.enable_agent_agent_f );
-	fprintf( output, "# max_f_agent_goal = %.2f\n", params.max_f_agent_goal );
-	fprintf( output, "# max_f_agent_obstacle = %.2f\n", params.max_f_agent_obstacle );
-	fprintf( output, "# max_f_agent_agent = %.2f\n", params.max_f_agent_agent );
-	fprintf( output, "# R = %.2f\n", params.R );
-	fprintf( output, "# range_coefficient = %.2f\n", params.range_coefficient );
-	fprintf( output, "# force_law = %d\n", params.force_law );
-	fprintf( output, "# max_V = %.2f\n", params.max_V );
-	fprintf( output, "# G = %.2f\n", params.G );
-	fprintf( output, "# p = %.2f\n", params.p );
-	fprintf( output, "# time_limit = %d\n", params.time_limit );
-	fprintf( output, "# runs_number = %d\n", params.runs_number );
-	fprintf( output, "# results_filename = %s\n", params.results_filename );
-	fprintf( output, "# n_number = %d\n", params.n_number );
-	fprintf( output, "# k_number = %d\n", params.k_number );
-	fprintf( output, "# a_b_number = %d\n", params.a_b_number );
-	fprintf( output, "# n_array = ");
-	
-	int i;
-	
-	for ( i = 0; i < params.n_number; i++ )
-	{
-		fprintf( output, "%d,", params.n_array[i] );
-	}
-	
-	fprintf( output, "\n# k_array = " );
-	
-	for ( i = 0; i < params.k_number; i++ )
-	{
-		fprintf( output, "%d,", params.k_array[i] );
-	}
-	
-	fprintf( output, "\n# alpha_array = " );
-	
-	for ( i = 0; i < params.a_b_number; i++ )
-	{
-		fprintf( output, "%.2f,", params.alpha_array[i] );
-	}
-
-	fprintf( output, "\n# beta_array = " );
-	
-	for ( i = 0; i < params.a_b_number; i++ )
-	{
-		fprintf( output, "%.2f,", params.beta_array[i] );
-	}
-
-	fprintf( output, "\n# alpha = %.2f\n", params.alpha );
-	fprintf( output, "# beta = %.2f\n", params.beta );
-	
-	fprintf( output, "\n\n" );
-}
-
 void run_cli( void )
 {
+	// How accurate is our integral approximation
+	int interval_number = 100;
+	
 	FILE *p_results;
 	p_results = fopen( params.results_filename, "w+" );
 
@@ -1918,11 +1883,67 @@ void run_cli( void )
 	for ( n = 0; n < params.n_number; n++ )
 	{
 		change_agent_number( params.n_array[n] );
+		nn = params.n_array[n];
 		
 		int i;
 
+		/***************** Calculate ground truth #1 - big_P *********************************/
+		printf( "Calculating P (ground truth #1)\n" );
+		
+		for ( i = 0; i < params.runs_number; i++ )
+		{
+			restart_simulation();
+			
+	        /******** initialize agents position *****************/
+	        srand( ( unsigned int ) time( NULL ) );
+	        
+	        int agent;
+	        
+	        for ( agent = 0; agent < params.agent_number; agent++ )
+	        {
+	            deploy_agent( agents[agent] );
+	        }
+	        /*****************************************************/
+	        
+	        while ( stats.reached_goal != params.agent_number && stats.timeStep < params.time_limit )
+	        {
+	            move_agents();
+	        }
+	        
+	        small_p += stats.reached_goal;
+	        
+	        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
+		}
+		
+		small_p /= ( double ) ( params.n_array[n] * params.runs_number );
+		
+		double big_P[nn + 1];
+		
+		int y, j;
+		
+		for ( y = 1; y <= nn; y++ )
+		{
+			big_P[y] = 0.0;
+			
+			for ( j = y; j <= nn; j++ )
+			{
+				// exp( gammaln( n + 1 ) ) == fac( n )
+				double n_choose_j =  exp( gammaln( nn + 1.0 ) - gammaln( j + 1.0 ) - gammaln( nn - j + 1.0 ) );
+				big_P[y] += n_choose_j * pow( small_p, j ) * pow( 1.0 - small_p, nn - j );
+			}
+			
+			if ( big_P[y] > 1.0 ) { big_P[y] = 1.0; }
+		}
+		
+		printf( "\n\tsmall_p = %f\n\n", small_p );
+		printf( "P calculation finished\n\n\n" );
+		/*******************************************************************************************/
+		
 		/***************** Calculate ground truth #2 - big_P_prime *********************************/
-		int big_P_prime[params.n_array[n] + 1];
+		printf( "Calculating P' (ground truth #2)\n" );
+		
+		double big_P_prime[params.n_array[n] + 1];
+		double increment = 1.0 / params.runs_number;
 		
 		for ( i = 0; i <= params.n_array[n]; i++ )
 		{
@@ -1949,118 +1970,99 @@ void run_cli( void )
 	            move_agents();
 	        }
 	        
-	        int j;
-	        
 	        for ( j = 0; j <= stats.reached_goal; j++ )
 	        {
-	        	++big_P_prime[j];
+	        	big_P_prime[j] += increment;
 	        }
 	        
-	        small_p += stats.reached_goal;
-	        
-	        if ( i % 100 == 0 ) { printf( "i = %d\n", i ); }
+	        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
 		}
 		
-		small_p /= ( double ) ( params.n_array[n] * params.runs_number );
-		
-		printf( "small_p = %f\n", small_p );
-		
-		for ( i = 0; i <= params.agent_number; i++ )
-		{
-			printf( "big_P_prime[%d] = %d\n", i, big_P_prime[i] );
-		}
+		printf( "P' calculation finished\n\n\n" );
 		/*******************************************************************************************/
 		
 		params.k_array[params.k_number] = params.n_array[n];
 		
-		for ( i = 0; i < 5; i++ )
+		int ab;
+		
+		for ( ab = 0; ab < params.a_b_number; ab++ )
 		{
-			change_agent_number( params.k_array[i] );
+			alpha = params.alpha_array[ab];
+			beta = params.beta_array[ab];
 
-			int j;
-			int success_number[params.k_array[i] + 1];
+			for ( i = 0; i <= params.k_number; i++ )
+			{
+				change_agent_number( params.k_array[i] );
+				kk = params.k_array[i];
 					
-			for ( j = 0; j <= params.k_array[i]; j++ )
-			{
-				success_number[j] = 0;
-			}
-			
-			for ( j = 0; j < params.runs_number; j++ )
-			{
-				restart_simulation();
-				
-		        /******** initialize agents position *****************/
-		        srand( ( unsigned int ) time( NULL ) );
-		        
-		        int agent;
-		        
-		        for ( agent = 0; agent < params.agent_number; agent++ )
-		        {
-		            deploy_agent( agents[agent] );
-		        }
-		        /*****************************************************/
-		        
-		        while ( stats.reached_goal != params.agent_number && stats.timeStep < params.time_limit )
-		        {
-		            move_agents();
-		        }
-		        
-		        ++success_number[stats.reached_goal];
-		        
-		        if ( j % 100 == 0 ) { printf( "j = %d, params.k_array[i] = %d\n", j, params.k_array[i] ); }
-			}
-			
-			nn = params.n_array[n];
-			kk = params.k_array[i];
-			
-			double pHats[params.k_array[i] + 1];
-			
-			for ( j = 0; j <= params.k_array[i]; j++ )
-			{
-				printf( "success_number[%d] = %d\n", j, success_number[j] );
-				pHats[j] = ( double ) j / ( double ) params.k_array[i];
-				printf( "pHats[%d] = %f\n", j, pHats[j] );
-			}
-			
-			fprintf( p_results, "#small_p = %f\n", small_p );
-			fprintf( p_results, "#n\t\tk\t\ty\t\tbig_P\t\tbig_P_prime\t\tbig_P_hat\t\terror1\t\terror2\n" );
-			
-			int y;
-			
-			for ( y = 1; y <= nn; y++ )
-			{
-				yy = y;
-				
-				/*********************** Calculate ground truth #1, big_P **********************************/
-				double big_P = 0.0;
-				
-				for ( j = y; j <= nn; j++ )
+				int success_number[params.k_array[i] + 1];
+						
+				for ( j = 0; j <= params.k_array[i]; j++ )
 				{
-					// exp( gammaln( n + 1 ) ) == fac( n )
-					double n_choose_j =  exp( gammaln( nn + 1 ) - gammaln( j + 1 ) - gammaln( nn - j + 1 ) );
-					big_P += n_choose_j * pow( small_p, j ) * pow( 1.0 - small_p, nn - j );
+					success_number[j] = 0;
 				}
-				/*******************************************************************************************/
 				
-				double big_P_hat = 0.0;
+				for ( j = 0; j < params.runs_number; j++ )
+				{
+					restart_simulation();
+					
+			        /******** initialize agents position *****************/
+			        srand( ( unsigned int ) time( NULL ) );
+			        
+			        int agent;
+			        
+			        for ( agent = 0; agent < params.agent_number; agent++ )
+			        {
+			            deploy_agent( agents[agent] );
+			        }
+			        /*****************************************************/
+			        
+			        while ( stats.reached_goal != params.agent_number && stats.timeStep < params.time_limit )
+			        {
+			            move_agents();
+			        }
+			        
+			        ++success_number[stats.reached_goal];
+			        
+			        if ( j % 100 == 0 ) { printf( "j = %d, params.k_array[i] = %d\n", j, params.k_array[i] ); }
+				}
+				
+				double pHats[params.k_array[i] + 1];
 				
 				for ( j = 0; j <= params.k_array[i]; j++ )
 				{
-					ppHat = pHats[j];
-					double rate = ( double ) success_number[j] / ( double ) params.runs_number;
-					big_P_hat +=  rate * gaussian_quadrature( 0.0f, 1.0f, 100, f );
+					printf( "success_number[%d] = %d\n", j, success_number[j] );
+					pHats[j] = ( double ) j / ( double ) params.k_array[i];
+					printf( "pHats[%d] = %f\n", j, pHats[j] );
 				}
 				
-				double error1 = fabs( big_P_hat - big_P );			
-				double error2 = fabs( big_P_hat - ( double ) big_P_prime[y] / ( double ) params.runs_number );
+				fprintf( p_results, "#small_p = %f, alpha = %.2f, beta = %.2f\n", small_p, alpha, beta );
+				fprintf( p_results, "#n\t\tk\t\ty\t\tbig_P\t\tbig_P_prime\t\tbig_P_hat\t\terror1\t\terror2\n" );
 				
-				fprintf( p_results, "%d\t\t%d\t\t%d\t\t%f\t\t%f\t\t%f\t\t%f\t\t%f\n",
-						 params.n_array[n], params.k_array[i], y, big_P, ( double ) big_P_prime[y] / ( double ) params.runs_number, big_P_hat, error1, error2 );
+				for ( y = 1; y <= nn; y++ )
+				{
+					yy = y;
+					
+					double big_P_hat = 0.0;
+					
+					for ( j = 0; j <= params.k_array[i]; j++ )
+					{
+						ppHat = pHats[j];
+						double weight = ( double ) success_number[j] / ( double ) params.runs_number;
+						big_P_hat +=  weight * gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+					}
+					
+					double error1 = fabs( big_P_hat - big_P[y] );			
+					double error2 = fabs( big_P_hat - big_P_prime[y] );
+					
+					fprintf( p_results, "%d\t\t%d\t\t%d\t\t%f\t\t%f\t\t%f\t\t%f\t\t%f\n",
+							 params.n_array[n], params.k_array[i], y, big_P[y], big_P_prime[y], big_P_hat, error1, error2 );
+				}
+				
+				fprintf( p_results, "\n\n" );
+				fflush( p_results );
 			}
-			
-			fprintf( p_results, "\n\n" );
-			fflush( p_results );
-		}		
+		}
 	}
 			
 	fclose( p_results );
@@ -2088,7 +2090,7 @@ int main ( int argc, char **argv )
 	    
 	    initialize_graphics();
 	    
-	    glutDisplayFunc( display );
+	    glutDisplayFunc( draw_all );
 	    glutKeyboardFunc( process_normal_keys );
 	    glutSpecialFunc( process_special_keys );
 	    glutTimerFunc( params.timer_delay_ms, run_gui, stats.timeStep );
