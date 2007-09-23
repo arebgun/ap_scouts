@@ -14,6 +14,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <float.h>
 
 #include "GL/gl.h"
 #include "GL/glut.h"
@@ -205,6 +206,10 @@ Obstacle **obstacles = NULL;
 Goal *goal = NULL;
 
 bool running;
+
+bool inside_window = false;
+bool selection_active = false;
+int selected_obstacle_id = -1;
 
 int increments[6] = { 1, 5, 10, 20, 50, 100 };
 int cur_inc_index = 0;
@@ -1310,7 +1315,7 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 						d = 0.1f;
 						
 						lhs = 2 * d * pow( params.R, 12 ) / pow( distance_to_obj, 13 );
-						rhs = c * pow( params.R, 5 ) / pow( distance_to_obj, 7 );
+						rhs = c * pow( params.R, 6 ) / pow( distance_to_obj, 7 );
 						
 						f = 24.0f * epsilon * ( lhs - rhs );
 						break;
@@ -1460,7 +1465,7 @@ double approximation( double a, double b, double ( *func ) ( double ) )
 {
 	double c = 0.5 * ( b - a );
 	double d = 0.5 * ( b + a );
-   
+
 	return c * ( ( 5.0 / 9.0 ) * func( c * ( -( sqrt( 3.0 / 5.0 ) ) ) + d ) +
 		   ( 8.0 / 9.0 ) * func( d ) + ( 5.0 / 9.0 ) * func( c * sqrt ( 3.0 / 5.0 ) + d ) );
 }
@@ -1483,7 +1488,7 @@ double gaussian_quadrature( double a, double b, int n, double ( *func ) ( double
 
 		sum += temp;
 	}
-   
+
 	return ( sum > 1.0 ) ? 1.0 : sum; 
 }
 
@@ -1538,6 +1543,9 @@ double f( double p )
 	double bb = b1 * b2;
 	
 	double C = pow( bb, -1 );
+
+	if ( isinf( C ) == 1 ) { C = DBL_MAX; }
+	else if ( isinf( C ) == -1 ) { C = DBL_MIN; }
 	
 	return C * pow( p, r - 1 ) * pow( 1 - p, s - 1 ) * gaussian_quadrature( 0.0, p, 100, incomplete_beta );
 }
@@ -1848,6 +1856,66 @@ void process_special_keys( int key, int x, int y )
 	}
 }
 
+void process_mouse_buttons( int button, int state, int x, int y )
+{
+	if ( state == GLUT_DOWN )
+	{
+		if ( button == GLUT_LEFT_BUTTON )
+		{
+			x = x - stats_area_width;
+			y = params.world_height - y;
+			
+			int i;
+			
+			for ( i = 0; i < params.obstacle_number; i++ )
+			{
+				int thresh = ceil( obstacles[i]->radius / 2.0f );
+				
+				float x_o = obstacles[i]->position.x;
+				float y_o = obstacles[i]->position.y;
+				 
+				if ( ( x >= x_o - thresh ) && ( x <= x_o + thresh ) &&
+					 ( y >= y_o - thresh ) && ( y <= y_o + thresh ) )
+				{
+					inside_window = true;
+					selected_obstacle_id = i;
+					selection_active = true;
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		inside_window = false;
+		selected_obstacle_id = -1;
+		selection_active = false;
+	}
+}
+
+void process_mouse_entry( int state )
+{
+	if ( state == GLUT_LEFT )
+	{
+		inside_window = false;
+	}
+	else
+	{
+		inside_window = true;
+	}
+}
+
+void process_mouse_active_motion( int x, int y )
+{
+	if ( selection_active && selected_obstacle_id != -1 && inside_window )
+	{
+		obstacles[selected_obstacle_id]->position.x = x - stats_area_width;
+		obstacles[selected_obstacle_id]->position.y = params.world_height - y ;
+		
+		glutPostRedisplay();
+	}
+}
+
 void run_gui( int time )
 {
 	if ( running )
@@ -1863,6 +1931,71 @@ void run_cli( void )
 {
 	// How accurate is our integral approximation
 	int interval_number = 100;
+	
+//	//************************************************************************************//
+//
+////	ppHat = 0.586;
+//	nn = 500;
+//	kk = 500;
+////	yy = 128;
+//	alpha = 10.9;
+//	beta = 98.1;
+//	
+////	double res = f( 0.005 ); //gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+//////	
+////	double a1 = gammaln( 303.9 );
+////	double a2 = gammaln( 305.1 );
+////	double a1a2 = gammaln( 303.9 + 305.1 );
+////	double a12 = a1 + a2;
+////	double power = a12 - a1a2;
+////	
+////	double rr = exp( power );
+////	double rr1 = beta_function( yy, nn - yy + 1 );
+////	double rrr = rr * rr1;
+////	double big = 1.0 / rrr;
+////	
+////	printf( "rr = %E, rr1 = %E, rrr = %E, big = %E\n", rr, rr1, rrr, big );
+////	
+////	printf( "res = %f\n", res );
+////	exit(0);
+//	
+//	int y, j;
+//	double pHats[501];
+//	int success_number[501];
+//
+//	for ( j = 0; j <= 500; j++ )
+//	{
+//		pHats[j] = ( double ) j / 500.0;
+//		success_number[j] = 0;
+//	}
+//	
+//	success_number[500] = params.runs_number;
+//	
+//	for ( y = 128; y <= nn; y++ )
+//	{
+//		yy = y;
+//		
+//		double big_P_hat = 0.0;
+//		
+//		printf( "y = %d\n", y );
+//		
+//		for ( j = 1; j <= 500; j++ )
+//		{
+//			ppHat = pHats[j];
+//			double weight = ( double ) success_number[j] / ( double ) params.runs_number;
+//			double gauss = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+//			big_P_hat +=  weight * gauss;
+//			
+////			printf( "\t\tj = %d, ppHat = %f, weight = %f, gauss = %f, P^ = %f\n", j, ppHat, weight, gauss, big_P_hat );
+//		}
+//
+//		printf( "\ty = %d, res = %f\n", y, big_P_hat );
+//	}
+//	
+//	
+//	exit( 0 );
+//	
+//	//************************************************************************************//
 	
 	FILE *p_results;
 	p_results = fopen( params.results_filename, "w+" );
@@ -2091,8 +2224,14 @@ int main ( int argc, char **argv )
 	    initialize_graphics();
 	    
 	    glutDisplayFunc( draw_all );
+
 	    glutKeyboardFunc( process_normal_keys );
 	    glutSpecialFunc( process_special_keys );
+
+	    glutMouseFunc( process_mouse_buttons );
+		glutEntryFunc( process_mouse_entry );
+		glutMotionFunc( process_mouse_active_motion );
+
 	    glutTimerFunc( params.timer_delay_ms, run_gui, stats.timeStep );
 	
 	    glutMainLoop();
