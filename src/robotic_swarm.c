@@ -1382,10 +1382,41 @@ bool agent_reached_goal( Agent *agent )
     Vector2f goal_pos = goal->position;
     Vector2f agent_pos = agent->position;
 
-    if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
-         fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
+    if ( params.enable_agent_agent_f )
     {
-            return true;
+	    if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
+	         fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
+	    {
+	            return true;
+	    }
+	    else
+	    {
+		    int i;
+	    	
+	    	for ( i = 0; i < params.agent_number; i++ )
+	    	{
+	    		Agent *agent2 = agents[i];
+	    		Vector2f agent2_pos = agent2->position;
+	    		
+	    		if ( agent->id != agent2->id )
+	    		{
+	    			double distance = sqrt( pow( agent_pos.x - agent2_pos.x, 2 ) + pow( agent_pos.y - agent2_pos.y, 2 ) );
+	    			
+	    			if ( distance <= params.R )
+	    			{
+	    				if ( agent2->goal_reached ) { return true; }
+	    			}
+	    		}
+	    	}
+	    }
+    }
+    else
+    {
+	    if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
+	         fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
+	    {
+	            return true;
+	    }
     }
 
     return false;
@@ -1499,27 +1530,31 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 	Vector2f agent_pos = agent->position;
 	Vector2f obj_pos;
 	float obj_mass;
+	double distance_to_obj;
 	
 	switch( obj_type )
 	{
 		case AGENT:
 			obj_pos = ( ( Agent * ) object )->position;
 			obj_mass = ( ( Agent * ) object )->mass;
+			distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
 			break;
 			
 		case OBSTACLE:
 			obj_pos = ( ( Obstacle * ) object )->position;
 			obj_mass = ( ( Obstacle * ) object )->mass;
+			distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
+			distance_to_obj -= ( ( Obstacle * ) object )->radius;
 			break;
 			
 		case GOAL:
 			obj_pos = ( ( Goal * ) object )->position;
 			obj_mass = ( ( Goal * ) object )->mass;
+			distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
 			break;
 	}
 	
-    float f = 0.0f;
-    float distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
+    double f = 0.0f;
 
     if ( distance_to_obj != 0 )
     {
@@ -1546,12 +1581,12 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 						break;
 						
 					case OBSTACLE:
-				        //if ( distance_to_obj <= params.range_coefficient * params.R )
-				        //{
-							f = -( params.G_agent_obstacle * agent->mass * obj_mass / pow( distance_to_obj /*- ( ( Obstacle * ) object )->radius*/, params.p_agent_obstacle ) );
+				        if ( distance_to_obj <= params.range_coefficient * params.R )
+				        {
+							f = -( params.G_agent_obstacle * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_obstacle ) );
 							
 							if ( f < -params.max_f_agent_obstacle_n ) { f = -params.max_f_agent_obstacle_n; }
-						//}
+						}
 						break;
 				}
 				break;
@@ -1561,7 +1596,7 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 				{
 					float epsilon, sigma;
 					float c, d;
-					float lhs, rhs;
+					double lhs, rhs;
 					
 					// agent-agent interactions, repulsive and attractive components
 					case AGENT:
@@ -1572,10 +1607,13 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 							d = params.d_agent_agent;
 							sigma = params.R;
 							
-							lhs = 2.0f * d * pow( sigma, 12.0f ) / pow( distance_to_obj, 13.0f );
-							rhs = c * pow( sigma, 6.0f ) / pow( distance_to_obj, 7.0f );
+							lhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
+							rhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
 							
-							f = 24.0f * epsilon * ( lhs - rhs );
+							f = 24.0 * epsilon * ( lhs - rhs );
+							
+							if ( isinf( f ) == 1 ) { f = DBL_MAX; }
+							else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
 							
 				        	if ( distance_to_obj < params.R ) { f = -f; }
 							if ( f > params.max_f_agent_agent_lj ) { f = params.max_f_agent_agent_lj; }
@@ -1585,15 +1623,22 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 						
 					// agent-obstacle interactions, repulsive component only
 					case OBSTACLE:
-						epsilon = params.epsilon_agent_obstacle;
-						d = params.d_agent_obstacle;
-						sigma = ( ( Obstacle * ) object )->radius + 1.0f;
-						
-						rhs = 2.0f * d * pow( sigma, 12.0f ) / pow( distance_to_obj/* - ( ( Obstacle * ) object )->radius*/, 13.0f );
-						
-						f = -24.0f * epsilon * rhs;
-						
-						if ( f < -params.max_f_agent_obstacle_lj ) { f = -params.max_f_agent_obstacle_lj; }
+				        if ( distance_to_obj <= params.range_coefficient * params.R )
+						{
+							epsilon = params.epsilon_agent_obstacle;
+							d = params.d_agent_obstacle;
+							sigma = ( ( Obstacle * ) object )->radius + 1.0f;
+							
+							rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
+	
+							f = -24.0 * epsilon * rhs;
+							
+							if ( isinf( f ) == 1 ) { f = DBL_MAX; }
+							else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
+							
+							if ( f < -params.max_f_agent_obstacle_lj ) { f = -params.max_f_agent_obstacle_lj; }
+							if ( f > params.max_f_agent_obstacle_lj ) { f = params.max_f_agent_obstacle_lj; }
+						}
 						break;
 						
 					// agent-goal interactions, attractive component only
@@ -1602,9 +1647,12 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 						c = params.c_agent_goal;
 						sigma = pow( params.R, 2.0f ) * 5.0f;
 						
-						lhs = c * pow( sigma, 6.0f ) / pow( distance_to_obj, 7.0f );
+						lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
 						
-						f = 24.0f * epsilon * lhs;
+						f = 24.0 * epsilon * lhs;
+
+						if ( isinf( f ) == 1 ) { f = DBL_MAX; }
+						else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
 						
 						if ( f > params.max_f_agent_goal_lj ) { f = params.max_f_agent_goal_lj; }
 						break;
@@ -1627,8 +1675,8 @@ void move_agents( void )
 		Vector2f agent_pos = agent->position;
 		Vector2f goal_pos = goal->position;
 		
-		float force_x = 0.0f;
-		float force_y = 0.0f;
+		double force_x = 0.0f;
+		double force_y = 0.0f;
 		
 		/************************** Calculate force between an obstacle and an agent ***********************/
 		if ( params.enable_agent_obstacle_f )
@@ -1639,7 +1687,7 @@ void move_agents( void )
 				Vector2f obs_pos = obs->position;
 				
 				float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
-				float net_force = calculate_force( agent, obs, OBSTACLE );
+				double net_force = calculate_force( agent, obs, OBSTACLE );
 				
 		        force_x += net_force * cos( angle_to_obstacle );
 		        force_y += net_force * sin( angle_to_obstacle );
@@ -1656,7 +1704,7 @@ void move_agents( void )
 				Vector2f agent2_pos = agent2->position;
 				
 				float angle_to_agent2 = atan2( agent2_pos.y - agent_pos.y, agent2_pos.x - agent_pos.x );
-		        float net_force = calculate_force( agent, agent2, AGENT );
+		        double net_force = calculate_force( agent, agent2, AGENT );
 		        
 		        force_x += net_force * cos( angle_to_agent2 );
 		        force_y += net_force * sin( angle_to_agent2 );
@@ -1668,7 +1716,7 @@ void move_agents( void )
 		if ( params.enable_agent_goal_f )
 		{
 			float angle_to_goal = atan2( goal_pos.y - agent_pos.y, goal_pos.x - agent_pos.x );
-			float net_force = calculate_force( agent, goal, GOAL );
+			double net_force = calculate_force( agent, goal, GOAL );
 
 	        force_x += net_force * cos( angle_to_goal );
 	        force_y += net_force * sin( angle_to_goal );
@@ -2201,211 +2249,218 @@ void run_gui( int time )
 
 void run_cli( void )
 {
+	char *environments[5] = { "nf_p_01.dat", "nf_p_03.dat", "nf_p_05.dat", "nf_p_07.dat", "nf_p_09.dat" };
+	
 	// How accurate is our integral approximation
 	int interval_number = 100;
 	
-	FILE *p_results;
-	p_results = fopen( params.results_filename, "w+" );
+	int e, n;
 
-	if ( p_results == NULL )
+	for ( e = 0; e < 5; e++ )
 	{
-		printf( "Error opening file [%s]!", params.results_filename );
-		exit( EXIT_FAILURE );
-	}
-	
-	output_simulation_parameters( p_results );
-	fflush( p_results );
+		load_scenario( environments[e] );
 
-	double small_p = 0.0;
-	
-	int n;
-	
-	for ( n = 0; n < params.n_number; n++ )
-	{
-		change_agent_number( params.n_array[n] );
-		nn = params.n_array[n];
-		
-		int i;
+		FILE *p_results;
+		p_results = fopen( params.results_filename, "w+" );
 
-		/***************** Calculate ground truth #1 - big_P *********************************/
-		printf( "Calculating P (ground truth #1)\n" );
-		
-		for ( i = 0; i < params.runs_number; i++ )
+		if ( p_results == NULL )
 		{
-			restart_simulation();
-			
-	        /******** initialize agents position *****************/
-	        srand( ( unsigned int ) time( NULL ) );
-	        
-	        int agent;
-	        
-	        for ( agent = 0; agent < params.agent_number; agent++ )
-	        {
-	            deploy_agent( agents[agent] );
-	        }
-	        /*****************************************************/
-	        
-	        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-	        {
-	            move_agents();
-	        }
-	        
-	        small_p += stats.reached_goal;
-	        
-	        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
+			printf( "Error opening file [%s]!", params.results_filename );
+			exit( EXIT_FAILURE );
 		}
 		
-		small_p /= ( double ) ( params.n_array[n] * params.runs_number );
+		output_simulation_parameters( p_results );
+		fflush( p_results );
+
+		double small_p = 0.0;
 		
-		double big_P[nn + 1];
-		
-		int y, j;
-		
-		for ( y = 1; y <= nn; y++ )
+		for ( n = 0; n < params.n_number; n++ )
 		{
-			big_P[y] = 0.0;
+			change_agent_number( params.n_array[n] );
+			nn = params.n_array[n];
 			
-			for ( j = y; j <= nn; j++ )
+			int i;
+	
+			/***************** Calculate ground truth #1 - big_P *********************************/
+			printf( "Calculating P (ground truth #1)\n" );
+			
+			for ( i = 0; i < params.runs_number; i++ )
 			{
-				// exp( gammaln( n + 1 ) ) == fac( n )
-				double n_choose_j =  exp( gammaln( nn + 1.0 ) - gammaln( j + 1.0 ) - gammaln( nn - j + 1.0 ) );
-				big_P[y] += n_choose_j * pow( small_p, j ) * pow( 1.0 - small_p, nn - j );
+				restart_simulation();
+				
+		        /******** initialize agents position *****************/
+		        srand( ( unsigned int ) time( NULL ) );
+		        
+		        int agent;
+		        
+		        for ( agent = 0; agent < params.agent_number; agent++ )
+		        {
+		            deploy_agent( agents[agent] );
+		        }
+		        /*****************************************************/
+		        
+		        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
+		        {
+		            move_agents();
+		        }
+		        
+		        small_p += stats.reached_goal;
+		        
+		        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
 			}
 			
-			if ( big_P[y] > 1.0 ) { big_P[y] = 1.0; }
-		}
-		
-		printf( "\n\tsmall_p = %f\n\n", small_p );
-		printf( "P calculation finished\n\n\n" );
-		/*******************************************************************************************/
-		
-		/***************** Calculate ground truth #2 - big_P_prime *********************************/
-		printf( "Calculating P' (ground truth #2)\n" );
-		
-		double big_P_prime[params.n_array[n] + 1];
-		double increment = 1.0 / params.runs_number;
-		
-		for ( i = 0; i <= params.n_array[n]; i++ )
-		{
-			big_P_prime[i] = 0;
-		}
-
-		for ( i = 0; i < params.runs_number; i++ )
-		{
-			restart_simulation();
+			small_p /= ( double ) ( params.n_array[n] * params.runs_number );
 			
-	        /******** initialize agents position *****************/
-	        srand( ( unsigned int ) time( NULL ) );
-	        
-	        int agent;
-	        
-	        for ( agent = 0; agent < params.agent_number; agent++ )
-	        {
-	            deploy_agent( agents[agent] );
-	        }
-	        /*****************************************************/
-	        
-	        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-	        {
-	            move_agents();
-	        }
-	        
-	        for ( j = 0; j <= stats.reached_goal; j++ )
-	        {
-	        	big_P_prime[j] += increment;
-	        }
-	        
-	        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
-		}
-		
-		printf( "P' calculation finished\n\n\n" );
-		/*******************************************************************************************/
-		
-		params.k_array[params.k_number] = params.n_array[n];
-		
-		int ab;
-		
-		for ( ab = 0; ab < params.a_b_number; ab++ )
-		{
-			alpha = params.alpha_array[ab];
-			beta = params.beta_array[ab];
-
-			for ( i = 0; i <= params.k_number; i++ )
+			double big_P[nn + 1];
+			
+			int y, j;
+			
+			for ( y = 1; y <= nn; y++ )
 			{
-				change_agent_number( params.k_array[i] );
-				kk = params.k_array[i];
-					
-				int success_number[params.k_array[i] + 1];
+				big_P[y] = 0.0;
+				
+				for ( j = y; j <= nn; j++ )
+				{
+					// exp( gammaln( n + 1 ) ) == fac( n )
+					double n_choose_j =  exp( gammaln( nn + 1.0 ) - gammaln( j + 1.0 ) - gammaln( nn - j + 1.0 ) );
+					big_P[y] += n_choose_j * pow( small_p, j ) * pow( 1.0 - small_p, nn - j );
+				}
+				
+				if ( big_P[y] > 1.0 ) { big_P[y] = 1.0; }
+			}
+			
+			printf( "\n\tsmall_p = %f\n\n", small_p );
+			printf( "P calculation finished\n\n\n" );
+			/*******************************************************************************************/
+			
+			/***************** Calculate ground truth #2 - big_P_prime *********************************/
+			printf( "Calculating P' (ground truth #2)\n" );
+			
+			double big_P_prime[params.n_array[n] + 1];
+			double increment = 1.0 / params.runs_number;
+			
+			for ( i = 0; i <= params.n_array[n]; i++ )
+			{
+				big_P_prime[i] = 0;
+			}
+	
+			for ( i = 0; i < params.runs_number; i++ )
+			{
+				restart_simulation();
+				
+		        /******** initialize agents position *****************/
+		        srand( ( unsigned int ) time( NULL ) );
+		        
+		        int agent;
+		        
+		        for ( agent = 0; agent < params.agent_number; agent++ )
+		        {
+		            deploy_agent( agents[agent] );
+		        }
+		        /*****************************************************/
+		        
+		        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
+		        {
+		            move_agents();
+		        }
+		        
+		        for ( j = 0; j <= stats.reached_goal; j++ )
+		        {
+		        	big_P_prime[j] += increment;
+		        }
+		        
+		        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
+			}
+			
+			printf( "P' calculation finished\n\n\n" );
+			/*******************************************************************************************/
+			
+			params.k_array[params.k_number] = params.n_array[n];
+			
+			int ab;
+			
+			for ( ab = 0; ab < params.a_b_number; ab++ )
+			{
+				alpha = params.alpha_array[ab];
+				beta = params.beta_array[ab];
+	
+				for ( i = 0; i <= params.k_number; i++ )
+				{
+					change_agent_number( params.k_array[i] );
+					kk = params.k_array[i];
 						
-				for ( j = 0; j <= params.k_array[i]; j++ )
-				{
-					success_number[j] = 0;
-				}
-				
-				for ( j = 0; j < params.runs_number; j++ )
-				{
-					restart_simulation();
+					int success_number[params.k_array[i] + 1];
+							
+					for ( j = 0; j <= params.k_array[i]; j++ )
+					{
+						success_number[j] = 0;
+					}
 					
-			        /******** initialize agents position *****************/
-			        srand( ( unsigned int ) time( NULL ) );
-			        
-			        int agent;
-			        
-			        for ( agent = 0; agent < params.agent_number; agent++ )
-			        {
-			            deploy_agent( agents[agent] );
-			        }
-			        /*****************************************************/
-			        
-			        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-			        {
-			            move_agents();
-			        }
-			        
-			        ++success_number[stats.reached_goal];
-			        
-			        if ( j % 100 == 0 ) { printf( "j = %d, params.k_array[i] = %d\n", j, params.k_array[i] ); }
-				}
-				
-				double pHats[params.k_array[i] + 1];
-				
-				for ( j = 0; j <= params.k_array[i]; j++ )
-				{
-					printf( "success_number[%d] = %d\n", j, success_number[j] );
-					pHats[j] = ( double ) j / ( double ) params.k_array[i];
-					printf( "pHats[%d] = %f\n", j, pHats[j] );
-				}
-				
-				fprintf( p_results, "#small_p = %f, alpha = %.2f, beta = %.2f\n", small_p, alpha, beta );
-				fprintf( p_results, "#n\t\tk\t\ty\t\tbig_P\t\tbig_P_prime\t\tbig_P_hat\t\terror1\t\terror2\n" );
-				
-				for ( y = 1; y <= nn; y++ )
-				{
-					yy = y;
+					for ( j = 0; j < params.runs_number; j++ )
+					{
+						restart_simulation();
+						
+				        /******** initialize agents position *****************/
+				        srand( ( unsigned int ) time( NULL ) );
+				        
+				        int agent;
+				        
+				        for ( agent = 0; agent < params.agent_number; agent++ )
+				        {
+				            deploy_agent( agents[agent] );
+				        }
+				        /*****************************************************/
+				        
+				        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
+				        {
+				            move_agents();
+				        }
+				        
+				        ++success_number[stats.reached_goal];
+				        
+				        if ( j % 100 == 0 ) { printf( "j = %d, params.k_array[i] = %d\n", j, params.k_array[i] ); }
+					}
 					
-					double big_P_hat = 0.0;
+					double pHats[params.k_array[i] + 1];
 					
 					for ( j = 0; j <= params.k_array[i]; j++ )
 					{
-						ppHat = pHats[j];
-						double weight = ( double ) success_number[j] / ( double ) params.runs_number;
-						big_P_hat +=  weight * gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+						printf( "success_number[%d] = %d\n", j, success_number[j] );
+						pHats[j] = ( double ) j / ( double ) params.k_array[i];
+						printf( "pHats[%d] = %f\n", j, pHats[j] );
 					}
 					
-					double error1 = fabs( big_P_hat - big_P[y] );			
-					double error2 = fabs( big_P_hat - big_P_prime[y] );
+					fprintf( p_results, "#small_p = %f, alpha = %.2f, beta = %.2f\n", small_p, alpha, beta );
+					fprintf( p_results, "#n\t\tk\t\ty\t\tbig_P\t\tbig_P_prime\t\tbig_P_hat\t\terror1\t\terror2\n" );
 					
-					fprintf( p_results, "%d\t\t%d\t\t%d\t\t%f\t\t%f\t\t%f\t\t%f\t\t%f\n",
-							 params.n_array[n], params.k_array[i], y, big_P[y], big_P_prime[y], big_P_hat, error1, error2 );
+					for ( y = 1; y <= nn; y++ )
+					{
+						yy = y;
+						
+						double big_P_hat = 0.0;
+						
+						for ( j = 0; j <= params.k_array[i]; j++ )
+						{
+							ppHat = pHats[j];
+							double weight = ( double ) success_number[j] / ( double ) params.runs_number;
+							big_P_hat +=  weight * gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+						}
+						
+						double error1 = fabs( big_P_hat - big_P[y] );			
+						double error2 = fabs( big_P_hat - big_P_prime[y] );
+						
+						fprintf( p_results, "%d\t\t%d\t\t%d\t\t%f\t\t%f\t\t%f\t\t%f\t\t%f\n",
+								 params.n_array[n], params.k_array[i], y, big_P[y], big_P_prime[y], big_P_hat, error1, error2 );
+					}
+					
+					fprintf( p_results, "\n\n" );
+					fflush( p_results );
 				}
-				
-				fprintf( p_results, "\n\n" );
-				fflush( p_results );
 			}
 		}
-	}
-			
-	fclose( p_results );
+		
+		fclose( p_results );
+	}			
 }
 
 int main ( int argc, char **argv )
