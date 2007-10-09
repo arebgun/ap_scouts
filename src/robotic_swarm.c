@@ -1382,41 +1382,10 @@ bool agent_reached_goal( Agent *agent )
     Vector2f goal_pos = goal->position;
     Vector2f agent_pos = agent->position;
 
-    if ( params.enable_agent_agent_f )
+    if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
+         fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
     {
-	    if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
-	         fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
-	    {
-	            return true;
-	    }
-	    else
-	    {
-		    int i;
-	    	
-	    	for ( i = 0; i < params.agent_number; i++ )
-	    	{
-	    		Agent *agent2 = agents[i];
-	    		Vector2f agent2_pos = agent2->position;
-	    		
-	    		if ( agent->id != agent2->id )
-	    		{
-	    			double distance = sqrt( pow( agent_pos.x - agent2_pos.x, 2 ) + pow( agent_pos.y - agent2_pos.y, 2 ) );
-	    			
-	    			if ( distance <= params.R )
-	    			{
-	    				if ( agent2->goal_reached ) { return true; }
-	    			}
-	    		}
-	    	}
-	    }
-    }
-    else
-    {
-	    if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
-	         fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
-	    {
-	            return true;
-	    }
+            return true;
     }
 
     return false;
@@ -1607,15 +1576,14 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 							d = params.d_agent_agent;
 							sigma = params.R;
 							
-							lhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
-							rhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
+							lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
+							rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
 							
 							f = 24.0 * epsilon * ( lhs - rhs );
 							
 							if ( isinf( f ) == 1 ) { f = DBL_MAX; }
 							else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
 							
-				        	if ( distance_to_obj < params.R ) { f = -f; }
 							if ( f > params.max_f_agent_agent_lj ) { f = params.max_f_agent_agent_lj; }
 							if ( f < -params.max_f_agent_agent_lj ) { f = -params.max_f_agent_agent_lj; }
 				        }
@@ -2247,8 +2215,65 @@ void run_gui( int time )
 	glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
 }
 
+void update_reach( void )
+{
+	int a1, a2;
+	
+	for ( a1 = 0; a1 < params.agent_number; a1++ )
+	{
+		Agent *agent1 = agents[a1];
+		Vector2f agent1_pos = agent1->position;
+		
+		if ( !agent1->goal_reached )
+		{
+            for ( a2 = a1 + 1; a2 < params.agent_number; a2++ )
+    		{
+    			Agent *agent2 = agents[a2];
+    			Vector2f agent2_pos = agent2->position;
+    			
+    			if ( agent2->goal_reached )
+    			{
+                    double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
+
+                    if ( distance <= params.range_coefficient * params.R )
+                    {
+                    	agent1->goal_reached = true;
+                    	++stats.reached_goal;
+                    	stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+                    }
+    			}
+    		}
+		}
+	}
+}
+
 void run_cli( void )
 {
+//	/////////////////////////////////////////////////////////////////////////////////////////////////////
+//	load_scenario( "nf_p_05.dat" );
+//	change_agent_number( 500 );
+//	
+//	output_simulation_parameters( stdout );
+//	
+//	ppHat = 0.550157;
+//	nn = 500;
+//	kk = 400;
+//	alpha = 14.5;
+//	beta = 14.5;
+//	
+//	int i;
+//	
+//	for ( i = 1; i <= nn; i++ )
+//	{
+//		yy = i;
+//		double ppp_hhhat = gaussian_quadrature( 0.0f, 1.0f, 100, f );
+//		
+//		printf( "%d\t\t%f\n", i, ppp_hhhat );
+//	}
+//	
+//	exit( 1 );
+//	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	char *environments[5] = { "nf_p_01.dat", "nf_p_03.dat", "nf_p_05.dat", "nf_p_07.dat", "nf_p_09.dat" };
 	
 	// How accurate is our integral approximation
@@ -2302,6 +2327,11 @@ void run_cli( void )
 		        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
 		        {
 		            move_agents();
+		        }
+		        
+		        if ( params.enable_agent_agent_f )
+		        {
+		        	update_reach();
 		        }
 		        
 		        small_p += stats.reached_goal;
@@ -2416,6 +2446,11 @@ void run_cli( void )
 				            move_agents();
 				        }
 				        
+				        if ( params.enable_agent_agent_f )
+				        {
+				        	update_reach();
+				        }
+				        
 				        ++success_number[stats.reached_goal];
 				        
 				        if ( j % 100 == 0 ) { printf( "j = %d, params.k_array[i] = %d\n", j, params.k_array[i] ); }
@@ -2463,15 +2498,33 @@ void run_cli( void )
 	}			
 }
 
+void print_usage( char *program_name )
+{
+	printf( "usage: %s -c config_filename\n", program_name );
+	printf( "       %s -s scenario_filename\n", program_name );
+}
+
 int main ( int argc, char **argv )
 {
-	if ( argc == 1 )
+	if ( argc < 3 )
 	{
-		printf( "usage: %s config_filename\n", argv[0] );
+		print_usage( argv[0] );
 		return EXIT_FAILURE;
 	}
 	
-	if ( initialize_simulation( argv[1] ) != 0 ) { return EXIT_FAILURE; }
+	if ( strcmp( "-c", argv[1] ) == 0 )
+	{
+		if ( initialize_simulation( argv[2] ) != 0 ) { return EXIT_FAILURE; }		
+	}
+	else if ( strcmp( "-s", argv[1] ) == 0 )
+	{
+		if ( load_scenario( argv[2] ) != 0 ) { return EXIT_FAILURE; }
+	}
+	else
+	{
+		print_usage( argv[0] );
+		return EXIT_FAILURE;
+	}
 	
 	output_simulation_parameters( stdout );
 	
