@@ -2215,7 +2215,7 @@ void run_gui( int time )
 	glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
 }
 
-void update_reach( void )
+void update_reach(void)
 {
 	int a1, a2;
 	
@@ -2223,26 +2223,27 @@ void update_reach( void )
 	{
 		Agent *agent1 = agents[a1];
 		Vector2f agent1_pos = agent1->position;
-		
+	
 		if ( !agent1->goal_reached )
 		{
-            for ( a2 = a1 + 1; a2 < params.agent_number; a2++ )
-    		{
-    			Agent *agent2 = agents[a2];
-    			Vector2f agent2_pos = agent2->position;
-    			
-    			if ( agent2->goal_reached )
-    			{
-                    double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
-
-                    if ( distance <= params.range_coefficient * params.R )
-                    {
-                    	agent1->goal_reached = true;
-                    	++stats.reached_goal;
-                    	stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-                    }
-    			}
-    		}
+			for ( a2 = 0; a2 < params.agent_number; a2++ )
+			{
+				Agent *agent2 = agents[a2];
+				Vector2f agent2_pos = agent2->position;
+	
+				if ( agent2->goal_reached )
+				{
+					double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
+	
+					if ( distance <= params.range_coefficient * params.R )
+					{
+						agent1->goal_reached = true;
+						++stats.reached_goal;
+						stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+						break;
+					}
+				}
+			}
 		}
 	}
 }
@@ -2335,7 +2336,6 @@ void run_cli( void )
 		        }
 		        
 		        small_p += stats.reached_goal;
-		        
 		        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
 			}
 			
@@ -2392,6 +2392,11 @@ void run_cli( void )
 		        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
 		        {
 		            move_agents();
+		        }
+
+		        if ( params.enable_agent_agent_f )
+		        {
+		        	update_reach();
 		        }
 		        
 		        for ( j = 0; j <= stats.reached_goal; j++ )
