@@ -2250,31 +2250,6 @@ void update_reach(void)
 
 void run_cli( void )
 {
-//	/////////////////////////////////////////////////////////////////////////////////////////////////////
-//	load_scenario( "nf_p_05.dat" );
-//	change_agent_number( 500 );
-//	
-//	output_simulation_parameters( stdout );
-//	
-//	ppHat = 0.550157;
-//	nn = 500;
-//	kk = 400;
-//	alpha = 14.5;
-//	beta = 14.5;
-//	
-//	int i;
-//	
-//	for ( i = 1; i <= nn; i++ )
-//	{
-//		yy = i;
-//		double ppp_hhhat = gaussian_quadrature( 0.0f, 1.0f, 100, f );
-//		
-//		printf( "%d\t\t%f\n", i, ppp_hhhat );
-//	}
-//	
-//	exit( 1 );
-//	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	
 	char *environments[5] = { "nf_p_01.dat", "nf_p_03.dat", "nf_p_05.dat", "nf_p_07.dat", "nf_p_09.dat" };
 	
 	// How accurate is our integral approximation
@@ -2298,6 +2273,7 @@ void run_cli( void )
 		output_simulation_parameters( p_results );
 		fflush( p_results );
 
+		int index = 0;
 		double small_p = 0.0;
 		
 		for ( n = 0; n < params.n_number; n++ )
@@ -2470,7 +2446,7 @@ void run_cli( void )
 						printf( "pHats[%d] = %f\n", j, pHats[j] );
 					}
 					
-					fprintf( p_results, "#small_p = %f, alpha = %.2f, beta = %.2f\n", small_p, alpha, beta );
+					fprintf( p_results, "#index %d, small_p = %f, alpha = %.2f, beta = %.2f\n", index, small_p, alpha, beta );
 					fprintf( p_results, "#n\t\tk\t\ty\t\tbig_P\t\tbig_P_prime\t\tbig_P_hat\t\terror1\t\terror2\n" );
 					
 					for ( y = 1; y <= nn; y++ )
@@ -2495,6 +2471,8 @@ void run_cli( void )
 					
 					fprintf( p_results, "\n\n" );
 					fflush( p_results );
+					
+					++index;
 				}
 			}
 		}
