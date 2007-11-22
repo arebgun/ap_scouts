@@ -62,12 +62,17 @@ typedef struct s_agent
 {
 	int id;
 	
-	Vector2f i_position;	// Robot deployment position
-	Vector2f position;		// Robot position vector
-	Vector2f velocity;		// Robot velocity vector
+	Vector2f i_position;	// Agent deployment (initial) position
+	Vector2f i_velocity;	// Agent initial velocity
+	
+	Vector2f position;		// Agent current position vector
+	Vector2f velocity;		// Agent current velocity vector
 
-	float radius;			// Robot size
-	float mass;				// Robot mass
+	Vector2f n_position;	// Agent new (for lock step) position
+	Vector2f n_velocity;	// Agent new (for lock step) velocity
+
+	float radius;			// Agent size
+	float mass;				// Agent mass
 	
 	bool goal_reached;		// true, if reached goal, false otherwise
 	
@@ -751,15 +756,15 @@ int create_goal( void )
 	
 	memcpy( goal->color, goal_color, 3 * sizeof( float ) );
 	
-	/*************************************************/
-	printf( "******* GOAL %d *******\n", goal->id );
-	printf( "mass\t\t%f\n", goal->mass );
-	printf( "width\t\t%f\n", goal->width );
-	printf( "x\t\t%f\n", goal->position.x );
-	printf( "y\t\t%f\n", goal->position.y );
-	printf( "*************************" );
-	printf( "\n\n" );
-	/*************************************************/
+//	/*************************************************/
+//	printf( "******* GOAL %d *******\n", goal->id );
+//	printf( "mass\t\t%f\n", goal->mass );
+//	printf( "width\t\t%f\n", goal->width );
+//	printf( "x\t\t%f\n", goal->position.x );
+//	printf( "y\t\t%f\n", goal->position.y );
+//	printf( "*************************" );
+//	printf( "\n\n" );
+//	/*************************************************/
 	
 	return 0;
 }
@@ -861,18 +866,18 @@ Agent *create_agent( int id )
 	
 	memcpy( agent->color, agent_color, 3 * sizeof( float ) );
 	
-	/*************************************************/
-	printf( "****** AGENT %d *****\n", agent->id );
-	printf( "mass\t\t%f\n", agent->mass );
-	printf( "goal\t\t%d\n", agent->goal_reached );
-	printf( "radius\t\t%f\n", agent->radius );
-	printf( "x\t\t%f\n", agent->position.x );
-	printf( "y\t\t%f\n", agent->position.y );
-	printf( "vx\t\t%f\n", agent->velocity.x );
-	printf( "vy\t\t%f\n", agent->velocity.y );
-	printf( "***********************" );
-	printf( "\n\n" );
-	/*************************************************/
+//	/*************************************************/
+//	printf( "****** AGENT %d *****\n", agent->id );
+//	printf( "mass\t\t%f\n", agent->mass );
+//	printf( "goal\t\t%d\n", agent->goal_reached );
+//	printf( "radius\t\t%f\n", agent->radius );
+//	printf( "x\t\t%f\n", agent->position.x );
+//	printf( "y\t\t%f\n", agent->position.y );
+//	printf( "vx\t\t%f\n", agent->velocity.x );
+//	printf( "vy\t\t%f\n", agent->velocity.y );
+//	printf( "***********************" );
+//	printf( "\n\n" );
+//	/*************************************************/
 	
 	return agent;
 }
@@ -933,15 +938,15 @@ Obstacle *create_obstacle( int id, bool random_radius, float radius_range )
 	
 	memcpy( obstacle->color, obstacle_color, 3 * sizeof( float ) );
 	
-	/********************************************************/
-	printf( "****** OBSTACLE %d ******\n", obstacle->id );
-	printf( "mass\t\t%f\n", obstacle->mass );
-	printf( "radius\t\t%f\n", obstacle->radius );
-	printf( "x\t\t%f\n", obstacle->position.x );
-	printf( "y\t\t%f\n", obstacle->position.y );
-	printf( "***************************" );
-	printf( "\n\n" );
-	/********************************************************/
+//	/********************************************************/
+//	printf( "****** OBSTACLE %d ******\n", obstacle->id );
+//	printf( "mass\t\t%f\n", obstacle->mass );
+//	printf( "radius\t\t%f\n", obstacle->radius );
+//	printf( "x\t\t%f\n", obstacle->position.x );
+//	printf( "y\t\t%f\n", obstacle->position.y );
+//	printf( "***************************" );
+//	printf( "\n\n" );
+//	/********************************************************/
 	
 	return obstacle;
 }
@@ -1691,29 +1696,42 @@ void move_agents( void )
 		}
         /**********************************************************************************************/
         
+		agent->n_velocity = agent->velocity;
+		
         // update agent velocity vector
-        agent->velocity.x += force_x / agent->mass;
-        agent->velocity.y += force_y / agent->mass;
+        agent->n_velocity.x += force_x / agent->mass;
+        agent->n_velocity.y += force_y / agent->mass;
         
-        float velocity_magnitude = sqrt( pow( agent->velocity.x, 2 ) + pow( agent->velocity.y, 2 ) );
+        float velocity_magnitude = sqrt( pow( agent->n_velocity.x, 2 ) + pow( agent->n_velocity.y, 2 ) );
         
         // check if new velocity exceeds the maximum
         if ( velocity_magnitude > params.max_V )
         {
-        	agent->velocity.x = ( agent->velocity.x * params.max_V ) / velocity_magnitude;
-        	agent->velocity.y = ( agent->velocity.y * params.max_V ) / velocity_magnitude;
+        	agent->n_velocity.x = ( agent->n_velocity.x * params.max_V ) / velocity_magnitude;
+        	agent->n_velocity.y = ( agent->n_velocity.y * params.max_V ) / velocity_magnitude;
         }
         
-        // update agent position
-        agent->position.x += agent->velocity.x;
-        agent->position.y += agent->velocity.y;
+        agent->n_position = agent->position;
         
-        if ( !agent->goal_reached && agent_reached_goal( agent ) )
+        // update agent position
+        agent->n_position.x += agent->n_velocity.x;
+        agent->n_position.y += agent->n_velocity.y;
+		
+        if ( !agents[i]->goal_reached && agent_reached_goal( agents[i] ) )
         {
-        	agent->goal_reached = true;
+        	agents[i]->goal_reached = true;
         	stats.reached_goal++;
         	stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
         }
+	}
+	
+	for ( i = 0; i < params.agent_number; i++ )
+	{
+		agents[i]->velocity.x = agents[i]->n_velocity.x;
+		agents[i]->velocity.y = agents[i]->n_velocity.y;
+		
+		agents[i]->position.x = agents[i]->n_position.x;
+		agents[i]->position.y = agents[i]->n_position.y;
 	}
 	
 	++stats.time_step;
@@ -2250,14 +2268,14 @@ void update_reach(void)
 
 void run_cli( void )
 {
-	char *environments[5] = { "nf_p_01.dat", "nf_p_03.dat", "nf_p_05.dat", "nf_p_07.dat", "nf_p_09.dat" };
+	char *environments[3] = { "nf_p_01.dat", "nf_p_05.dat", "nf_p_09.dat" };
 	
 	// How accurate is our integral approximation
 	int interval_number = 100;
 	
 	int e, n;
 
-	for ( e = 0; e < 5; e++ )
+	for ( e = 0; e < 3; e++ )
 	{
 		load_scenario( environments[e] );
 
@@ -2273,74 +2291,23 @@ void run_cli( void )
 		output_simulation_parameters( p_results );
 		fflush( p_results );
 
-		int index = 0;
-		double small_p = 0.0;
+		int mean_diff_P[4] = { 0 };
+		int mean_diff_P_hat[4] = { 0 };
+		int means_overlap[2] = { 0 };
 		
+		int index = 0;
+		int counter = 1;
+
 		for ( n = 0; n < params.n_number; n++ )
 		{
-			change_agent_number( params.n_array[n] );
+			params.k_array[params.k_number] = params.n_array[n];
 			nn = params.n_array[n];
+			change_agent_number( params.n_array[n] );
 			
-			int i;
-	
-			/***************** Calculate ground truth #1 - big_P *********************************/
-			printf( "Calculating P (ground truth #1)\n" );
+			int i, j;
 			
-			for ( i = 0; i < params.runs_number; i++ )
-			{
-				restart_simulation();
-				
-		        /******** initialize agents position *****************/
-		        srand( ( unsigned int ) time( NULL ) );
-		        
-		        int agent;
-		        
-		        for ( agent = 0; agent < params.agent_number; agent++ )
-		        {
-		            deploy_agent( agents[agent] );
-		        }
-		        /*****************************************************/
-		        
-		        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-		        {
-		            move_agents();
-		        }
-		        
-		        if ( params.enable_agent_agent_f )
-		        {
-		        	update_reach();
-		        }
-		        
-		        small_p += stats.reached_goal;
-		        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
-			}
-			
-			small_p /= ( double ) ( params.n_array[n] * params.runs_number );
-			
-			double big_P[nn + 1];
-			
-			int y, j;
-			
-			for ( y = 1; y <= nn; y++ )
-			{
-				big_P[y] = 0.0;
-				
-				for ( j = y; j <= nn; j++ )
-				{
-					// exp( gammaln( n + 1 ) ) == fac( n )
-					double n_choose_j =  exp( gammaln( nn + 1.0 ) - gammaln( j + 1.0 ) - gammaln( nn - j + 1.0 ) );
-					big_P[y] += n_choose_j * pow( small_p, j ) * pow( 1.0 - small_p, nn - j );
-				}
-				
-				if ( big_P[y] > 1.0 ) { big_P[y] = 1.0; }
-			}
-			
-			printf( "\n\tsmall_p = %f\n\n", small_p );
-			printf( "P calculation finished\n\n\n" );
-			/*******************************************************************************************/
-			
-			/***************** Calculate ground truth #2 - big_P_prime *********************************/
-			printf( "Calculating P' (ground truth #2)\n" );
+			/***************** Calculate ground truth - big_P_prime *********************************/
+			printf( "Calculating P' (ground truth from simulation)\n" );
 			
 			double big_P_prime[params.n_array[n] + 1];
 			double increment = 1.0 / params.runs_number;
@@ -2349,21 +2316,21 @@ void run_cli( void )
 			{
 				big_P_prime[i] = 0;
 			}
+			
+			double small_p = 0.0;
 	
+	        srand( ( unsigned int ) time( NULL ) );
+	        
 			for ( i = 0; i < params.runs_number; i++ )
 			{
 				restart_simulation();
 				
-		        /******** initialize agents position *****************/
-		        srand( ( unsigned int ) time( NULL ) );
-		        
 		        int agent;
 		        
 		        for ( agent = 0; agent < params.agent_number; agent++ )
 		        {
 		            deploy_agent( agents[agent] );
 		        }
-		        /*****************************************************/
 		        
 		        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
 		        {
@@ -2380,47 +2347,65 @@ void run_cli( void )
 		        	big_P_prime[j] += increment;
 		        }
 		        
+		        small_p += stats.reach_ratio;
+		        
 		        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
 			}
+			
+			small_p /= params.runs_number;
 			
 			printf( "P' calculation finished\n\n\n" );
 			/*******************************************************************************************/
 			
-			params.k_array[params.k_number] = params.n_array[n];
-			
-			int ab;
+			int ab, k, y, l;
 			
 			for ( ab = 0; ab < params.a_b_number; ab++ )
 			{
 				alpha = params.alpha_array[ab];
 				beta = params.beta_array[ab];
 	
-				for ( i = 0; i <= params.k_number; i++ )
+				for ( k = 0; k <= params.k_number; k++ )
 				{
-					change_agent_number( params.k_array[i] );
-					kk = params.k_array[i];
-						
-					int success_number[params.k_array[i] + 1];
-							
-					for ( j = 0; j <= params.k_array[i]; j++ )
+					change_agent_number( params.k_array[k] );
+					kk = params.k_array[k];
+					
+					fprintf( p_results, "#index %d, small_p = %f, n = %d, k = %d, alpha = %.2f, beta = %.2f\n", index, small_p, nn, kk, alpha, beta );
+					fprintf( p_results, "#n\t\t\tk\t\t\ty\t\t\tbig_P_mean\t\t\tbig_P_prime\t\t\tbig_P_hat_mean\t\t\terror1\t\t\terror2" );
+					fprintf( p_results, "\t\t\tbig_P_std\t\t\tbig_P_hat_std\t\t\tbig_P_var\t\t\tbig_P_hat_var\n" );
+					
+					double *big_P_array;
+					double *big_P_hat_array;
+
+					big_P_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
+					big_P_hat_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
+
+					if ( big_P_array == NULL || big_P_hat_array == NULL )
 					{
-						success_number[j] = 0;
+						printf( "Error allocating memory for big_P_array or big_P_hat_array!" );
+						exit( EXIT_FAILURE );
 					}
 					
+					double big_P_mean[nn + 1];
+					double big_P_hat_mean[nn + 1];
+					
+					for ( j = 0; j <= nn; j++ )
+					{
+						big_P_mean[j] = 0.0;
+						big_P_hat_mean[j] = 0.0;
+					}
+					//double phat = 0.0;
+			        srand( ( unsigned int ) time( NULL ) );
+			        
 					for ( j = 0; j < params.runs_number; j++ )
 					{
 						restart_simulation();
 						
-				        /******** initialize agents position *****************/
-				        srand( ( unsigned int ) time( NULL ) );
-				        
 				        int agent;
 				        
 				        for ( agent = 0; agent < params.agent_number; agent++ )
 				        {
 				            deploy_agent( agents[agent] );
 				        }
-				        /*****************************************************/
 				        
 				        while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
 				        {
@@ -2431,54 +2416,139 @@ void run_cli( void )
 				        {
 				        	update_reach();
 				        }
-				        
-				        ++success_number[stats.reached_goal];
-				        
-				        if ( j % 100 == 0 ) { printf( "j = %d, params.k_array[i] = %d\n", j, params.k_array[i] ); }
-					}
-					
-					double pHats[params.k_array[i] + 1];
-					
-					for ( j = 0; j <= params.k_array[i]; j++ )
-					{
-						printf( "success_number[%d] = %d\n", j, success_number[j] );
-						pHats[j] = ( double ) j / ( double ) params.k_array[i];
-						printf( "pHats[%d] = %f\n", j, pHats[j] );
-					}
-					
-					fprintf( p_results, "#index %d, small_p = %f, alpha = %.2f, beta = %.2f\n", index, small_p, alpha, beta );
-					fprintf( p_results, "#n\t\tk\t\ty\t\tbig_P\t\tbig_P_prime\t\tbig_P_hat\t\terror1\t\terror2\n" );
-					
-					for ( y = 1; y <= nn; y++ )
-					{
-						yy = y;
-						
-						double big_P_hat = 0.0;
-						
-						for ( j = 0; j <= params.k_array[i]; j++ )
+				        //phat += stats.reach_ratio / params.runs_number;
+						for ( y = 1; y <= nn; y++ )
 						{
-							ppHat = pHats[j];
-							double weight = ( double ) success_number[j] / ( double ) params.runs_number;
-							big_P_hat +=  weight * gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+							yy = y;
+
+							/***************** Calculate big_P ***************************************************************/
+							double big_P = 0.0;
+
+							for ( l = y; l <= nn; l++ )
+							{
+								// exp( gammaln( n + 1 ) ) == fac( n )
+								double n_choose_l =  exp( gammaln( nn + 1.0 ) - gammaln( l + 1.0 ) - gammaln( nn - l + 1.0 ) );
+								big_P += n_choose_l * pow( stats.reach_ratio, l ) * pow( 1.0 - stats.reach_ratio, nn - l );
+							}
+							
+							if ( big_P > 1.0 ) { big_P = 1.0; }
+							/*************************************************************************************************/
+							
+							/***************** Calculate big_P_hat ***********************************************************/
+							ppHat = stats.reach_ratio;
+							
+							double big_P_hat = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+
+							if ( big_P_hat > 1.0 ) { big_P_hat = 1.0; }
+							/*************************************************************************************************/
+							
+							big_P_array[y * params.runs_number + j] = big_P;
+							big_P_hat_array[y * params.runs_number + j] = big_P_hat;
+							
+							big_P_mean[y] += big_P / params.runs_number;
+							big_P_hat_mean[y] += big_P_hat / params.runs_number;
+							
+							//printf( "%d\t\t\t%f\t\t\t%f\t\t\t%f\n", j, stats.reach_ratio, big_P, big_P_hat );
 						}
 						
-						double error1 = fabs( big_P_hat - big_P[y] );			
-						double error2 = fabs( big_P_hat - big_P_prime[y] );
-						
-						fprintf( p_results, "%d\t\t%d\t\t%d\t\t%f\t\t%f\t\t%f\t\t%f\t\t%f\n",
-								 params.n_array[n], params.k_array[i], y, big_P[y], big_P_prime[y], big_P_hat, error1, error2 );
+				        if ( j % 100 == 0 ) { printf( "j = %d, n = %d, k = %d\n", j, params.n_array[n], params.k_array[k] ); }
 					}
 					
+					//printf( "\t\t\t%f\t\t\t%f\t\t\t%f\n", phat, big_P_mean[18], big_P_hat_mean[18] );
+			        
+					for ( y = 1; y <= nn; y++ )
+					{
+						double big_P_sum = 0.0;
+						double big_P_hat_sum = 0.0;
+						
+						for ( j = 0; j < params.runs_number; j++ )
+						{
+							big_P_sum += pow( big_P_array[y * params.runs_number + j] - big_P_mean[y], 2.0 );
+							big_P_hat_sum += pow( big_P_hat_array[y * params.runs_number + j] - big_P_hat_mean[y], 2.0 );
+						}
+						
+						double big_P_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_sum );
+						double big_P_hat_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_hat_sum );
+						
+						double big_P_var = pow( big_P_std_dev, 2.0 );
+						double big_P_hat_var = pow( big_P_hat_std_dev, 2.0 );
+						
+						double error1 = fabs( big_P_hat_mean[y] - big_P_mean[y] );
+						double error2 = fabs( big_P_hat_mean[y] - big_P_prime[y] );
+						
+						fprintf( p_results, "%d\t\t\t%d\t\t\t%d\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f",
+								 params.n_array[n], params.k_array[k], y, big_P_mean[y], big_P_prime[y], big_P_hat_mean[y], error1, error2 );
+						fprintf( p_results, "\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f\n",
+								 big_P_std_dev, big_P_hat_std_dev, big_P_var, big_P_hat_var );
+						
+						// diff_index of 0 = means are within 1 P std deviation
+						int diff_index = floor( error1 / big_P_std_dev );
+						
+						if ( diff_index < 3 ) { ++mean_diff_P[diff_index]; }
+						else { ++mean_diff_P[3]; }
+						
+						// diff_index of 0 = means are within 1 P-hat std deviation
+						diff_index = floor( error1 / big_P_hat_std_dev );
+						
+						if ( diff_index < 3 ) { ++mean_diff_P_hat[diff_index]; }
+						else { ++mean_diff_P_hat[3]; }
+						
+						if ( ( big_P_mean[y] + big_P_std_dev >= big_P_hat_mean[y] + big_P_hat_std_dev &&
+							   big_P_mean[y] - big_P_std_dev <= big_P_hat_mean[y] + big_P_hat_std_dev ) ||
+							 ( big_P_mean[y] + big_P_std_dev <= big_P_hat_mean[y] + big_P_hat_std_dev &&
+							   big_P_mean[y] - big_P_std_dev >= big_P_hat_mean[y] + big_P_hat_std_dev ) )
+						{
+							++means_overlap[0];
+						}
+						else
+						{
+							++means_overlap[1];
+						}
+						
+						++counter;						
+					}
+
 					fprintf( p_results, "\n\n" );
 					fflush( p_results );
-					
+
 					++index;
 				}
 			}
+			
+			for ( j = 0; j < 3; j++ )
+			{
+				printf( "%.2f per cent of the time means are within %d P stdandard deviation(s)\n", ( ( double ) mean_diff_P[j] / ( double ) counter ), j + 1 );
+				printf( "%.2f per cent of the time means are within %d P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[j] / ( double ) counter ), j + 1 );
+			}
+			
+			printf( "%.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
+			printf( "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
+			
+			printf( "\n\n" );
+			
+			printf( "%.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
 		}
 		
+		int j;
+		
+		for ( j = 0; j < 3; j++ )
+		{
+			fprintf( p_results, "%.2f per cent of the time means are within %d P stdandard deviation(s)\n", ( ( double ) mean_diff_P[j] / ( double ) counter ), j + 1 );
+		}
+		
+		fprintf( p_results, "%.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
+		
+		for ( j = 0; j < 3; j++ )
+		{
+			fprintf( p_results, "%.2f per cent of the time means are within %d P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[j] / ( double ) counter ), j + 1 );
+		}
+		
+		fprintf( p_results, "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
+		fprintf( p_results, "\n\n" );
+		fprintf( p_results, "%.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
+		
 		fclose( p_results );
-	}			
+	}
 }
 
 void print_usage( char *program_name )
