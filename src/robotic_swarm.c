@@ -30,17 +30,17 @@ int nn;
 
 typedef enum e_viewmode
 {
-	CLI,
-	GUI,
-	
+    CLI,
+    GUI,
+    
 } Viewmode;
 
 typedef enum e_obj_type
 {
-	AGENT,
-	OBSTACLE,
-	GOAL,
-	
+    AGENT,
+    OBSTACLE,
+    GOAL,
+    
 } ObjectType;
 
 /**
@@ -49,9 +49,9 @@ typedef enum e_obj_type
  */
 typedef struct s_vec2f
 {
-	GLfloat x;
-	GLfloat y;
-	
+    GLfloat x;
+    GLfloat y;
+    
 } Vector2f;
 
 /**
@@ -60,24 +60,25 @@ typedef struct s_vec2f
  */
 typedef struct s_agent
 {
-	int id;
-	
-	Vector2f i_position;	// Agent deployment (initial) position
-	Vector2f i_velocity;	// Agent initial velocity
-	
-	Vector2f position;		// Agent current position vector
-	Vector2f velocity;		// Agent current velocity vector
+    int id;
+    
+    Vector2f i_position;    // Agent deployment (initial) position
+    Vector2f i_velocity;    // Agent initial velocity
+    
+    Vector2f position;      // Agent current position vector
+    Vector2f velocity;      // Agent current velocity vector
 
-	Vector2f n_position;	// Agent new (for lock step) position
-	Vector2f n_velocity;	// Agent new (for lock step) velocity
+    Vector2f n_position;    // Agent new (for lock step) position
+    Vector2f n_velocity;    // Agent new (for lock step) velocity
 
-	float radius;			// Agent size
-	float mass;				// Agent mass
-	
-	bool goal_reached;		// true, if reached goal, false otherwise
-	
-	GLfloat color[3];
-	
+    float radius;           // Agent size
+    float mass;             // Agent mass
+    
+    bool collided;          // true, if agent collided with obstacle
+    bool goal_reached;      // true, if reached goal, false otherwise
+    
+    GLfloat color[3];
+    
 } Agent;
 
 /**
@@ -86,15 +87,15 @@ typedef struct s_agent
  */
 typedef struct s_goal
 {
-	int id;
-	
-	Vector2f position;
-	
-	float width;
-	float mass;
+    int id;
+    
+    Vector2f position;
+    
+    float width;
+    float mass;
 
-	GLfloat color[3];
-	
+    GLfloat color[3];
+    
 } Goal;
 
 /**
@@ -103,125 +104,128 @@ typedef struct s_goal
  */
 typedef struct s_obstacle
 {
-	int id;
-	
-	Vector2f position;
-	
-	float radius;
-	float mass;
-	
-	GLfloat color[3];
-	
+    int id;
+    
+    Vector2f position;
+    
+    float radius;
+    float mass;
+    
+    GLfloat color[3];
+    
 } Obstacle;
 
 typedef enum e_quadrant
 {
-	NW, N, NE,
-	W,  C, E,
-	SW, S, SE,
-	
+    NW, N, NE,
+    W,  C, E,
+    SW, S, SE,
+    
 } Quadrant;
 
 typedef enum e_force_law
 {
-	NEWTONIAN,
-	LENNARD_JONES,
-	
+    NEWTONIAN,
+    LENNARD_JONES,
+    
 } ForceLaw;
 
 typedef struct s_params
 {
-	int world_width;
-	int world_height;
-	int timer_delay_ms;
-	
-	unsigned int goal_random_seed;
-	float goal_width;
-	float goal_mass;
-	Quadrant goal_quadrant;
-	
-	unsigned int agent_random_seed;
-	int agent_number;
-	float agent_radius;
-	float agent_mass;
-	int deployment_width;
-	int deployment_height;
-	Quadrant deployment_quadrant;	
-	
-	unsigned int obstacle_random_seed;
-	int obstacle_number;
-	float obstacle_radius;
-	float obstacle_radius_min;
-	float obstacle_radius_max;
-	float obstacle_mass;
-	
-	bool enable_agent_goal_f;
-	bool enable_agent_obstacle_f;
-	bool enable_agent_agent_f;
-	
-	float R;
-	float range_coefficient;
-	float max_V; 
-	ForceLaw force_law;
-	
-	float G_agent_agent;			// Newtonian - Gravitational force of agent-agent interactions
-	float G_agent_obstacle;			// Newtonian - Gravitational force of agent-obstacle interactions
-	float G_agent_goal;				// Newtonian - Gravitational force of agent-goal interactions
-	
-	float p_agent_agent;			// Newtonian - (distance_between_objects) ^ p of agent-agent interactions
-	float p_agent_obstacle;			// Newtonian - (distance_between_objects) ^ p of agent-obstacle interactions
-	float p_agent_goal;				// Newtonian - (distance_between_objects) ^ p of agent-goal interactions
-	
-	float max_f_agent_agent_n;		// Newtonian - agent-agent force cutoff
-	float max_f_agent_obstacle_n;	// Newtonian - agent-obstacle force cutoff
-	float max_f_agent_goal_n;		// Newtonian - agent-goal force cutoff
-	
-	float epsilon_agent_agent;		// LJ - Strength of agent-agent interactions
-	float epsilon_agent_obstacle;	// LJ - Strength of agent-obstacle interactions
-	float epsilon_agent_goal;		// LJ - Strength of agent-goal interactions
+    int world_width;
+    int world_height;
+    int timer_delay_ms;
+    
+    unsigned int goal_random_seed;
+    float goal_width;
+    float goal_mass;
+    Quadrant goal_quadrant;
+    
+    unsigned int agent_random_seed;
+    int agent_number;
+    float agent_radius;
+    float agent_mass;
+    int deployment_width;
+    int deployment_height;
+    Quadrant deployment_quadrant;    
+    
+    unsigned int obstacle_random_seed;
+    int obstacle_number;
+    float obstacle_radius;
+    float obstacle_radius_min;
+    float obstacle_radius_max;
+    float obstacle_mass;
+    
+    bool enable_agent_goal_f;
+    bool enable_agent_obstacle_f;
+    bool enable_agent_agent_f;
+    
+    float R;
+    float range_coefficient;
+    float max_V; 
+    ForceLaw force_law;
+    
+    float G_agent_agent;            // Newtonian - Gravitational force of agent-agent interactions
+    float G_agent_obstacle;         // Newtonian - Gravitational force of agent-obstacle interactions
+    float G_agent_goal;             // Newtonian - Gravitational force of agent-goal interactions
+    
+    float p_agent_agent;            // Newtonian - (distance_between_objects) ^ p of agent-agent interactions
+    float p_agent_obstacle;         // Newtonian - (distance_between_objects) ^ p of agent-obstacle interactions
+    float p_agent_goal;             // Newtonian - (distance_between_objects) ^ p of agent-goal interactions
+    
+    float max_f_agent_agent_n;      // Newtonian - agent-agent force cutoff
+    float max_f_agent_obstacle_n;   // Newtonian - agent-obstacle force cutoff
+    float max_f_agent_goal_n;       // Newtonian - agent-goal force cutoff
+    
+    float epsilon_agent_agent;      // LJ - Strength of agent-agent interactions
+    float epsilon_agent_obstacle;   // LJ - Strength of agent-obstacle interactions
+    float epsilon_agent_goal;       // LJ - Strength of agent-goal interactions
 
-	float c_agent_agent;			// LJ - Attractive agent-agent parameter
-	float c_agent_obstacle;			// LJ - Attractive agent-obstacle parameter
-	float c_agent_goal;				// LJ - Attractive agent-goal parameter
+    float c_agent_agent;            // LJ - Attractive agent-agent parameter
+    float c_agent_obstacle;         // LJ - Attractive agent-obstacle parameter
+    float c_agent_goal;             // LJ - Attractive agent-goal parameter
 
-	float d_agent_agent;			// LJ - Repulsive agent-agent parameter
-	float d_agent_obstacle;			// LJ - Repulsive agent-obstacle parameter
-	float d_agent_goal;				// LJ - Repulsive agent-goal parameter
-	
-	float max_f_agent_agent_lj;		// LJ - agent-agent force cutoff
-	float max_f_agent_obstacle_lj;	// LJ - agent-obstacle force cutoff
-	float max_f_agent_goal_lj;		// LJ - agent-goal force cutoff
-	
-	int time_limit;
-	int runs_number;
+    float d_agent_agent;            // LJ - Repulsive agent-agent parameter
+    float d_agent_obstacle;         // LJ - Repulsive agent-obstacle parameter
+    float d_agent_goal;             // LJ - Repulsive agent-goal parameter
+    
+    float max_f_agent_agent_lj;     // LJ - agent-agent force cutoff
+    float max_f_agent_obstacle_lj;  // LJ - agent-obstacle force cutoff
+    float max_f_agent_goal_lj;      // LJ - agent-goal force cutoff
+    
+    int time_limit;
+    int runs_number;
     bool run_simulation;
-	
+    
     bool initialize_from_file;
     char *scenario_filename;
-	char *results_filename;
-	
-	int n_number;
-	int k_number;
-	int a_b_number;
-	int *n_array;
-	int *k_array;
-	float *alpha_array;
-	float *beta_array;
-	
+    char *results_filename;
+    
+    int n_number;
+    int k_number;
+    int a_b_number;
+    int *n_array;
+    int *k_array;
+    float *alpha_array;
+    float *beta_array;
+    
 } Parameters;
 
 typedef struct s_statistics
 {
-	int time_step;
-	int reached_goal;
-	float reach_ratio;
-	
+    int time_step;
+    int reached_goal;
+    float reach_ratio;
+    int collided;
+    
 } Statistics;
 
 int help_area_height = 100;
 int stats_area_width = 150;
 
 GLfloat agent_color[3] = { 0.0f, 0.2f, 1.0f };
+GLfloat agent_color_coll[3] = { 1.0f, 0.0f, 0.0f };
+GLfloat agent_color_conn[3] = { 0.8f, 0.8f, 0.8f };
 GLfloat goal_color[3] = { 1.0f, 0.0f, 0.2f };
 GLfloat obstacle_color[3] = { 0.0f, 0.4f, 0.0f };
 
@@ -246,6 +250,8 @@ int cur_inc_index = 0;
 char *selections[3] = { "AGENT", "OBSTACLE", "GOAL" };
 int cur_sel_index = 0;
 
+bool show_connectivity = false;
+
 /**
  * \fn int read_config_file( char *p_filename )
  * \brief parses configuration file
@@ -254,220 +260,220 @@ int cur_sel_index = 0;
  */
 int read_config_file( char *p_filename )
 {
-	FILE *p_config;
-	p_config = fopen( p_filename, "r" );
-	
-	if ( p_config != NULL )
-	{
-		char parameter[100];
-		char value[100];
-		
-		while ( fscanf( p_config, "%100s%100s%*[^\n]", parameter, value ) != EOF )
-		{
-			if ( strcmp( "view_mode", parameter ) == 0 )
-			{
-				mode = atoi( value );
-			}
-			else if ( strcmp( "world_width", parameter ) == 0 )
-			{
-				params.world_width = atoi( value );
-			}
-			else if ( strcmp( "world_height", parameter ) == 0 )
-			{
-				params.world_height = atoi( value );
-			}
-			else if ( strcmp( "timer_delay_ms", parameter ) == 0 )
-			{
-				params.timer_delay_ms = atoi( value );
-			}
-			else if ( strcmp( "goal_random_seed", parameter ) == 0 )
-			{
-				params.goal_random_seed = atoi( value );
-			}
-			else if ( strcmp( "goal_width", parameter ) == 0 )
-			{
-				params.goal_width = atof( value );
-			}
-			else if ( strcmp( "goal_mass", parameter ) == 0 )
-			{
-				params.goal_mass = atof( value );
-			}
-			else if ( strcmp( "goal_quadrant", parameter ) == 0 )
-			{
-				params.goal_quadrant = atoi( value );
-			}
-			else if ( strcmp( "agent_random_seed", parameter ) == 0 )
-			{
-				params.agent_random_seed = atoi( value );
-			}
-			else if ( strcmp( "agent_number", parameter ) == 0 )
-			{
-				params.agent_number = atoi( value );
-			}
-			else if ( strcmp( "agent_radius", parameter ) == 0 )
-			{
-				params.agent_radius = atof( value );
-			}
-			else if ( strcmp( "agent_mass", parameter ) == 0 )
-			{
-				params.agent_mass = atof( value );
-			}
-			else if ( strcmp( "deployment_width", parameter ) == 0 )
-			{
-				params.deployment_width = atoi( value );
-			}
-			else if ( strcmp( "deployment_height", parameter ) == 0 )
-			{
-				params.deployment_height = atoi( value );
-			}
-			else if ( strcmp( "deployment_quadrant", parameter ) == 0 )
-			{
-				params.deployment_quadrant = atoi( value );
-			}
-			else if ( strcmp( "obstacle_random_seed", parameter ) == 0 )
-			{
-				params.obstacle_random_seed = atoi( value );
-			}
-			else if ( strcmp( "obstacle_number", parameter ) == 0 )
-			{
-				params.obstacle_number = atoi( value );
-			}
-			else if ( strcmp( "obstacle_radius", parameter ) == 0 )
-			{
-				params.obstacle_radius = atof( value );
-			}
-			else if ( strcmp( "obstacle_radius_min", parameter ) == 0 )
-			{
-				params.obstacle_radius_min = atof( value );
-			}
-			else if ( strcmp( "obstacle_radius_max", parameter ) == 0 )
-			{
-				params.obstacle_radius_max = atof( value );
-			}
-			else if ( strcmp( "obstacle_mass", parameter ) == 0 )
-			{
-				params.obstacle_mass = atof( value );
-			}
-			else if ( strcmp( "enable_agent_goal_f", parameter ) == 0 )
-			{
-				params.enable_agent_goal_f = atoi( value );
-			}
-			else if ( strcmp( "enable_agent_obstacle_f", parameter ) == 0 )
-			{
-				params.enable_agent_obstacle_f = atoi( value );
-			}
-			else if ( strcmp( "enable_agent_agent_f", parameter ) == 0 )
-			{
-				params.enable_agent_agent_f = atoi( value );
-			}
-			else if ( strcmp( "R", parameter ) == 0 )
-			{
-				params.R = atof( value );
-			}
-			else if ( strcmp( "range_coefficient", parameter ) == 0 )
-			{
-				params.range_coefficient = atof( value );
-			}
-			else if ( strcmp( "max_V", parameter ) == 0 )
-			{
-				params.max_V = atof( value );
-			}
-			else if ( strcmp( "force_law", parameter ) == 0 )
-			{
-				params.force_law = atoi( value );
-			}
-			else if ( strcmp( "G_agent_agent", parameter ) == 0 )
-			{
-				params.G_agent_agent = atof( value );
-			}
-			else if ( strcmp( "G_agent_obstacle", parameter ) == 0 )
-			{
-				params.G_agent_obstacle = atof( value );
-			}
-			else if ( strcmp( "G_agent_goal", parameter ) == 0 )
-			{
-				params.G_agent_goal = atof( value );
-			}
-			else if ( strcmp( "p_agent_agent", parameter ) == 0 )
-			{
-				params.p_agent_agent = atof( value );
-			}
-			else if ( strcmp( "p_agent_obstacle", parameter ) == 0 )
-			{
-				params.p_agent_obstacle = atof( value );
-			}
-			else if ( strcmp( "p_agent_goal", parameter ) == 0 )
-			{
-				params.p_agent_goal = atof( value );
-			}
-			else if ( strcmp( "max_f_agent_agent_n", parameter ) == 0 )
-			{
-				params.max_f_agent_agent_n = atof( value );
-			}
-			else if ( strcmp( "max_f_agent_obstacle_n", parameter ) == 0 )
-			{
-				params.max_f_agent_obstacle_n = atof( value );
-			}
-			else if ( strcmp( "max_f_agent_goal_n", parameter ) == 0 )
-			{
-				params.max_f_agent_goal_n = atof( value );
-			}
-			else if ( strcmp( "epsilon_agent_agent", parameter ) == 0 )
-			{
-				params.epsilon_agent_agent = atof( value );
-			}
-			else if ( strcmp( "epsilon_agent_obstacle", parameter ) == 0 )
-			{
-				params.epsilon_agent_obstacle = atof( value );
-			}
-			else if ( strcmp( "epsilon_agent_goal", parameter ) == 0 )
-			{
-				params.epsilon_agent_goal = atof( value );
-			}
-			else if ( strcmp( "c_agent_agent", parameter ) == 0 )
-			{
-				params.c_agent_agent = atof( value );
-			}
-			else if ( strcmp( "c_agent_obstacle", parameter ) == 0 )
-			{
-				params.c_agent_obstacle = atof( value );
-			}
-			else if ( strcmp( "c_agent_goal", parameter ) == 0 )
-			{
-				params.c_agent_goal = atof( value );
-			}
-			else if ( strcmp( "d_agent_agent", parameter ) == 0 )
-			{
-				params.d_agent_agent = atof( value );
-			}
-			else if ( strcmp( "d_agent_obstacle", parameter ) == 0 )
-			{
-				params.d_agent_obstacle = atof( value );
-			}
-			else if ( strcmp( "d_agent_goal", parameter ) == 0 )
-			{
-				params.d_agent_goal = atof( value );
-			}
-			else if ( strcmp( "max_f_agent_agent_lj", parameter ) == 0 )
-			{
-				params.max_f_agent_agent_lj = atof( value );
-			}
-			else if ( strcmp( "max_f_agent_obstacle_lj", parameter ) == 0 )
-			{
-				params.max_f_agent_obstacle_lj = atof( value );
-			}
-			else if ( strcmp( "max_f_agent_goal_lj", parameter ) == 0 )
-			{
-				params.max_f_agent_goal_lj = atof( value );
-			}
-			else if ( strcmp( "time_limit", parameter ) == 0 )
-			{
-				params.time_limit = atoi( value );
-			}
-			else if ( strcmp( "runs_number", parameter ) == 0 )
-			{
-				params.runs_number = atoi( value );
-			}
+    FILE *p_config;
+    p_config = fopen( p_filename, "r" );
+    
+    if ( p_config != NULL )
+    {
+        char parameter[100];
+        char value[100];
+        
+        while ( fscanf( p_config, "%100s%100s%*[^\n]", parameter, value ) != EOF )
+        {
+            if ( strcmp( "view_mode", parameter ) == 0 )
+            {
+                mode = atoi( value );
+            }
+            else if ( strcmp( "world_width", parameter ) == 0 )
+            {
+                params.world_width = atoi( value );
+            }
+            else if ( strcmp( "world_height", parameter ) == 0 )
+            {
+                params.world_height = atoi( value );
+            }
+            else if ( strcmp( "timer_delay_ms", parameter ) == 0 )
+            {
+                params.timer_delay_ms = atoi( value );
+            }
+            else if ( strcmp( "goal_random_seed", parameter ) == 0 )
+            {
+                params.goal_random_seed = atoi( value );
+            }
+            else if ( strcmp( "goal_width", parameter ) == 0 )
+            {
+                params.goal_width = atof( value );
+            }
+            else if ( strcmp( "goal_mass", parameter ) == 0 )
+            {
+                params.goal_mass = atof( value );
+            }
+            else if ( strcmp( "goal_quadrant", parameter ) == 0 )
+            {
+                params.goal_quadrant = atoi( value );
+            }
+            else if ( strcmp( "agent_random_seed", parameter ) == 0 )
+            {
+                params.agent_random_seed = atoi( value );
+            }
+            else if ( strcmp( "agent_number", parameter ) == 0 )
+            {
+                params.agent_number = atoi( value );
+            }
+            else if ( strcmp( "agent_radius", parameter ) == 0 )
+            {
+                params.agent_radius = atof( value );
+            }
+            else if ( strcmp( "agent_mass", parameter ) == 0 )
+            {
+                params.agent_mass = atof( value );
+            }
+            else if ( strcmp( "deployment_width", parameter ) == 0 )
+            {
+                params.deployment_width = atoi( value );
+            }
+            else if ( strcmp( "deployment_height", parameter ) == 0 )
+            {
+                params.deployment_height = atoi( value );
+            }
+            else if ( strcmp( "deployment_quadrant", parameter ) == 0 )
+            {
+                params.deployment_quadrant = atoi( value );
+            }
+            else if ( strcmp( "obstacle_random_seed", parameter ) == 0 )
+            {
+                params.obstacle_random_seed = atoi( value );
+            }
+            else if ( strcmp( "obstacle_number", parameter ) == 0 )
+            {
+                params.obstacle_number = atoi( value );
+            }
+            else if ( strcmp( "obstacle_radius", parameter ) == 0 )
+            {
+                params.obstacle_radius = atof( value );
+            }
+            else if ( strcmp( "obstacle_radius_min", parameter ) == 0 )
+            {
+                params.obstacle_radius_min = atof( value );
+            }
+            else if ( strcmp( "obstacle_radius_max", parameter ) == 0 )
+            {
+                params.obstacle_radius_max = atof( value );
+            }
+            else if ( strcmp( "obstacle_mass", parameter ) == 0 )
+            {
+                params.obstacle_mass = atof( value );
+            }
+            else if ( strcmp( "enable_agent_goal_f", parameter ) == 0 )
+            {
+                params.enable_agent_goal_f = atoi( value );
+            }
+            else if ( strcmp( "enable_agent_obstacle_f", parameter ) == 0 )
+            {
+                params.enable_agent_obstacle_f = atoi( value );
+            }
+            else if ( strcmp( "enable_agent_agent_f", parameter ) == 0 )
+            {
+                params.enable_agent_agent_f = atoi( value );
+            }
+            else if ( strcmp( "R", parameter ) == 0 )
+            {
+                params.R = atof( value );
+            }
+            else if ( strcmp( "range_coefficient", parameter ) == 0 )
+            {
+                params.range_coefficient = atof( value );
+            }
+            else if ( strcmp( "max_V", parameter ) == 0 )
+            {
+                params.max_V = atof( value );
+            }
+            else if ( strcmp( "force_law", parameter ) == 0 )
+            {
+                params.force_law = atoi( value );
+            }
+            else if ( strcmp( "G_agent_agent", parameter ) == 0 )
+            {
+                params.G_agent_agent = atof( value );
+            }
+            else if ( strcmp( "G_agent_obstacle", parameter ) == 0 )
+            {
+                params.G_agent_obstacle = atof( value );
+            }
+            else if ( strcmp( "G_agent_goal", parameter ) == 0 )
+            {
+                params.G_agent_goal = atof( value );
+            }
+            else if ( strcmp( "p_agent_agent", parameter ) == 0 )
+            {
+                params.p_agent_agent = atof( value );
+            }
+            else if ( strcmp( "p_agent_obstacle", parameter ) == 0 )
+            {
+                params.p_agent_obstacle = atof( value );
+            }
+            else if ( strcmp( "p_agent_goal", parameter ) == 0 )
+            {
+                params.p_agent_goal = atof( value );
+            }
+            else if ( strcmp( "max_f_agent_agent_n", parameter ) == 0 )
+            {
+                params.max_f_agent_agent_n = atof( value );
+            }
+            else if ( strcmp( "max_f_agent_obstacle_n", parameter ) == 0 )
+            {
+                params.max_f_agent_obstacle_n = atof( value );
+            }
+            else if ( strcmp( "max_f_agent_goal_n", parameter ) == 0 )
+            {
+                params.max_f_agent_goal_n = atof( value );
+            }
+            else if ( strcmp( "epsilon_agent_agent", parameter ) == 0 )
+            {
+                params.epsilon_agent_agent = atof( value );
+            }
+            else if ( strcmp( "epsilon_agent_obstacle", parameter ) == 0 )
+            {
+                params.epsilon_agent_obstacle = atof( value );
+            }
+            else if ( strcmp( "epsilon_agent_goal", parameter ) == 0 )
+            {
+                params.epsilon_agent_goal = atof( value );
+            }
+            else if ( strcmp( "c_agent_agent", parameter ) == 0 )
+            {
+                params.c_agent_agent = atof( value );
+            }
+            else if ( strcmp( "c_agent_obstacle", parameter ) == 0 )
+            {
+                params.c_agent_obstacle = atof( value );
+            }
+            else if ( strcmp( "c_agent_goal", parameter ) == 0 )
+            {
+                params.c_agent_goal = atof( value );
+            }
+            else if ( strcmp( "d_agent_agent", parameter ) == 0 )
+            {
+                params.d_agent_agent = atof( value );
+            }
+            else if ( strcmp( "d_agent_obstacle", parameter ) == 0 )
+            {
+                params.d_agent_obstacle = atof( value );
+            }
+            else if ( strcmp( "d_agent_goal", parameter ) == 0 )
+            {
+                params.d_agent_goal = atof( value );
+            }
+            else if ( strcmp( "max_f_agent_agent_lj", parameter ) == 0 )
+            {
+                params.max_f_agent_agent_lj = atof( value );
+            }
+            else if ( strcmp( "max_f_agent_obstacle_lj", parameter ) == 0 )
+            {
+                params.max_f_agent_obstacle_lj = atof( value );
+            }
+            else if ( strcmp( "max_f_agent_goal_lj", parameter ) == 0 )
+            {
+                params.max_f_agent_goal_lj = atof( value );
+            }
+            else if ( strcmp( "time_limit", parameter ) == 0 )
+            {
+                params.time_limit = atoi( value );
+            }
+            else if ( strcmp( "runs_number", parameter ) == 0 )
+            {
+                params.runs_number = atoi( value );
+            }
             else if ( strcmp( "run_simulation", parameter ) == 0 )
             {
                 params.run_simulation = atoi( value );
@@ -477,497 +483,497 @@ int read_config_file( char *p_filename )
                 params.initialize_from_file = atoi( value );
             }
             else if ( strcmp( "scenario_filename", parameter ) == 0 )
-			{
-				params.scenario_filename = strdup( value );
-			}
-			else if ( strcmp( "results_filename", parameter ) == 0 )
-			{
-				params.results_filename = strdup( value );
-			}
-			else if ( strcmp( "n_number", parameter ) == 0 )
-			{
-				params.n_number = atoi( value );
-			}
-			else if ( strcmp( "k_number", parameter ) == 0 )
-			{
-				params.k_number = atoi( value );
-			}
-			else if ( strcmp( "a_b_number", parameter ) == 0 )
-			{
-				params.a_b_number = atoi( value );
-			}
-			else if ( strcmp( "n_array", parameter ) == 0 )
-			{
-				params.n_array = ( int * ) calloc( params.n_number, sizeof( int ) );
-				
-				if ( params.n_array == NULL )
-				{
-					printf( "Error while allocating memory for n_array!" );
-					return -1;
-				}
-				
-				int i;
-				
-				params.n_array[0] = atoi( strtok( value, "," ) );
-				
-				for ( i = 1; i < params.n_number; i++ )
-				{
-					params.n_array[i] = atoi( strtok( NULL, "," ) );
-				}
-			}
-			else if ( strcmp( "k_array", parameter ) == 0 )
-			{
-				params.k_array = ( int * ) calloc( params.k_number + 1, sizeof( int ) );
+            {
+                params.scenario_filename = strdup( value );
+            }
+            else if ( strcmp( "results_filename", parameter ) == 0 )
+            {
+                params.results_filename = strdup( value );
+            }
+            else if ( strcmp( "n_number", parameter ) == 0 )
+            {
+                params.n_number = atoi( value );
+            }
+            else if ( strcmp( "k_number", parameter ) == 0 )
+            {
+                params.k_number = atoi( value );
+            }
+            else if ( strcmp( "a_b_number", parameter ) == 0 )
+            {
+                params.a_b_number = atoi( value );
+            }
+            else if ( strcmp( "n_array", parameter ) == 0 )
+            {
+                params.n_array = ( int * ) calloc( params.n_number, sizeof( int ) );
+                
+                if ( params.n_array == NULL )
+                {
+                    printf( "Error while allocating memory for n_array!" );
+                    return -1;
+                }
+                
+                int i;
+                
+                params.n_array[0] = atoi( strtok( value, "," ) );
+                
+                for ( i = 1; i < params.n_number; i++ )
+                {
+                    params.n_array[i] = atoi( strtok( NULL, "," ) );
+                }
+            }
+            else if ( strcmp( "k_array", parameter ) == 0 )
+            {
+                params.k_array = ( int * ) calloc( params.k_number + 1, sizeof( int ) );
 
-				if ( params.k_array == NULL )
-				{
-					printf( "Error while allocating memory for k_array!" );
-					return -1;
-				}
-				
-				int i;
-				
-				params.k_array[0] = atoi( strtok( value, "," ) );
-				
-				for ( i = 1; i < params.k_number; i++ )
-				{
-					params.k_array[i] = atoi( strtok( NULL, "," ) );
-				}
-			}
-			else if ( strcmp( "alpha_array", parameter ) == 0 )
-			{
-				params.alpha_array = ( float * ) calloc( params.a_b_number, sizeof( float ) );
+                if ( params.k_array == NULL )
+                {
+                    printf( "Error while allocating memory for k_array!" );
+                    return -1;
+                }
+                
+                int i;
+                
+                params.k_array[0] = atoi( strtok( value, "," ) );
+                
+                for ( i = 1; i < params.k_number; i++ )
+                {
+                    params.k_array[i] = atoi( strtok( NULL, "," ) );
+                }
+            }
+            else if ( strcmp( "alpha_array", parameter ) == 0 )
+            {
+                params.alpha_array = ( float * ) calloc( params.a_b_number, sizeof( float ) );
 
-				if ( params.alpha_array == NULL )
-				{
-					printf( "Error while allocating memory for alpha_array!" );
-					return -1;
-				}
-				
-				int i;
-				
-				params.alpha_array[0] = atof( strtok( value, "," ) );
-				
-				for ( i = 1; i < params.a_b_number; i++ )
-				{
-					params.alpha_array[i] = atof( strtok( NULL, "," ) );
-				}
-			}
-			else if ( strcmp( "beta_array", parameter ) == 0 )
-			{
-				params.beta_array = ( float * ) calloc( params.a_b_number, sizeof( float ) );
+                if ( params.alpha_array == NULL )
+                {
+                    printf( "Error while allocating memory for alpha_array!" );
+                    return -1;
+                }
+                
+                int i;
+                
+                params.alpha_array[0] = atof( strtok( value, "," ) );
+                
+                for ( i = 1; i < params.a_b_number; i++ )
+                {
+                    params.alpha_array[i] = atof( strtok( NULL, "," ) );
+                }
+            }
+            else if ( strcmp( "beta_array", parameter ) == 0 )
+            {
+                params.beta_array = ( float * ) calloc( params.a_b_number, sizeof( float ) );
 
-				if ( params.beta_array == NULL )
-				{
-					printf( "Error while allocating memory for beta_array!" );
-					return -1;
-				}
-				
-				int i;
-				
-				params.beta_array[0] = atof( strtok( value, "," ) );
-				
-				for ( i = 1; i < params.a_b_number; i++ )
-				{
-					params.beta_array[i] = atof( strtok( NULL, "," ) );
-				}
-			}
-			else
-			{
-				printf( "WARNING: Unknown parameter [%s]\n", parameter );
-			}
-		}
-	}
-	else
-	{
-		printf( "Error opening configuration file: \"%s\"!\n", p_filename );
-		return -1;
-	}
-	
-	fclose( p_config );
-	
-	return 0;
+                if ( params.beta_array == NULL )
+                {
+                    printf( "Error while allocating memory for beta_array!" );
+                    return -1;
+                }
+                
+                int i;
+                
+                params.beta_array[0] = atof( strtok( value, "," ) );
+                
+                for ( i = 1; i < params.a_b_number; i++ )
+                {
+                    params.beta_array[i] = atof( strtok( NULL, "," ) );
+                }
+            }
+            else
+            {
+                printf( "WARNING: Unknown parameter [%s]\n", parameter );
+            }
+        }
+    }
+    else
+    {
+        printf( "Error opening configuration file: \"%s\"!\n", p_filename );
+        return -1;
+    }
+    
+    fclose( p_config );
+    
+    return 0;
 }
 
 void output_simulation_parameters( FILE *output )
 {
-	fprintf( output, "\n\n" );
-	
-	fprintf( output, "# world_width = %d\n", params.world_width );
-	fprintf( output, "# world_height = %d\n", params.world_height );
-	fprintf( output, "# timer_delay_ms = %d\n", params.timer_delay_ms );
-	fprintf( output, "# goal_random_seed = %d\n", params.goal_random_seed );
-	fprintf( output, "# goal_width = %.2f\n", params.goal_width );
-	fprintf( output, "# goal_mass = %.2f\n", params.goal_mass );
-	fprintf( output, "# goal_quadrant = %d\n", params.goal_quadrant );
-	fprintf( output, "# agent_random_seed = %d\n", params.agent_random_seed );
-	fprintf( output, "# agent_number = %d\n", params.agent_number );
-	fprintf( output, "# agent_radius = %.2f\n", params.agent_radius );
-	fprintf( output, "# agent_mass = %.2f\n", params.agent_mass );
-	fprintf( output, "# deployment_width = %d\n", params.deployment_width );
-	fprintf( output, "# deployment_height = %d\n", params.deployment_height );
-	fprintf( output, "# deployment_quadrant = %d\n", params.deployment_quadrant );
-	fprintf( output, "# obstacle_random_seed = %d\n", params.obstacle_random_seed );
-	fprintf( output, "# obstacle_number = %d\n", params.obstacle_number );
-	fprintf( output, "# obstacle_radius = %.2f\n", params.obstacle_radius );
-	fprintf( output, "# obstacle_radius_min = %.2f\n", params.obstacle_radius_min );
-	fprintf( output, "# obstacle_radius_max = %.2f\n", params.obstacle_radius_max );
-	fprintf( output, "# obstacle_mass = %.2f\n", params.obstacle_mass );
-	fprintf( output, "# enable_agent_goal_f = %d\n", params.enable_agent_goal_f );
-	fprintf( output, "# enable_agent_obstacle_f = %d\n", params.enable_agent_obstacle_f );
-	fprintf( output, "# enable_agent_agent_f = %d\n", params.enable_agent_agent_f );
-	fprintf( output, "# R = %.2f\n", params.R );
-	fprintf( output, "# range_coefficient = %.2f\n", params.range_coefficient );
-	fprintf( output, "# max_V = %.2f\n", params.max_V );
-	fprintf( output, "# force_law = %d\n", params.force_law );
-	fprintf( output, "# G_agent_agent = %.2f\n", params.G_agent_agent );
-	fprintf( output, "# G_agent_obstacle = %.2f\n", params.G_agent_obstacle );
-	fprintf( output, "# G_agent_goal = %.2f\n", params.G_agent_goal );
-	fprintf( output, "# p_agent_agent = %.2f\n", params.p_agent_agent );
-	fprintf( output, "# p_agent_obstacle = %.2f\n", params.p_agent_obstacle );
-	fprintf( output, "# p_agent_goal = %.2f\n", params.p_agent_goal );
-	fprintf( output, "# max_f_agent_agent_n = %.2f\n", params.max_f_agent_agent_n );
-	fprintf( output, "# max_f_agent_obstacle_n = %.2f\n", params.max_f_agent_obstacle_n );
-	fprintf( output, "# max_f_agent_goal_n = %.2f\n", params.max_f_agent_goal_n );
-	fprintf( output, "# epsilon_agent_agent = %.2f\n", params.epsilon_agent_agent );
-	fprintf( output, "# epsilon_agent_obstacle = %.2f\n", params.epsilon_agent_obstacle );
-	fprintf( output, "# epsilon_agent_goal = %.2f\n", params.epsilon_agent_goal );
-	fprintf( output, "# c_agent_agent = %.2f\n", params.c_agent_agent );
-	fprintf( output, "# c_agent_obstacle = %.2f\n", params.c_agent_obstacle );
-	fprintf( output, "# c_agent_goal = %.2f\n", params.c_agent_goal );
-	fprintf( output, "# d_agent_agent = %.2f\n", params.d_agent_agent );
-	fprintf( output, "# d_agent_obstacle = %.2f\n", params.d_agent_obstacle );
-	fprintf( output, "# d_agent_goal = %.2f\n", params.d_agent_goal );
-	fprintf( output, "# max_f_agent_agent_lj = %.2f\n", params.max_f_agent_agent_lj );
-	fprintf( output, "# max_f_agent_obstacle_lj = %.2f\n", params.max_f_agent_obstacle_lj );
-	fprintf( output, "# max_f_agent_goal_lj = %.2f\n", params.max_f_agent_goal_lj );
-	fprintf( output, "# time_limit = %d\n", params.time_limit );
-	fprintf( output, "# runs_number = %d\n", params.runs_number );
+    fprintf( output, "\n\n" );
+    
+    fprintf( output, "# world_width = %d\n", params.world_width );
+    fprintf( output, "# world_height = %d\n", params.world_height );
+    fprintf( output, "# timer_delay_ms = %d\n", params.timer_delay_ms );
+    fprintf( output, "# goal_random_seed = %d\n", params.goal_random_seed );
+    fprintf( output, "# goal_width = %.2f\n", params.goal_width );
+    fprintf( output, "# goal_mass = %.2f\n", params.goal_mass );
+    fprintf( output, "# goal_quadrant = %d\n", params.goal_quadrant );
+    fprintf( output, "# agent_random_seed = %d\n", params.agent_random_seed );
+    fprintf( output, "# agent_number = %d\n", params.agent_number );
+    fprintf( output, "# agent_radius = %.2f\n", params.agent_radius );
+    fprintf( output, "# agent_mass = %.2f\n", params.agent_mass );
+    fprintf( output, "# deployment_width = %d\n", params.deployment_width );
+    fprintf( output, "# deployment_height = %d\n", params.deployment_height );
+    fprintf( output, "# deployment_quadrant = %d\n", params.deployment_quadrant );
+    fprintf( output, "# obstacle_random_seed = %d\n", params.obstacle_random_seed );
+    fprintf( output, "# obstacle_number = %d\n", params.obstacle_number );
+    fprintf( output, "# obstacle_radius = %.2f\n", params.obstacle_radius );
+    fprintf( output, "# obstacle_radius_min = %.2f\n", params.obstacle_radius_min );
+    fprintf( output, "# obstacle_radius_max = %.2f\n", params.obstacle_radius_max );
+    fprintf( output, "# obstacle_mass = %.2f\n", params.obstacle_mass );
+    fprintf( output, "# enable_agent_goal_f = %d\n", params.enable_agent_goal_f );
+    fprintf( output, "# enable_agent_obstacle_f = %d\n", params.enable_agent_obstacle_f );
+    fprintf( output, "# enable_agent_agent_f = %d\n", params.enable_agent_agent_f );
+    fprintf( output, "# R = %.2f\n", params.R );
+    fprintf( output, "# range_coefficient = %.2f\n", params.range_coefficient );
+    fprintf( output, "# max_V = %.2f\n", params.max_V );
+    fprintf( output, "# force_law = %d\n", params.force_law );
+    fprintf( output, "# G_agent_agent = %.2f\n", params.G_agent_agent );
+    fprintf( output, "# G_agent_obstacle = %.2f\n", params.G_agent_obstacle );
+    fprintf( output, "# G_agent_goal = %.2f\n", params.G_agent_goal );
+    fprintf( output, "# p_agent_agent = %.2f\n", params.p_agent_agent );
+    fprintf( output, "# p_agent_obstacle = %.2f\n", params.p_agent_obstacle );
+    fprintf( output, "# p_agent_goal = %.2f\n", params.p_agent_goal );
+    fprintf( output, "# max_f_agent_agent_n = %.2f\n", params.max_f_agent_agent_n );
+    fprintf( output, "# max_f_agent_obstacle_n = %.2f\n", params.max_f_agent_obstacle_n );
+    fprintf( output, "# max_f_agent_goal_n = %.2f\n", params.max_f_agent_goal_n );
+    fprintf( output, "# epsilon_agent_agent = %.2f\n", params.epsilon_agent_agent );
+    fprintf( output, "# epsilon_agent_obstacle = %.2f\n", params.epsilon_agent_obstacle );
+    fprintf( output, "# epsilon_agent_goal = %.2f\n", params.epsilon_agent_goal );
+    fprintf( output, "# c_agent_agent = %.2f\n", params.c_agent_agent );
+    fprintf( output, "# c_agent_obstacle = %.2f\n", params.c_agent_obstacle );
+    fprintf( output, "# c_agent_goal = %.2f\n", params.c_agent_goal );
+    fprintf( output, "# d_agent_agent = %.2f\n", params.d_agent_agent );
+    fprintf( output, "# d_agent_obstacle = %.2f\n", params.d_agent_obstacle );
+    fprintf( output, "# d_agent_goal = %.2f\n", params.d_agent_goal );
+    fprintf( output, "# max_f_agent_agent_lj = %.2f\n", params.max_f_agent_agent_lj );
+    fprintf( output, "# max_f_agent_obstacle_lj = %.2f\n", params.max_f_agent_obstacle_lj );
+    fprintf( output, "# max_f_agent_goal_lj = %.2f\n", params.max_f_agent_goal_lj );
+    fprintf( output, "# time_limit = %d\n", params.time_limit );
+    fprintf( output, "# runs_number = %d\n", params.runs_number );
     fprintf( output, "# run_simulation = %d\n", params.run_simulation );
     fprintf( output, "# initialize_from_file = %d\n", params.initialize_from_file );
     fprintf( output, "# scenario_filename = %s\n", params.scenario_filename );
-	fprintf( output, "# results_filename = %s\n", params.results_filename );
-	fprintf( output, "# n_number = %d\n", params.n_number );
-	fprintf( output, "# k_number = %d\n", params.k_number );
-	fprintf( output, "# a_b_number = %d\n", params.a_b_number );
-	fprintf( output, "# n_array = ");
-	
-	int i;
-	
-	for ( i = 0; i < params.n_number; i++ )
-	{
-		fprintf( output, "%d,", params.n_array[i] );
-	}
-	
-	fprintf( output, "\n# k_array = " );
-	
-	for ( i = 0; i < params.k_number; i++ )
-	{
-		fprintf( output, "%d,", params.k_array[i] );
-	}
-	
-	fprintf( output, "\n# alpha_array = " );
-	
-	for ( i = 0; i < params.a_b_number; i++ )
-	{
-		fprintf( output, "%.2f,", params.alpha_array[i] );
-	}
+    fprintf( output, "# results_filename = %s\n", params.results_filename );
+    fprintf( output, "# n_number = %d\n", params.n_number );
+    fprintf( output, "# k_number = %d\n", params.k_number );
+    fprintf( output, "# a_b_number = %d\n", params.a_b_number );
+    fprintf( output, "# n_array = ");
+    
+    int i;
+    
+    for ( i = 0; i < params.n_number; i++ )
+    {
+        fprintf( output, "%d,", params.n_array[i] );
+    }
+    
+    fprintf( output, "\n# k_array = " );
+    
+    for ( i = 0; i < params.k_number; i++ )
+    {
+        fprintf( output, "%d,", params.k_array[i] );
+    }
+    
+    fprintf( output, "\n# alpha_array = " );
+    
+    for ( i = 0; i < params.a_b_number; i++ )
+    {
+        fprintf( output, "%.2f,", params.alpha_array[i] );
+    }
 
-	fprintf( output, "\n# beta_array = " );
-	
-	for ( i = 0; i < params.a_b_number; i++ )
-	{
-		fprintf( output, "%.2f,", params.beta_array[i] );
-	}
+    fprintf( output, "\n# beta_array = " );
+    
+    for ( i = 0; i < params.a_b_number; i++ )
+    {
+        fprintf( output, "%.2f,", params.beta_array[i] );
+    }
 
-	fprintf( output, "\n\n" );
+    fprintf( output, "\n\n" );
 }
 
 int create_goal( void )
 {
-	/******************** Initialize goal ********************************/
-	goal = ( Goal * ) malloc( sizeof( Goal ) );
-	
-	if ( goal == NULL )
-	{
-		printf( "Error while allocating memory for goal!" );
-		return -1;
-	}
-	
-	// Initialize goal random number seed
-	if ( params.goal_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
-	else { srand( params.goal_random_seed ); }
-	
-	goal->id = 0;
-	goal->mass = params.goal_mass;
-	goal->width = params.goal_width;
-	
-	float quadrant_width = params.world_width / 3.0f;
-	float quadrant_height = params.world_height / 3.0f;
+    /******************** Initialize goal ********************************/
+    goal = ( Goal * ) malloc( sizeof( Goal ) );
+    
+    if ( goal == NULL )
+    {
+        printf( "Error while allocating memory for goal!" );
+        return -1;
+    }
+    
+    // Initialize goal random number seed
+    if ( params.goal_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
+    else { srand( params.goal_random_seed ); }
+    
+    goal->id = 0;
+    goal->mass = params.goal_mass;
+    goal->width = params.goal_width;
+    
+    float quadrant_width = params.world_width / 3.0f;
+    float quadrant_height = params.world_height / 3.0f;
 
-	float offset_x;
-	float offset_y;
-	
-	/*
-	 *		 ------------- 
-	 * 		| NW | N | NE |
-	 * 		|-------------
-	 * 		| N  | C | E  |
-	 * 		|-------------
-	 * 		| SW | S | SE |
-	 * 		 -------------
-	 */
-	switch ( params.goal_quadrant )
-	{
-		case NW:
-			offset_x = 0.0f;
-			offset_y = quadrant_height * 2.0f;
-			break;
-			
-		case N:
-			offset_x = quadrant_width;
-			offset_y = quadrant_height * 2.0f;
-			break;
-			
-		case NE:
-			offset_x = quadrant_width * 2.0f;
-			offset_y = quadrant_height * 2.0f;
-			break;
-			
-		case W:
-			offset_x = 0.0f;
-			offset_y = quadrant_height;
-			break;
-			
-		case C:
-			offset_x = quadrant_width;
-			offset_y = quadrant_height;
-			break;
-			
-		case E:
-			offset_x = quadrant_width * 2.0f;;
-			offset_y = quadrant_height * 2.0f;
-			break;
-			
-		case SW:
-			offset_x = 0.0f;
-			offset_y = 0.0f;
-			break;
-			
-		case S:
-			offset_x = quadrant_width;
-			offset_y = 0.0f;
-			break;
-			
-		case SE:
-			offset_x = quadrant_width * 2.0f;
-			offset_y = 0.0f;
-			break;
-			
-		default:
-			offset_x = 0.0f;
-			offset_y = 0.0f;
-	}
-	
-	goal->position.x = rand() % ( int ) quadrant_width + offset_x;
-	goal->position.y = rand() % ( int ) quadrant_height + offset_y;
-	
-	memcpy( goal->color, goal_color, 3 * sizeof( float ) );
-	
-	return 0;
+    float offset_x;
+    float offset_y;
+    
+    /*
+     *         ------------- 
+     *         | NW | N | NE |
+     *         |-------------
+     *         | N  | C | E  |
+     *         |-------------
+     *         | SW | S | SE |
+     *          -------------
+     */
+    switch ( params.goal_quadrant )
+    {
+        case NW:
+            offset_x = 0.0f;
+            offset_y = quadrant_height * 2.0f;
+            break;
+            
+        case N:
+            offset_x = quadrant_width;
+            offset_y = quadrant_height * 2.0f;
+            break;
+            
+        case NE:
+            offset_x = quadrant_width * 2.0f;
+            offset_y = quadrant_height * 2.0f;
+            break;
+            
+        case W:
+            offset_x = 0.0f;
+            offset_y = quadrant_height;
+            break;
+            
+        case C:
+            offset_x = quadrant_width;
+            offset_y = quadrant_height;
+            break;
+            
+        case E:
+            offset_x = quadrant_width * 2.0f;;
+            offset_y = quadrant_height * 2.0f;
+            break;
+            
+        case SW:
+            offset_x = 0.0f;
+            offset_y = 0.0f;
+            break;
+            
+        case S:
+            offset_x = quadrant_width;
+            offset_y = 0.0f;
+            break;
+            
+        case SE:
+            offset_x = quadrant_width * 2.0f;
+            offset_y = 0.0f;
+            break;
+            
+        default:
+            offset_x = 0.0f;
+            offset_y = 0.0f;
+    }
+    
+    goal->position.x = rand() % ( int ) quadrant_width + offset_x;
+    goal->position.y = rand() % ( int ) quadrant_height + offset_y;
+    
+    memcpy( goal->color, goal_color, 3 * sizeof( float ) );
+    
+    return 0;
 }
 
 void deploy_agent( Agent *agent )
 {
-	float quadrant_width = params.world_width / 3.0f;
-	float quadrant_height = params.world_height / 3.0f;
+    float quadrant_width = params.world_width / 3.0f;
+    float quadrant_height = params.world_height / 3.0f;
 
-	float offset_x;
-	float offset_y;
-	
-	/*
-	 *		 ------------- 
-	 * 		| NW | N | NE |
-	 * 		|-------------
-	 * 		| N  | C | E  |
-	 * 		|-------------
-	 * 		| SW | S | SE |
-	 * 		 -------------
-	 */
-	switch ( params.deployment_quadrant )
-	{
-		case NW:
-			offset_x = 10.0f;
-			offset_y = params.world_height - params.deployment_height - 10.0f;
-			break;
-			
-		case N:
-			offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
-			offset_y = params.world_height - params.deployment_height - 10.0f;
-			break;
-			
-		case NE:
-			offset_x = params.world_width - params.deployment_width - 10.0f;
-			offset_y = params.world_height - params.deployment_height - 10.0f;
-			break;
-			
-		case W:
-			offset_x = 10.0f;
-			offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
-			break;
-			
-		case C:
-			offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
-			offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
-			break;
-			
-		case E:
-			offset_x = params.world_width - params.deployment_width - 10.0f;
-			offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
-			break;
-			
-		case SW:
-			offset_x = 10.0f;
-			offset_y = 10.0f;
-			break;
-			
-		case S:
-			offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
-			offset_y = 10.0f;
-			break;
-			
-		case SE:
-			offset_x = params.world_width - params.deployment_width - 10.0f;
-			offset_y = 10.0f;
-			break;
-			
-		default:
-			offset_x = 10.0f;
-			offset_y = 10.0f;
-	}
-	
-	agent->i_position.x = rand() % params.deployment_width + offset_x;
-	agent->i_position.y = rand() % params.deployment_height + offset_y;
-	
-	agent->position.x = agent->i_position.x;
-	agent->position.y = agent->i_position.y;
+    float offset_x;
+    float offset_y;
+    
+    /*
+     *         ------------- 
+     *         | NW | N | NE |
+     *         |-------------
+     *         | N  | C | E  |
+     *         |-------------
+     *         | SW | S | SE |
+     *          -------------
+     */
+    switch ( params.deployment_quadrant )
+    {
+        case NW:
+            offset_x = 10.0f;
+            offset_y = params.world_height - params.deployment_height - 10.0f;
+            break;
+            
+        case N:
+            offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
+            offset_y = params.world_height - params.deployment_height - 10.0f;
+            break;
+            
+        case NE:
+            offset_x = params.world_width - params.deployment_width - 10.0f;
+            offset_y = params.world_height - params.deployment_height - 10.0f;
+            break;
+            
+        case W:
+            offset_x = 10.0f;
+            offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
+            break;
+            
+        case C:
+            offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
+            offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
+            break;
+            
+        case E:
+            offset_x = params.world_width - params.deployment_width - 10.0f;
+            offset_y = quadrant_height + ( quadrant_height - params.deployment_height ) / 2.0f;
+            break;
+            
+        case SW:
+            offset_x = 10.0f;
+            offset_y = 10.0f;
+            break;
+            
+        case S:
+            offset_x = quadrant_width + ( quadrant_width - params.deployment_height ) / 2.0f;
+            offset_y = 10.0f;
+            break;
+            
+        case SE:
+            offset_x = params.world_width - params.deployment_width - 10.0f;
+            offset_y = 10.0f;
+            break;
+            
+        default:
+            offset_x = 10.0f;
+            offset_y = 10.0f;
+    }
+    
+    agent->i_position.x = rand() % params.deployment_width + offset_x;
+    agent->i_position.y = rand() % params.deployment_height + offset_y;
+    
+    agent->position.x = agent->i_position.x;
+    agent->position.y = agent->i_position.y;
 }
 
 Agent *create_agent( int id )
 {
-	Agent *agent = ( Agent * ) malloc( sizeof( Agent ) );
-	
-	if ( agent == NULL )
-	{
-		printf( "Error while allocating memory for an agent!" );
-		return NULL;
-	}
-	
-	agent->id = id;
-	agent->mass = params.agent_mass;
-	agent->goal_reached = false;
-	agent->radius = params.agent_radius;
-	agent->velocity.x = 0.0f;
-	agent->velocity.y = 0.0f;
-	
-	deploy_agent( agent );
-	
-	memcpy( agent->color, agent_color, 3 * sizeof( float ) );
-	
-	return agent;
+    Agent *agent = ( Agent * ) malloc( sizeof( Agent ) );
+    
+    if ( agent == NULL )
+    {
+        printf( "Error while allocating memory for an agent!" );
+        return NULL;
+    }
+    
+    agent->id = id;
+    agent->mass = params.agent_mass;
+    agent->goal_reached = false;
+    agent->radius = params.agent_radius;
+    agent->velocity.x = 0.0f;
+    agent->velocity.y = 0.0f;
+    
+    deploy_agent( agent );
+    
+    memcpy( agent->color, agent_color, 3 * sizeof( float ) );
+    
+    return agent;
 }
 
 int create_swarm( void )
 {
-	/******************** Initialize agents ******************************/
-	agents = ( Agent ** ) calloc( params.agent_number, sizeof( Agent * ) );
-	
-	if ( agents == NULL )
-	{
-		printf( "Error while allocating memory for agents array!" );
-		return -1;
-	}
-	
-	// Initialize agents random number seed
-	if ( params.agent_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
-	else { srand( params.agent_random_seed ); }
+    /******************** Initialize agents ******************************/
+    agents = ( Agent ** ) calloc( params.agent_number, sizeof( Agent * ) );
+    
+    if ( agents == NULL )
+    {
+        printf( "Error while allocating memory for agents array!" );
+        return -1;
+    }
+    
+    // Initialize agents random number seed
+    if ( params.agent_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
+    else { srand( params.agent_random_seed ); }
 
-	int i;
-	
-	for ( i = 0; i < params.agent_number; i++ )
-	{
-		agents[i] = create_agent( i );
-		
-		if ( agents[i] == NULL )
-		{
-			printf( "Error while allocating memory for agent %d!", i );
-			return -1;
-		}
-	}
+    int i;
+    
+    for ( i = 0; i < params.agent_number; i++ )
+    {
+        agents[i] = create_agent( i );
+        
+        if ( agents[i] == NULL )
+        {
+            printf( "Error while allocating memory for agent %d!", i );
+            return -1;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 Obstacle *create_obstacle( int id, bool random_radius, float radius_range )
 {
-	Obstacle *obstacle = ( Obstacle * ) malloc( sizeof( Obstacle ) );
-	
-	if ( obstacle == NULL )
-	{
-		printf( "Error while allocating memory for obstacle!" );
-		return NULL;
-	}
-	
-	obstacle->id = id;
-	obstacle->mass = params.obstacle_mass;
-			
-	if ( random_radius )
-	{
-		float random = ( float ) rand() / ( float ) RAND_MAX;
-		obstacle->radius = random * radius_range + params.obstacle_radius_min;
-	} 
-	else { obstacle->radius = params.obstacle_radius; }
-	
-	obstacle->position.x = rand() % ( params.world_width - 20 ) + 10;
-	obstacle->position.y = rand() % ( params.world_height - 20 ) + 10;
-	
-	memcpy( obstacle->color, obstacle_color, 3 * sizeof( float ) );
-	
-	return obstacle;
+    Obstacle *obstacle = ( Obstacle * ) malloc( sizeof( Obstacle ) );
+    
+    if ( obstacle == NULL )
+    {
+        printf( "Error while allocating memory for obstacle!" );
+        return NULL;
+    }
+    
+    obstacle->id = id;
+    obstacle->mass = params.obstacle_mass;
+            
+    if ( random_radius )
+    {
+        float random = ( float ) rand() / ( float ) RAND_MAX;
+        obstacle->radius = random * radius_range + params.obstacle_radius_min;
+    } 
+    else { obstacle->radius = params.obstacle_radius; }
+    
+    obstacle->position.x = rand() % ( params.world_width - 20 ) + 10;
+    obstacle->position.y = rand() % ( params.world_height - 20 ) + 10;
+    
+    memcpy( obstacle->color, obstacle_color, 3 * sizeof( float ) );
+    
+    return obstacle;
 }
 
 int create_obstacle_course( void )
 {
-	/******************** Initialize obstacles ***************************/
-	obstacles = ( Obstacle ** ) calloc( params.obstacle_number, sizeof( Obstacle * ) );
-	
-	if ( obstacles == NULL )
-	{
-		printf( "Error while allocating memory for obstacles array!" );
-		return -1;
-	}
-	
-	// Initialize obstacles random number seed
-	if ( params.obstacle_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
-	else { srand( params.obstacle_random_seed ); }
-	
-	bool random_radius = ( params.obstacle_radius == 0 ) ? true : false;
-	float radius_range = params.obstacle_radius_max - params.obstacle_radius_min;
+    /******************** Initialize obstacles ***************************/
+    obstacles = ( Obstacle ** ) calloc( params.obstacle_number, sizeof( Obstacle * ) );
+    
+    if ( obstacles == NULL )
+    {
+        printf( "Error while allocating memory for obstacles array!" );
+        return -1;
+    }
+    
+    // Initialize obstacles random number seed
+    if ( params.obstacle_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
+    else { srand( params.obstacle_random_seed ); }
+    
+    bool random_radius = ( params.obstacle_radius == 0 ) ? true : false;
+    float radius_range = params.obstacle_radius_max - params.obstacle_radius_min;
 
-	int i;
-	
-	for ( i = 0; i < params.obstacle_number; i++ )
-	{
-		obstacles[i] = create_obstacle( i, random_radius, radius_range );
-		
-		if ( obstacles[i] == NULL )
-		{
-			printf( "Error while allocating memory for obstacle %d!", i );
-			return -1;
-		}
-	}
+    int i;
+    
+    for ( i = 0; i < params.obstacle_number; i++ )
+    {
+        obstacles[i] = create_obstacle( i, random_radius, radius_range );
+        
+        if ( obstacles[i] == NULL )
+        {
+            printf( "Error while allocating memory for obstacle %d!", i );
+            return -1;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 void free_memory( void )
@@ -978,14 +984,14 @@ void free_memory( void )
     
     for ( i = 0; i < params.agent_number; i++ )
     {
-    	if ( agents[i] != NULL ) { free( agents[i] ); }
+        if ( agents[i] != NULL ) { free( agents[i] ); }
     }
     
     if ( agents != NULL ) { free( agents ); }
     
     for ( i = 0; i < params.obstacle_number; i++ )
     {
-    	if ( obstacles[i] != NULL ) { free( obstacles[i] ); }
+        if ( obstacles[i] != NULL ) { free( obstacles[i] ); }
     }
     
     if ( obstacles != NULL ) { free( obstacles ); }
@@ -995,80 +1001,81 @@ void free_memory( void )
 
 void reset_statistics( void )
 {
-	stats.time_step = 0;
-	stats.reach_ratio = 0.0f;
-	stats.reached_goal = 0;
+    stats.time_step = 0;
+    stats.reach_ratio = 0.0f;
+    stats.reached_goal = 0;
+    stats.collided = 0;
 }
 
 void initialize_simulation( void )
 {
-	running = false;
-	
-	// Initialize simulation parameters to sane defaults,
-	// in case some information is missing from config file
-	params.world_width = 800;
-	params.world_height = 600;
-	params.timer_delay_ms = 8;
-	params.goal_random_seed = 0;
-	params.goal_width = 15.0f;
-	params.goal_mass = 10.0f;
-	params.goal_quadrant = 2;
-	params.agent_random_seed = 0;
-	params.agent_number = 100;
-	params.deployment_width = 100;
-	params.deployment_height = 100;
-	params.deployment_quadrant = 4;
-	params.obstacle_random_seed = 0;
-	params.obstacle_number = 20;
-	params.obstacle_radius = 3.0f;
-	params.obstacle_mass = 1.0f;
-	params.enable_agent_goal_f = 1;
-	params.enable_agent_obstacle_f = 1;
-	params.enable_agent_agent_f = 0;
-	params.R = 50.0f;
-	params.range_coefficient = 1.5f;
-	params.force_law = 0;
-	params.max_V = 0.5f;
-	params.G_agent_agent = 1000.0f;
-	params.G_agent_obstacle = 1000.0f;
-	params.G_agent_goal = 1000.0f;
-	params.p_agent_agent = 2.0f;
-	params.p_agent_obstacle = 2.0f;
-	params.p_agent_goal = 2.0f;
-	params.max_f_agent_agent_n = 4.0f;
-	params.max_f_agent_obstacle_n = 14.0f;
-	params.max_f_agent_goal_n = 4.0f;
-	params.epsilon_agent_agent = 16.5f;
-	params.epsilon_agent_obstacle = 16.5f;
-	params.epsilon_agent_goal = 16.5f;
-	params.c_agent_agent = 0.1f;
-	params.c_agent_obstacle = 0.1f;
-	params.c_agent_goal = 0.1f;
-	params.d_agent_agent = 0.1f;
-	params.d_agent_obstacle = 0.1f;
-	params.d_agent_goal = 0.1f;
-	params.max_f_agent_agent_lj = 4.0f;
-	params.max_f_agent_obstacle_lj = 14.0f;
-	params.max_f_agent_goal_lj = 4.0f;
-	params.time_limit = 1000;
-	params.runs_number = 10;
+    running = false;
+    
+    // Initialize simulation parameters to sane defaults,
+    // in case some information is missing from config file
+    params.world_width = 800;
+    params.world_height = 600;
+    params.timer_delay_ms = 8;
+    params.goal_random_seed = 0;
+    params.goal_width = 15.0f;
+    params.goal_mass = 10.0f;
+    params.goal_quadrant = 2;
+    params.agent_random_seed = 0;
+    params.agent_number = 100;
+    params.deployment_width = 100;
+    params.deployment_height = 100;
+    params.deployment_quadrant = 4;
+    params.obstacle_random_seed = 0;
+    params.obstacle_number = 20;
+    params.obstacle_radius = 3.0f;
+    params.obstacle_mass = 1.0f;
+    params.enable_agent_goal_f = 1;
+    params.enable_agent_obstacle_f = 1;
+    params.enable_agent_agent_f = 0;
+    params.R = 50.0f;
+    params.range_coefficient = 1.5f;
+    params.force_law = 0;
+    params.max_V = 0.5f;
+    params.G_agent_agent = 1000.0f;
+    params.G_agent_obstacle = 1000.0f;
+    params.G_agent_goal = 1000.0f;
+    params.p_agent_agent = 2.0f;
+    params.p_agent_obstacle = 2.0f;
+    params.p_agent_goal = 2.0f;
+    params.max_f_agent_agent_n = 4.0f;
+    params.max_f_agent_obstacle_n = 14.0f;
+    params.max_f_agent_goal_n = 4.0f;
+    params.epsilon_agent_agent = 16.5f;
+    params.epsilon_agent_obstacle = 16.5f;
+    params.epsilon_agent_goal = 16.5f;
+    params.c_agent_agent = 0.1f;
+    params.c_agent_obstacle = 0.1f;
+    params.c_agent_goal = 0.1f;
+    params.d_agent_agent = 0.1f;
+    params.d_agent_obstacle = 0.1f;
+    params.d_agent_goal = 0.1f;
+    params.max_f_agent_agent_lj = 4.0f;
+    params.max_f_agent_obstacle_lj = 14.0f;
+    params.max_f_agent_goal_lj = 4.0f;
+    params.time_limit = 1000;
+    params.runs_number = 10;
     params.run_simulation = false;
     params.initialize_from_file = false;
-	
-	// Reset statistics
-	reset_statistics();	
+    
+    // Reset statistics
+    reset_statistics();    
 }
 
 int save_scenario( char *filename )
 {
-	FILE *config;
-	config = fopen( filename, "w" );
-	
-	if ( config != NULL )
-	{
-		int i;
+    FILE *config;
+    config = fopen( filename, "w" );
+    
+    if ( config != NULL )
+    {
+        int i;
 
-		// World parameters
+        // World parameters
         fprintf( config, "view_mode                %d    # 0 - batch (CLI), 1 - GUI\n", mode );
         fprintf( config, "\n" );
         
@@ -1079,14 +1086,14 @@ int save_scenario( char *filename )
         fprintf( config, "timer_delay_ms           %d    # Controls simulation speed\n", params.timer_delay_ms );
         fprintf( config, "\n" );
         
-		// Goal parameters
+        // Goal parameters
         fprintf( config, "goal_random_seed         %d    # Random number seed for goal; 0 for random seed initialized with current time\n", params.goal_random_seed );
         fprintf( config, "goal_width               %f    # Size of the goal\n",                                                             params.goal_width );
         fprintf( config, "goal_mass                %f    # Goal mass (for calculating forces)\n",                                           params.goal_mass );
         fprintf( config, "goal_quadrant            %d    # Goal position\n",                                                                params.goal_quadrant );
         fprintf( config, "\n" );
         
-		// Agent parameters
+        // Agent parameters
         fprintf( config, "agent_random_seed        %d    # Random number seed for agents; 0 for random seed initialized with current time\n", params.agent_random_seed );
         fprintf( config, "agent_number             %d    # Number of agents in the swarm\n",                                                  params.agent_number );
         fprintf( config, "agent_radius             %f    # Size of the agent\n",                                                              params.agent_radius );
@@ -1096,7 +1103,7 @@ int save_scenario( char *filename )
         fprintf( config, "deployment_quadrant      %d    # Initial deployment area position\n",                                               params.deployment_quadrant );
         fprintf( config, "\n" );
 
-		// Obstacle parameters
+        // Obstacle parameters
         fprintf( config, "obstacle_random_seed     %d    # Random number seed for obstacles; 0 for random seed initialized with current time\n", params.obstacle_random_seed );
         fprintf( config, "obstacle_number          %d    # Number of obstacles\n",                                                               params.obstacle_number );
         fprintf( config, "obstacle_radius          %f    # Size of the obstacle; 0.0 for random, specify min and max below\n",                   params.obstacle_radius );
@@ -1105,20 +1112,20 @@ int save_scenario( char *filename )
         fprintf( config, "obstacle_mass            %f    # Obstacle mass (for calculating forces)\n",                                            params.obstacle_mass );
         fprintf( config, "\n" );
 
-		// Enable/Disable forces
+        // Enable/Disable forces
         fprintf( config, "enable_agent_goal_f      %d    # enable/disable agent-goal interactions, 0 - disable, 1 - enable\n",     params.enable_agent_goal_f );
         fprintf( config, "enable_agent_obstacle_f  %d    # enable/disable agent-obstacle interactions, 0 - disable, 1 - enable\n", params.enable_agent_obstacle_f );
         fprintf( config, "enable_agent_agent_f     %d    # enable/disable agent-agent interactions, 0 - disable, 1 - enable\n",    params.enable_agent_agent_f );
         fprintf( config, "\n" );
 
-		// General physics parameters
+        // General physics parameters
         fprintf( config, "R                        %f    # Desired distance R\n",               params.R );
         fprintf( config, "range_coefficient        %f    # Agent visual range coefficient\n",   params.range_coefficient );
         fprintf( config, "max_V                    %f    # Maximum agent velocity\n",           params.max_V );
         fprintf( config, "force_law                %d    # 0 - Newtonian, 1 - Lennard-Jones\n", params.force_law );
         fprintf( config, "\n" );
 
- 		// Newtonian force law parameters
+         // Newtonian force law parameters
         fprintf( config, "G_agent_agent            %f    # Newtonian - Gravitational constant of agent-agent interactions\n",    params.G_agent_agent );
         fprintf( config, "G_agent_obstacle         %f    # Newtonian - Gravitational constant of agent-obstacle interactions\n", params.G_agent_obstacle );
         fprintf( config, "G_agent_goal             %f    # Newtonian - Gravitational constant of agent-goal interactions\n",     params.G_agent_goal );
@@ -1134,7 +1141,7 @@ int save_scenario( char *filename )
         fprintf( config, "max_f_agent_goal_n       %f    # Newtonian - Force cutoff agent-goal\n",     params.max_f_agent_goal_n );
         fprintf( config, "\n" );
 
-		// Lennard-Jones force law parameters
+        // Lennard-Jones force law parameters
         fprintf( config, "epsilon_agent_agent      %f    # LJ - Strength of agent-agent interactions (acceptable values 1.0 - 20.0)\n",    params.epsilon_agent_agent );
         fprintf( config, "epsilon_agent_obstacle   %f    # LJ - Strength of agent-obstacle interactions (acceptable values 1.0 - 20.0)\n", params.epsilon_agent_obstacle );
         fprintf( config, "epsilon_agent_goal       %f    # LJ - Strength of agent-goal interactions (acceptable values 1.0 - 20.0)\n",     params.epsilon_agent_goal );
@@ -1155,7 +1162,7 @@ int save_scenario( char *filename )
         fprintf( config, "max_f_agent_goal_lj      %f    # LJ - Force cutoff agent-goal\n",     params.max_f_agent_goal_lj );
         fprintf( config, "\n" );
 
-		// Batch parameters
+        // Batch parameters
         fprintf( config, "time_limit               %d    # CLI only - time limit per run\n", params.time_limit );
         fprintf( config, "runs_number              %d    # CLI only - number of runs\n",     params.runs_number );
         fprintf( config, "run_simulation           %d    # CLI only - run simulator to get probabilies or use random number generator, 0 - RNG, 1 - simulation\n", params.run_simulation );
@@ -1174,46 +1181,46 @@ int save_scenario( char *filename )
         fprintf( config, "n_array                  " );
 
         for ( i = 0; i < params.n_number; i++ )
-		{
-			fprintf( config, "%d,", params.n_array[i] );
-		}
+        {
+            fprintf( config, "%d,", params.n_array[i] );
+        }
 
-		fprintf( config, "   # CLI only - Actual n values\n" );
+        fprintf( config, "   # CLI only - Actual n values\n" );
 
         fprintf( config, "k_array                  " );
 
         for ( i = 0; i < params.k_number; i++ )
-		{
-			fprintf( config, "%d,", params.k_array[i] );
-		}
+        {
+            fprintf( config, "%d,", params.k_array[i] );
+        }
 
-		fprintf( config, "   # CLI only - Actual k values\n" );
+        fprintf( config, "   # CLI only - Actual k values\n" );
 
         fprintf( config, "alpha_array              " );
 
         for ( i = 0; i < params.a_b_number; i++ )
-		{
-			fprintf( config, "%f,", params.alpha_array[i] );
-		}
+        {
+            fprintf( config, "%f,", params.alpha_array[i] );
+        }
 
-		fprintf( config, "   # CLI only - Actual alpha values\n" );
+        fprintf( config, "   # CLI only - Actual alpha values\n" );
         
         fprintf( config, "beta_array               " );
 
         for ( i = 0; i < params.a_b_number; i++ )
-		{
-			fprintf( config, "%f,", params.beta_array[i] );
-		}
+        {
+            fprintf( config, "%f,", params.beta_array[i] );
+        }
 
-		fprintf( config, "   # CLI only - Actual beta values\n" );		
-	}
-	else
-	{
-		printf( "Configuration file [%s] could not be created!", filename );
-		return -1;
-	}
+        fprintf( config, "   # CLI only - Actual beta values\n" );        
+    }
+    else
+    {
+        printf( "Configuration file [%s] could not be created!", filename );
+        return -1;
+    }
     
-	fclose( config );
+    fclose( config );
 
     if ( params.initialize_from_file )
     {
@@ -1225,7 +1232,7 @@ int save_scenario( char *filename )
             int i;
             
             // Statistics
-            fprintf( scenario, "%d %d %f\n", stats.time_step, stats.reached_goal, stats.reach_ratio );
+            fprintf( scenario, "%d %d %f %d\n", stats.time_step, stats.reached_goal, stats.reach_ratio, stats.collided );
 
             // Current values for goal
             fprintf( scenario, "%d %f %f %f %f\n", goal->id, goal->mass, goal->width, goal->position.x, goal->position.y );
@@ -1259,7 +1266,7 @@ int save_scenario( char *filename )
         fclose( scenario );
     }
 
-	return 0;
+    return 0;
 }
 
 int load_scenario( char *filename )
@@ -1277,13 +1284,13 @@ int load_scenario( char *filename )
     {
         FILE *scenario;
         scenario = fopen( params.scenario_filename, "r" );
-	
+    
         if ( scenario != NULL )
         {
             int i;
-		
+        
             // Statistics
-            fscanf( scenario, "%d %d %f", &stats.time_step, &stats.reached_goal, &stats.reach_ratio );
+            fscanf( scenario, "%d %d %f %d", &stats.time_step, &stats.reached_goal, &stats.reach_ratio, &stats.collided );
 
             /******************************* Current values for all objects **********************************************/
             // Create simulation objects
@@ -1320,11 +1327,11 @@ int load_scenario( char *filename )
             return -1;
         }
     
-    	fclose( scenario );
+        fclose( scenario );
     }
     else
     {
-    	running = false;
+        running = false;
 
         // Reset statistics
         reset_statistics();
@@ -1334,27 +1341,29 @@ int load_scenario( char *filename )
         if ( create_swarm() != 0 ) { return -1; }
         if ( create_obstacle_course() != 0 ) { return -1; }
     }
-	
-	return 0;
+    
+    return 0;
 }
 
 void restart_simulation( void )
 {
-	int i;
-	
-	running = false;
-	
-	// Reset statistics
-	reset_statistics();
-	
-	for ( i = 0; i < params.agent_number; i++ )
-	{
-		agents[i]->position.x = agents[i]->i_position.x;
-		agents[i]->position.y = agents[i]->i_position.y;
-		agents[i]->velocity.x = 0.0f;
-		agents[i]->velocity.y = 0.0f;
-		agents[i]->goal_reached = false;
-	}
+    int i;
+    
+    running = false;
+    
+    // Reset statistics
+    reset_statistics();
+    
+    for ( i = 0; i < params.agent_number; i++ )
+    {
+        agents[i]->position.x = agents[i]->i_position.x;
+        agents[i]->position.y = agents[i]->i_position.y;
+        agents[i]->velocity.x = 0.0f;
+        agents[i]->velocity.y = 0.0f;
+        agents[i]->goal_reached = false;
+        
+        memcpy( agents[i]->color, agent_color, 3 * sizeof( float ) );
+    }
 }
 
 void initialize_graphics( void )
@@ -1374,7 +1383,7 @@ bool agent_reached_goal( Agent *agent )
     if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
          fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
     {
-            return true;
+        return true;
     }
 
     return false;
@@ -1382,306 +1391,306 @@ bool agent_reached_goal( Agent *agent )
 
 int change_agent_number( int agent_number )
 {
-	int i;	
-	int delta = agent_number - params.agent_number;
-	
-	if ( delta > 0 )
-	{
-		agents = ( Agent ** ) realloc( agents, agent_number * sizeof( Agent * ) );
-		
-		if ( agents == NULL )
-		{
-			printf( "Error while expanding memory for agents array!" );
-			return -1;
-		}
-		
-		for ( i = params.agent_number; i < agent_number; i++ )
-		{
-			agents[i] = create_agent( i );
-		}
-		
-		params.agent_number = agent_number;
-	}
-	else if ( delta < 0 && abs( delta ) < params.agent_number )
-	{
-		agents = ( Agent ** ) realloc( agents, agent_number * sizeof( Agent * ) );
-		
-		if ( agents == NULL )
-		{
-			printf( "Error while shrinking memory for agents array!" );
-			return -1;
-		}
-		
-		params.agent_number = agent_number;
-	}
-	else if ( delta < 0 && abs( delta ) >= params.agent_number )
-	{
-		agents = ( Agent ** ) realloc( agents, sizeof( Agent * ) );
-		
-		if ( agents == NULL )
-		{
-			printf( "Error while shrinking memory for agents array!" );
-			return -1;
-		}
-		
-		params.agent_number = 1;
-	}
-	
-	return 0;
+    int i;    
+    int delta = agent_number - params.agent_number;
+    
+    if ( delta > 0 )
+    {
+        agents = ( Agent ** ) realloc( agents, agent_number * sizeof( Agent * ) );
+        
+        if ( agents == NULL )
+        {
+            printf( "Error while expanding memory for agents array!" );
+            return -1;
+        }
+        
+        for ( i = params.agent_number; i < agent_number; i++ )
+        {
+            agents[i] = create_agent( i );
+        }
+        
+        params.agent_number = agent_number;
+    }
+    else if ( delta < 0 && abs( delta ) < params.agent_number )
+    {
+        agents = ( Agent ** ) realloc( agents, agent_number * sizeof( Agent * ) );
+        
+        if ( agents == NULL )
+        {
+            printf( "Error while shrinking memory for agents array!" );
+            return -1;
+        }
+        
+        params.agent_number = agent_number;
+    }
+    else if ( delta < 0 && abs( delta ) >= params.agent_number )
+    {
+        agents = ( Agent ** ) realloc( agents, sizeof( Agent * ) );
+        
+        if ( agents == NULL )
+        {
+            printf( "Error while shrinking memory for agents array!" );
+            return -1;
+        }
+        
+        params.agent_number = 1;
+    }
+    
+    return 0;
 }
 
 int change_obstacle_number( int obstacle_number )
 {
-	int i;	
-	int delta = obstacle_number - params.obstacle_number;
-	
-	if ( delta > 0 )
-	{
-		obstacles = ( Obstacle ** ) realloc( obstacles, obstacle_number * sizeof( Obstacle * ) );
-		
-		if ( obstacles == NULL )
-		{
-			printf( "Error while expanding memory for obstacles array!" );
-			return -1;
-		}
-		
-		bool random_radius = ( params.obstacle_radius == 0 ) ? true : false;
-		float radius_range = params.obstacle_radius_max - params.obstacle_radius_min;
-		
-		for ( i = params.obstacle_number; i < obstacle_number; i++ )
-		{
-			obstacles[i] = create_obstacle( i, random_radius, radius_range );
-		}
-		
-		params.obstacle_number = obstacle_number;
-	}
-	else if ( delta < 0 && abs( delta ) < params.obstacle_number )
-	{
-		obstacles = ( Obstacle ** ) realloc( obstacles, obstacle_number * sizeof( Obstacle * ) );
-		
-		if ( agents == NULL )
-		{
-			printf( "Error while shrinking memory for obstacles array!" );
-			return -1;
-		}
-		
-		params.obstacle_number = obstacle_number;
-	}
-	else if ( delta < 0 && abs( delta ) >= params.obstacle_number )
-	{
-		obstacles = ( Obstacle ** ) realloc( obstacles, sizeof( Obstacle * ) );
-		
-		if ( agents == NULL )
-		{
-			printf( "Error while shrinking memory for obstacles array!" );
-			return -1;
-		}
-		
-		params.obstacle_number = 1;
-	}
-	
-	return 0;
+    int i;    
+    int delta = obstacle_number - params.obstacle_number;
+    
+    if ( delta > 0 )
+    {
+        obstacles = ( Obstacle ** ) realloc( obstacles, obstacle_number * sizeof( Obstacle * ) );
+        
+        if ( obstacles == NULL )
+        {
+            printf( "Error while expanding memory for obstacles array!" );
+            return -1;
+        }
+        
+        bool random_radius = ( params.obstacle_radius == 0 ) ? true : false;
+        float radius_range = params.obstacle_radius_max - params.obstacle_radius_min;
+        
+        for ( i = params.obstacle_number; i < obstacle_number; i++ )
+        {
+            obstacles[i] = create_obstacle( i, random_radius, radius_range );
+        }
+        
+        params.obstacle_number = obstacle_number;
+    }
+    else if ( delta < 0 && abs( delta ) < params.obstacle_number )
+    {
+        obstacles = ( Obstacle ** ) realloc( obstacles, obstacle_number * sizeof( Obstacle * ) );
+        
+        if ( agents == NULL )
+        {
+            printf( "Error while shrinking memory for obstacles array!" );
+            return -1;
+        }
+        
+        params.obstacle_number = obstacle_number;
+    }
+    else if ( delta < 0 && abs( delta ) >= params.obstacle_number )
+    {
+        obstacles = ( Obstacle ** ) realloc( obstacles, sizeof( Obstacle * ) );
+        
+        if ( agents == NULL )
+        {
+            printf( "Error while shrinking memory for obstacles array!" );
+            return -1;
+        }
+        
+        params.obstacle_number = 1;
+    }
+    
+    return 0;
 }
 
 float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 {
-	Vector2f agent_pos = agent->position;
-	Vector2f obj_pos;
-	float obj_mass;
-	double distance_to_obj;
-	
-	switch( obj_type )
-	{
-		case AGENT:
-			obj_pos = ( ( Agent * ) object )->position;
-			obj_mass = ( ( Agent * ) object )->mass;
-			distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
-			break;
-			
-		case OBSTACLE:
-			obj_pos = ( ( Obstacle * ) object )->position;
-			obj_mass = ( ( Obstacle * ) object )->mass;
-			distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
-			distance_to_obj -= ( ( Obstacle * ) object )->radius;
-			break;
-			
-		case GOAL:
-			obj_pos = ( ( Goal * ) object )->position;
-			obj_mass = ( ( Goal * ) object )->mass;
-			distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
-			break;
-	}
-	
+    Vector2f agent_pos = agent->position;
+    Vector2f obj_pos;
+    float obj_mass;
+    double distance_to_obj;
+    
+    switch( obj_type )
+    {
+        case AGENT:
+            obj_pos = ( ( Agent * ) object )->position;
+            obj_mass = ( ( Agent * ) object )->mass;
+            distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
+            break;
+            
+        case OBSTACLE:
+            obj_pos = ( ( Obstacle * ) object )->position;
+            obj_mass = ( ( Obstacle * ) object )->mass;
+            distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
+            distance_to_obj -= ( ( Obstacle * ) object )->radius;
+            break;
+            
+        case GOAL:
+            obj_pos = ( ( Goal * ) object )->position;
+            obj_mass = ( ( Goal * ) object )->mass;
+            distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
+            break;
+    }
+    
     double f = 0.0f;
 
     if ( distance_to_obj != 0 )
     {
-	    switch( params.force_law )
-		{
-			case NEWTONIAN:
-				switch( obj_type )
-				{
-					case AGENT:
-				        if ( distance_to_obj <= params.range_coefficient * params.R )
-				        {
-							f = params.G_agent_agent * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_agent );
-							
-				        	if ( distance_to_obj < params.R ) { f = -f; }
-							if ( f > params.max_f_agent_agent_n ) { f = params.max_f_agent_agent_n; }
-							if ( f < -params.max_f_agent_agent_n ) { f = -params.max_f_agent_agent_n; }
-				        }
-						break;
+        switch( params.force_law )
+        {
+            case NEWTONIAN:
+                switch( obj_type )
+                {
+                    case AGENT:
+                        if ( distance_to_obj <= params.range_coefficient * params.R )
+                        {
+                            f = params.G_agent_agent * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_agent );
+                            
+                            if ( distance_to_obj < params.R ) { f = -f; }
+                            if ( f > params.max_f_agent_agent_n ) { f = params.max_f_agent_agent_n; }
+                            if ( f < -params.max_f_agent_agent_n ) { f = -params.max_f_agent_agent_n; }
+                        }
+                        break;
 
-					case GOAL:
-						f = params.G_agent_goal * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_goal );
-						
-						if ( f > params.max_f_agent_goal_n ) { f = params.max_f_agent_goal_n; }
-						break;
-						
-					case OBSTACLE:
-				        if ( distance_to_obj <= params.range_coefficient * params.R )
-				        {
-							f = -( params.G_agent_obstacle * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_obstacle ) );
-							
-							if ( f < -params.max_f_agent_obstacle_n ) { f = -params.max_f_agent_obstacle_n; }
-						}
-						break;
-				}
-				break;
-				
-			case LENNARD_JONES:
-				switch( obj_type )
-				{
-					float epsilon, sigma;
-					float c, d;
-					double lhs, rhs;
-					
-					// agent-agent interactions, repulsive and attractive components
-					case AGENT:
-				        if ( distance_to_obj <= params.range_coefficient * params.R )
-				        {
-							epsilon = params.epsilon_agent_agent;
-							c = params.c_agent_agent;
-							d = params.d_agent_agent;
-							sigma = params.R;
-							
-							lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
-							rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
-							
-							f = 24.0 * epsilon * ( lhs - rhs );
-							
-							if ( isinf( f ) == 1 ) { f = DBL_MAX; }
-							else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
-							
-							if ( f > params.max_f_agent_agent_lj ) { f = params.max_f_agent_agent_lj; }
-							if ( f < -params.max_f_agent_agent_lj ) { f = -params.max_f_agent_agent_lj; }
-				        }
-						break;
-						
-					// agent-obstacle interactions, repulsive component only
-					case OBSTACLE:
-				        if ( distance_to_obj <= params.range_coefficient * params.R )
-						{
-							epsilon = params.epsilon_agent_obstacle;
-							d = params.d_agent_obstacle;
-							sigma = ( ( Obstacle * ) object )->radius + 1.0f;
-							
-							rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
-	
-							f = -24.0 * epsilon * rhs;
-							
-							if ( isinf( f ) == 1 ) { f = DBL_MAX; }
-							else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
-							
-							if ( f < -params.max_f_agent_obstacle_lj ) { f = -params.max_f_agent_obstacle_lj; }
-							if ( f > params.max_f_agent_obstacle_lj ) { f = params.max_f_agent_obstacle_lj; }
-						}
-						break;
-						
-					// agent-goal interactions, attractive component only
-					case GOAL:
-						epsilon = params.epsilon_agent_goal;
-						c = params.c_agent_goal;
-						sigma = pow( params.R, 2.0f ) * 5.0f;
-						
-						lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
-						
-						f = 24.0 * epsilon * lhs;
+                    case GOAL:
+                        f = params.G_agent_goal * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_goal );
+                        
+                        if ( f > params.max_f_agent_goal_n ) { f = params.max_f_agent_goal_n; }
+                        break;
+                        
+                    case OBSTACLE:
+                        if ( distance_to_obj <= params.range_coefficient * params.R )
+                        {
+                            f = -( params.G_agent_obstacle * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_obstacle ) );
+                            
+                            if ( f < -params.max_f_agent_obstacle_n ) { f = -params.max_f_agent_obstacle_n; }
+                        }
+                        break;
+                }
+                break;
+                
+            case LENNARD_JONES:
+                switch( obj_type )
+                {
+                    float epsilon, sigma;
+                    float c, d;
+                    double lhs, rhs;
+                    
+                    // agent-agent interactions, repulsive and attractive components
+                    case AGENT:
+                        if ( distance_to_obj <= params.range_coefficient * params.R )
+                        {
+                            epsilon = params.epsilon_agent_agent;
+                            c = params.c_agent_agent;
+                            d = params.d_agent_agent;
+                            sigma = params.R;
+                            
+                            lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
+                            rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
+                            
+                            f = 24.0 * epsilon * ( lhs - rhs );
+                            
+                            if ( isinf( f ) == 1 ) { f = DBL_MAX; }
+                            else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
+                            
+                            if ( f > params.max_f_agent_agent_lj ) { f = params.max_f_agent_agent_lj; }
+                            if ( f < -params.max_f_agent_agent_lj ) { f = -params.max_f_agent_agent_lj; }
+                        }
+                        break;
+                        
+                    // agent-obstacle interactions, repulsive component only
+                    case OBSTACLE:
+                        if ( distance_to_obj <= params.range_coefficient * params.R )
+                        {
+                            epsilon = params.epsilon_agent_obstacle;
+                            d = params.d_agent_obstacle;
+                            sigma = ( ( Obstacle * ) object )->radius + 1.0f;
+                            
+                            rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
+    
+                            f = -24.0 * epsilon * rhs;
+                            
+                            if ( isinf( f ) == 1 ) { f = DBL_MAX; }
+                            else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
+                            
+                            if ( f < -params.max_f_agent_obstacle_lj ) { f = -params.max_f_agent_obstacle_lj; }
+                            if ( f > params.max_f_agent_obstacle_lj ) { f = params.max_f_agent_obstacle_lj; }
+                        }
+                        break;
+                        
+                    // agent-goal interactions, attractive component only
+                    case GOAL:
+                        epsilon = params.epsilon_agent_goal;
+                        c = params.c_agent_goal;
+                        sigma = pow( params.R, 2.0f ) * 5.0f;
+                        
+                        lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
+                        
+                        f = 24.0 * epsilon * lhs;
 
-						if ( isinf( f ) == 1 ) { f = DBL_MAX; }
-						else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
-						
-						if ( f > params.max_f_agent_goal_lj ) { f = params.max_f_agent_goal_lj; }
-						break;
-				}
-				break;
-		}
+                        if ( isinf( f ) == 1 ) { f = DBL_MAX; }
+                        else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
+                        
+                        if ( f > params.max_f_agent_goal_lj ) { f = params.max_f_agent_goal_lj; }
+                        break;
+                }
+                break;
+        }
     }
-	
+    
     return f;
 }
 
 void move_agents( void )
 {
-	int i, j;
+    int i, j;
 
-	for ( i = 0; i < params.agent_number; i++ )
-	{
-		Agent *agent = agents[i];
-		
-		Vector2f agent_pos = agent->position;
-		Vector2f goal_pos = goal->position;
-		
-		double force_x = 0.0f;
-		double force_y = 0.0f;
-		
-		/************************** Calculate force between an obstacle and an agent ***********************/
-		if ( params.enable_agent_obstacle_f )
-		{
-			for ( j = 0; j < params.obstacle_number; j++ )
-			{
-				Obstacle *obs = obstacles[j];
-				Vector2f obs_pos = obs->position;
-				
-				float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
-				double net_force = calculate_force( agent, obs, OBSTACLE );
-				
-		        force_x += net_force * cos( angle_to_obstacle );
-		        force_y += net_force * sin( angle_to_obstacle );
-			}
-		}
+    for ( i = 0; i < params.agent_number; i++ )
+    {
+        Agent *agent = agents[i];
+        
+        Vector2f agent_pos = agent->position;
+        Vector2f goal_pos = goal->position;
+        
+        double force_x = 0.0f;
+        double force_y = 0.0f;
+        
+        /************************** Calculate force between an obstacle and an agent ***********************/
+        if ( params.enable_agent_obstacle_f )
+        {
+            for ( j = 0; j < params.obstacle_number; j++ )
+            {
+                Obstacle *obs = obstacles[j];
+                Vector2f obs_pos = obs->position;
+                
+                float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
+                double net_force = calculate_force( agent, obs, OBSTACLE );
+                
+                force_x += net_force * cos( angle_to_obstacle );
+                force_y += net_force * sin( angle_to_obstacle );
+            }
+        }
         /****************************************************************************************************/
-		
-		/************************** Calculate force between agents *************************************************/
-		if ( params.enable_agent_agent_f )
-		{
-			for ( j = 0; j < params.agent_number; j++ )
-			{
-				Agent *agent2 = agents[j];
-				Vector2f agent2_pos = agent2->position;
-				
-				float angle_to_agent2 = atan2( agent2_pos.y - agent_pos.y, agent2_pos.x - agent_pos.x );
-		        double net_force = calculate_force( agent, agent2, AGENT );
-		        
-		        force_x += net_force * cos( angle_to_agent2 );
-		        force_y += net_force * sin( angle_to_agent2 );
-			}
-		}
-		/***********************************************************************************************************/
-		
-		/********************** Calculate force between the goal and an agent *************************/
-		if ( params.enable_agent_goal_f )
-		{
-			float angle_to_goal = atan2( goal_pos.y - agent_pos.y, goal_pos.x - agent_pos.x );
-			double net_force = calculate_force( agent, goal, GOAL );
+        
+        /************************** Calculate force between agents *************************************************/
+        if ( params.enable_agent_agent_f )
+        {
+            for ( j = 0; j < params.agent_number; j++ )
+            {
+                Agent *agent2 = agents[j];
+                Vector2f agent2_pos = agent2->position;
+                
+                float angle_to_agent2 = atan2( agent2_pos.y - agent_pos.y, agent2_pos.x - agent_pos.x );
+                double net_force = calculate_force( agent, agent2, AGENT );
+                
+                force_x += net_force * cos( angle_to_agent2 );
+                force_y += net_force * sin( angle_to_agent2 );
+            }
+        }
+        /***********************************************************************************************************/
+        
+        /********************** Calculate force between the goal and an agent *************************/
+        if ( params.enable_agent_goal_f )
+        {
+            float angle_to_goal = atan2( goal_pos.y - agent_pos.y, goal_pos.x - agent_pos.x );
+            double net_force = calculate_force( agent, goal, GOAL );
 
-	        force_x += net_force * cos( angle_to_goal );
-	        force_y += net_force * sin( angle_to_goal );
-		}
+            force_x += net_force * cos( angle_to_goal );
+            force_y += net_force * sin( angle_to_goal );
+        }
         /**********************************************************************************************/
         
-		agent->n_velocity = agent->velocity;
-		
+        agent->n_velocity = agent->velocity;
+        
         // update agent velocity vector
         agent->n_velocity.x += force_x / agent->mass;
         agent->n_velocity.y += force_y / agent->mass;
@@ -1691,8 +1700,8 @@ void move_agents( void )
         // check if new velocity exceeds the maximum
         if ( velocity_magnitude > params.max_V )
         {
-        	agent->n_velocity.x = ( agent->n_velocity.x * params.max_V ) / velocity_magnitude;
-        	agent->n_velocity.y = ( agent->n_velocity.y * params.max_V ) / velocity_magnitude;
+            agent->n_velocity.x = ( agent->n_velocity.x * params.max_V ) / velocity_magnitude;
+            agent->n_velocity.y = ( agent->n_velocity.y * params.max_V ) / velocity_magnitude;
         }
         
         agent->n_position = agent->position;
@@ -1700,379 +1709,436 @@ void move_agents( void )
         // update agent position
         agent->n_position.x += agent->n_velocity.x;
         agent->n_position.y += agent->n_velocity.y;
-		
+        
+        // calculate number of agents that reached the goal by "touching" it
         if ( !agents[i]->goal_reached && agent_reached_goal( agents[i] ) )
         {
-        	agents[i]->goal_reached = true;
-        	stats.reached_goal++;
-        	stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+            agents[i]->goal_reached = true;
+            stats.reached_goal++;
+            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
         }
-	}
-	
-	for ( i = 0; i < params.agent_number; i++ )
-	{
-		agents[i]->velocity.x = agents[i]->n_velocity.x;
-		agents[i]->velocity.y = agents[i]->n_velocity.y;
-		
-		agents[i]->position.x = agents[i]->n_position.x;
-		agents[i]->position.y = agents[i]->n_position.y;
-	}
-	
-	++stats.time_step;
+        
+        // calculate number of agent-obstacle collisions
+        for ( j = 0; j < params.obstacle_number; j++ )
+        {
+            Obstacle *obs = obstacles[j];
+            Vector2f obs_pos = obs->position;
+            
+            float distance_to_obs = sqrt( pow( agent_pos.x - obs_pos.x, 2 ) + pow( agent_pos.y - obs_pos.y, 2 ) );
+            distance_to_obs -= obs->radius;
+            
+            if ( !agent->collided &&
+                 distance_to_obs <= obs->radius &&
+                 fabs( agent_pos.x - obs_pos.x ) <= obs->radius &&
+                 fabs( agent_pos.y - obs_pos.y ) <= obs->radius )
+            {
+                agent->collided = true;
+                memcpy( agent->color, agent_color_coll, 3 * sizeof( float ) );
+                
+                ++stats.collided;
+            }
+        }
+    }
+    
+    // move all agents in lock step
+    for ( i = 0; i < params.agent_number; i++ )
+    {
+        agents[i]->velocity.x = agents[i]->n_velocity.x;
+        agents[i]->velocity.y = agents[i]->n_velocity.y;
+        
+        agents[i]->position.x = agents[i]->n_position.x;
+        agents[i]->position.y = agents[i]->n_position.y;
+    }
+    
+    ++stats.time_step;
 }
 
 /*************************** Calculate P(y|p) by Dr. A-S formula ************************/
 
 double approximation( double a, double b, double ( *func ) ( double ) )
 {
-	double c = 0.5 * ( b - a );
-	double d = 0.5 * ( b + a );
+    double c = 0.5 * ( b - a );
+    double d = 0.5 * ( b + a );
 
-	return c * ( ( 5.0 / 9.0 ) * func( c * ( -( sqrt( 3.0 / 5.0 ) ) ) + d ) +
-		   ( 8.0 / 9.0 ) * func( d ) + ( 5.0 / 9.0 ) * func( c * sqrt ( 3.0 / 5.0 ) + d ) );
+    return c * ( ( 5.0 / 9.0 ) * func( c * ( -( sqrt( 3.0 / 5.0 ) ) ) + d ) +
+           ( 8.0 / 9.0 ) * func( d ) + ( 5.0 / 9.0 ) * func( c * sqrt ( 3.0 / 5.0 ) + d ) );
 }
 
 double gaussian_quadrature( double a, double b, int n, double ( *func ) ( double ) )
 {
-	double step = ( a + b ) / n;
-	double upper = a + step;
-	double lower = a;
-	double sum = 0;
+    double step = ( a + b ) / n;
+    double upper = a + step;
+    double lower = a;
+    double sum = 0;
 
-	int i;
+    int i;
    
-	for ( i = 0; i < n; i++ )
-	{
-		double temp = approximation( lower, upper, func );
+    for ( i = 0; i < n; i++ )
+    {
+        double temp = approximation( lower, upper, func );
 
-		lower = upper;
-		upper += step;
+        lower = upper;
+        upper += step;
 
-		sum += temp;
-	}
+        sum += temp;
+    }
 
-	return ( sum > 1.0 ) ? 1.0 : sum; 
+    return ( sum > 1.0 ) ? 1.0 : sum; 
 }
 
 double gammaln( double xx )
 {
-	int j;
-	double x, y, tmp, ser;
-	static double cof[6] = { 76.18009172947146,     -86.50532032941677,
-	                         24.01409824083091,     -1.231739572450155,
-	                         0.1208650973866179e-2, -0.5395239384953e-5 };
-	
-	y = x = xx;
-	tmp = x + 5.5;
-	tmp -= ( x + 0.5 ) * log( tmp );
-	ser = 1.000000000190015;
-	
-	for ( j = 0; j <= 5; j++ )
-	{
-		ser += cof[j] / ++y;
-	}
-	
-	return -tmp + log( 2.5066282746310005 * ser / x );
+    int j;
+    double x, y, tmp, ser;
+    static double cof[6] = { 76.18009172947146,     -86.50532032941677,
+                             24.01409824083091,     -1.231739572450155,
+                             0.1208650973866179e-2, -0.5395239384953e-5 };
+    
+    y = x = xx;
+    tmp = x + 5.5;
+    tmp -= ( x + 0.5 ) * log( tmp );
+    ser = 1.000000000190015;
+    
+    for ( j = 0; j <= 5; j++ )
+    {
+        ser += cof[j] / ++y;
+    }
+    
+    return -tmp + log( 2.5066282746310005 * ser / x );
 }
     
 double beta_function( double z, double w )
 {
-	return exp( gammaln( z ) + gammaln( w ) - gammaln( z + w ) );
+    return exp( gammaln( z ) + gammaln( w ) - gammaln( z + w ) );
 }
 
 double incomplete_beta( double t )
 {
-	int y = yy;
-	int n = nn;
-	
-	return pow( t, y - 1 ) * pow( 1 - t, n - y );
+    int y = yy;
+    int n = nn;
+    
+    return pow( t, y - 1 ) * pow( 1 - t, n - y );
 }
 
 double f( double p )
 {
-	double a = alpha;
-	double b = beta;
-	double pHat = ppHat;
-	int y = yy;
-	int n = nn;
-	int k = kk;
-	
-	double r = k * pHat + a;
-	double s = k * ( 1 - pHat ) + b;
-	
-	double b1 = beta_function( r, s );
-	double b2 = beta_function( y, n - y + 1 );
-	double bb = b1 * b2;
-	
-	double C = pow( bb, -1 );
+    double a = alpha;
+    double b = beta;
+    double pHat = ppHat;
+    int y = yy;
+    int n = nn;
+    int k = kk;
+    
+    double r = k * pHat + a;
+    double s = k * ( 1 - pHat ) + b;
+    
+    double b1 = beta_function( r, s );
+    double b2 = beta_function( y, n - y + 1 );
+    double bb = b1 * b2;
+    
+    double C = pow( bb, -1 );
 
-	if ( isinf( C ) == 1 ) { C = DBL_MAX; }
-	else if ( isinf( C ) == -1 ) { C = DBL_MIN; }
-	
-	return C * pow( p, r - 1 ) * pow( 1 - p, s - 1 ) * gaussian_quadrature( 0.0, p, 100, incomplete_beta );
+    if ( isinf( C ) == 1 ) { C = DBL_MAX; }
+    else if ( isinf( C ) == -1 ) { C = DBL_MIN; }
+    
+    return C * pow( p, r - 1 ) * pow( 1 - p, s - 1 ) * gaussian_quadrature( 0.0, p, 100, incomplete_beta );
 }
 
 /****************************************************************************************/
 
 void draw_string( char *s )
 {
-	int i;
-	
-	for ( i = 0; i < strlen( s ); i++ )
-	{
-		glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
-	}
+    int i;
+    
+    for ( i = 0; i < strlen( s ); i++ )
+    {
+        glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
+    }
 }
 
 inline void draw_goal( Goal *goal )
 {
-	float x1 = goal->position.x - goal->width / 2;
-	float y1 = goal->position.y + goal->width / 2;
-	float x2 = goal->position.x + goal->width / 2;
-	float y2 = goal->position.y - goal->width / 2;
+    float x1 = goal->position.x - goal->width / 2;
+    float y1 = goal->position.y + goal->width / 2;
+    float x2 = goal->position.x + goal->width / 2;
+    float y2 = goal->position.y - goal->width / 2;
 
-	glColor3fv( goal->color );
-	glRectf( x1, y1, x2, y2 );
+    glColor3fv( goal->color );
+    glRectf( x1, y1, x2, y2 );
 }
 
 inline void draw_agent( Agent *agent )
 {
-	if ( agent->position.x >= 0.0f && agent->position.y >= 0.0f )
-	{
-		glPointSize( agent->radius );
-		glColor3fv( agent->color );
-	
-		glBegin( GL_POINTS );
-			glVertex2f( agent->position.x, agent->position.y );
-		glEnd();
-	}
+    if ( agent->position.x >= 0.0f && agent->position.y >= 0.0f )
+    {
+        glPointSize( agent->radius );
+        glColor3fv( agent->color );
+    
+        glBegin( GL_POINTS );
+            glVertex2f( agent->position.x, agent->position.y );
+        glEnd();
+    }
+}
+
+inline void draw_agent_connectivity( void )
+{
+    int i, j;
+    
+    glColor3fv( agent_color_conn );
+
+    for ( i = 0; i < params.agent_number; i++ )
+    {
+        Agent *a1 = agents[i];
+        Vector2f a1_pos = a1->position;
+
+        for ( j = i; j < params.agent_number; j++ )
+        {
+            Agent *a2 = agents[j];
+            Vector2f a2_pos = a2->position;
+            
+            float distance = sqrt( pow( a1_pos.x - a2_pos.x, 2 ) + pow( a1_pos.y - a2_pos.y, 2 ) );
+
+            if ( distance <= params.range_coefficient * params.R )
+            {
+                glBegin( GL_LINES );
+                    glVertex2f( a1_pos.x, a1_pos.y );
+                    glVertex2f( a2_pos.x, a2_pos.y );
+                glEnd();
+            }
+        }
+    }
 }
 
 inline void draw_obstacle( Obstacle *obstacle )
 {
-	glColor3fv( obstacle->color );
+    glColor3fv( obstacle->color );
 
-	glPushMatrix();
-		glTranslatef( obstacle->position.x, obstacle->position.y, 0.0f );
-		glutSolidSphere( obstacle->radius, 20, 20 );
-	glPopMatrix();
+    glPushMatrix();
+        glTranslatef( obstacle->position.x, obstacle->position.y, 0.0f );
+        glutSolidSphere( obstacle->radius, 20, 20 );
+    glPopMatrix();
 }
 
 inline void draw_params_stats( void )
 {
-	// Draw simulation parameters on screen
-	
-	char label[100];
-	int line = 1;
-	int line_offset = 13;
-	int screen_offset_x = 10 - stats_area_width;
-	int screen_offset_y = 10;
-	
-	glColor3f( 0.7f, 0.0f, 0.6f );
-	
-	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - line * line_offset );
-	sprintf( label, "Agent #: %d", params.agent_number );
-	draw_string( label );
-	
-	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-	sprintf( label, "Obstacle #: %d", params.obstacle_number );
-	draw_string( label );
+    // Draw simulation parameters on screen
+    
+    char label[100];
+    int line = 1;
+    int line_offset = 13;
+    int screen_offset_x = 10 - stats_area_width;
+    int screen_offset_y = 10;
+    
+    glColor3f( 0.7f, 0.0f, 0.6f );
+    
+    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - line * line_offset );
+    sprintf( label, "Agent #: %d", params.agent_number );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+    sprintf( label, "Obstacle #: %d", params.obstacle_number );
+    draw_string( label );
 
-	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-	sprintf( label, "Timer Delay: %d", params.timer_delay_ms );
-	draw_string( label );
-	
-	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-	sprintf( label, "Max Velocity: %.2f", params.max_V );
-	draw_string( label );
-	
-	++line;
-	
-	switch ( params.force_law )	
-	{
-		case NEWTONIAN:
-			glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-			sprintf( label, "G Force A-A: %.2f", params.G_agent_agent );
-			draw_string( label );
-			
-			glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-			sprintf( label, "G Force A-O: %.2f", params.G_agent_obstacle );
-			draw_string( label );
-			
-			glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-			sprintf( label, "G Force A-G: %.2f", params.G_agent_goal );
-			draw_string( label );
-			
-			glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-			sprintf( label, "p Power A-A: %.2f", params.p_agent_agent );
-			draw_string( label );
-			
-			glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-			sprintf( label, "p Power A-O: %.2f", params.p_agent_obstacle );
-			draw_string( label );
-			
-			glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-			sprintf( label, "p Power A-G: %.2f", params.p_agent_goal );
-			draw_string( label );
-			break;
-			
-		case LENNARD_JONES:
-			break;
-	}
-	
-	++line;
-	
-	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-	sprintf( label, "Reached Goal #: %d", stats.reached_goal );
-	draw_string( label );
-	
-	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-	sprintf( label, "Reach Ratio: %.2f%%", stats.reach_ratio * 100.0f );
-	draw_string( label );
-	
-	glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-	sprintf( label, "Time Step: %d", stats.time_step );
-	draw_string( label );
-	
-	glColor3f( 0.0f, 0.0f, 0.0f );
-	
-	glBegin( GL_LINES );
-		glVertex2f( 0.0f, 0.0f );
-		glVertex2f( 0.0f, params.world_height );
-	glEnd();
+    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+    sprintf( label, "Timer Delay: %d", params.timer_delay_ms );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+    sprintf( label, "Max Velocity: %.2f", params.max_V );
+    draw_string( label );
+    
+    ++line;
+    
+    switch ( params.force_law )    
+    {
+        case NEWTONIAN:
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "G Force A-A: %.2f", params.G_agent_agent );
+            draw_string( label );
+            
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "G Force A-O: %.2f", params.G_agent_obstacle );
+            draw_string( label );
+            
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "G Force A-G: %.2f", params.G_agent_goal );
+            draw_string( label );
+            
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "p Power A-A: %.2f", params.p_agent_agent );
+            draw_string( label );
+            
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "p Power A-O: %.2f", params.p_agent_obstacle );
+            draw_string( label );
+            
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "p Power A-G: %.2f", params.p_agent_goal );
+            draw_string( label );
+            break;
+            
+        case LENNARD_JONES:
+            break;
+    }
+    
+    ++line;
+    
+    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+    sprintf( label, "Reached Goal #: %d", stats.reached_goal );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+    sprintf( label, "Reach Ratio: %.2f%%", stats.reach_ratio * 100.0f );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+    sprintf( label, "Collisions: %d", stats.collided );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+    sprintf( label, "Time Step: %d", stats.time_step );
+    draw_string( label );
+    
+    glColor3f( 0.0f, 0.0f, 0.0f );
+    
+    glBegin( GL_LINES );
+        glVertex2f( 0.0f, 0.0f );
+        glVertex2f( 0.0f, params.world_height );
+    glEnd();
 }
 
 inline void draw_instructions( void )
 {
-	// Draw simulation instructions (help)
-	
-	char label[100];
-	int line = 1;
-	int line_offset = 13;
-	int screen_offset = 10;
-	
-	glColor3f( 0.0f, 0.0f, 0.0f );
-	
-	glRasterPos2i( screen_offset, -3 * screen_offset - line * line_offset );
-	sprintf( label, "'S' -- Start/Stop the simualtion" );
-	draw_string( label );
-	
-	glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
-	sprintf( label, "'R' -- Restart the simulation" );
-	draw_string( label );
+    // Draw simulation instructions (help)
+    
+    char label[100];
+    int line = 1;
+    int line_offset = 13;
+    int screen_offset = 10;
+    
+    glColor3f( 0.0f, 0.0f, 0.0f );
+    
+    glRasterPos2i( screen_offset, -3 * screen_offset - line * line_offset );
+    sprintf( label, "'S' -- Start/Stop the simualtion" );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'R' -- Restart the simulation" );
+    draw_string( label );
 
-	glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
-	sprintf( label, "'PageUp' -- Increase timer delay (slower)" );
-	draw_string( label );
+    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'PageUp' -- Increase timer delay (slower)" );
+    draw_string( label );
 
-	glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
-	sprintf( label, "'PageDown' -- Decrease timer delay (faster)" );
-	draw_string( label );
-	
-	line = 1;
-	
-	glRasterPos2i( screen_offset + 300, -3 * screen_offset - line * line_offset );
-	sprintf( label, "'I' -- Change object increment/decrement" );
-	draw_string( label );
-	
-	glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
-	sprintf( label, "'A' -- Selects agent # to be incremented/decremented" );
-	draw_string( label );
-	
-	glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
-	sprintf( label, "'UP' -- Increments # of objects" );
-	draw_string( label );
-	
-	glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
-	sprintf( label, "'DOWN' -- Decrements # of objects" );
-	draw_string( label );
-
-	
-	if ( running )
-	{
-		glColor3f( 0.0f, 0.5f, 0.0f );
-		glRasterPos2i( params.world_width - 70, -help_area_height + line_offset );
-		sprintf( label, "RUNNING" );
-		draw_string( label );
-	}
-	else
-	{
-		glColor3f( 0.5f, 0.0f, 0.0f );
-		glRasterPos2i( params.world_width - 70, -help_area_height + line_offset );
-		sprintf( label, "STOPPED" );
-		draw_string( label );
-	}
-	
-	glColor3f( 0.0f, 0.0f, 0.0f );
-	glRasterPos2i( params.world_width - 170, -help_area_height + line_offset );
-	sprintf( label, "%s [%3d]", selections[cur_sel_index], increments[cur_inc_index] );
-	draw_string( label );
-	
-	glBegin( GL_LINES );
-		glVertex2f( 0.0f, 0.0f );
-		glVertex2f( params.world_width, 0.0f );
-	glEnd();
+    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'PageDown' -- Decrease timer delay (faster)" );
+    draw_string( label );
+    
+    line = 1;
+    
+    glRasterPos2i( screen_offset + 300, -3 * screen_offset - line * line_offset );
+    sprintf( label, "'I' -- Change object increment/decrement" );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'A' -- Selects agent # to be incremented/decremented" );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'UP' -- Increments # of objects" );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'DOWN' -- Decrements # of objects" );
+    draw_string( label );
+    
+    if ( running )
+    {
+        glColor3f( 0.0f, 0.5f, 0.0f );
+        glRasterPos2i( params.world_width - 70, -help_area_height + line_offset );
+        sprintf( label, "RUNNING" );
+        draw_string( label );
+    }
+    else
+    {
+        glColor3f( 0.5f, 0.0f, 0.0f );
+        glRasterPos2i( params.world_width - 70, -help_area_height + line_offset );
+        sprintf( label, "STOPPED" );
+        draw_string( label );
+    }
+    
+    glColor3f( 0.0f, 0.0f, 0.0f );
+    glRasterPos2i( params.world_width - 170, -help_area_height + line_offset );
+    sprintf( label, "%s [%3d]", selections[cur_sel_index], increments[cur_inc_index] );
+    draw_string( label );
+    
+    glBegin( GL_LINES );
+        glVertex2f( 0.0f, 0.0f );
+        glVertex2f( params.world_width, 0.0f );
+    glEnd();
 }
 
 void draw_all( void )
 {
-	int i;
-	
-	glClear( GL_COLOR_BUFFER_BIT );
-	
-	draw_goal( goal );
-	
-	for( i = 0; i < params.agent_number; i++ )
-	{
-		draw_agent( agents[i] );
-	}
-	
-	for ( i = 0; i < params.obstacle_number; i++ )
-	{
-		draw_obstacle( obstacles[i] );
-	}
-	
-	draw_params_stats();
-	draw_instructions();
+    int i;
+    
+    glClear( GL_COLOR_BUFFER_BIT );
+    
+    draw_goal( goal );
+    
+    for ( i = 0; i < params.obstacle_number; i++ )
+    {
+        draw_obstacle( obstacles[i] );
+    }
+    
+    if ( show_connectivity ) { draw_agent_connectivity(); }
 
-	glutSwapBuffers();
+    for( i = 0; i < params.agent_number; i++ )
+    {
+        draw_agent( agents[i] );
+    }
+    
+    draw_params_stats();
+    draw_instructions();
+
+    glutSwapBuffers();
 }
 
 void process_normal_keys( unsigned char key, int x, int y )
 {
-	if ( key == 's' || key == 'S' )
-	{
-		running = !running;
-		glutPostRedisplay();
-	}
-	else if ( key == 'r' || key == 'R' )
-	{
-		restart_simulation();
-		glutPostRedisplay();
-	}
-	else if ( key == 'i' || key == 'I' )
-	{
-		++cur_inc_index;
-		cur_inc_index %= 6;
-		glutPostRedisplay();
-	}
-	else if ( key == 'a' || key == 'A' )
-	{
-		cur_sel_index = 0;		// AGENT
-		glutPostRedisplay();
-	}
-	else if ( key == 'o' || key == 'O' )
-	{
-		cur_sel_index = 1;		// OBSTACLE
-		glutPostRedisplay();
-	}
-	else if ( key == 'd' )
-	{
-		if ( save_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
-		glutPostRedisplay();
-	}
-	else if ( key == 'D' )
-	{
+    if ( key == 's' || key == 'S' )
+    {
+        running = !running;
+        glutPostRedisplay();
+    }
+    else if ( key == 'r' || key == 'R' )
+    {
+        restart_simulation();
+        glutPostRedisplay();
+    }
+    else if ( key == 'i' || key == 'I' )
+    {
+        ++cur_inc_index;
+        cur_inc_index %= 6;
+        glutPostRedisplay();
+    }
+    else if ( key == 'a' || key == 'A' )
+    {
+        cur_sel_index = 0;        // AGENT
+        glutPostRedisplay();
+    }
+    else if ( key == 'o' || key == 'O' )
+    {
+        cur_sel_index = 1;        // OBSTACLE
+        glutPostRedisplay();
+    }
+    else if ( key == 'd' )
+    {
+        if ( save_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
+        glutPostRedisplay();
+    }
+    else if ( key == 'D' )
+    {
         if ( !params.initialize_from_file )
         {
             params.initialize_from_file = true;
@@ -2083,15 +2149,15 @@ void process_normal_keys( unsigned char key, int x, int y )
         {
             if ( save_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
         }
-		glutPostRedisplay();
-	}
-	else if ( key == 'l' )
-	{
-		if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
-		glutPostRedisplay();
-	}
-	else if ( key == 'L' )
-	{
+        glutPostRedisplay();
+    }
+    else if ( key == 'l' )
+    {
+        if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
+        glutPostRedisplay();
+    }
+    else if ( key == 'L' )
+    {
         if ( !params.initialize_from_file )
         {
             params.initialize_from_file = true;
@@ -2102,246 +2168,251 @@ void process_normal_keys( unsigned char key, int x, int y )
         {
             if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
         }
-		glutPostRedisplay();
-	}
-	else if ( key == 'q' || key == 'Q' )
-	{
-		free_memory();
-		exit( EXIT_SUCCESS );
-	}
+        glutPostRedisplay();
+    }
+    else if ( key == 'c' || key == 'C')
+    {
+        show_connectivity = show_connectivity ? false : true;
+        glutPostRedisplay();
+    }
+    else if ( key == 'q' || key == 'Q' )
+    {
+        free_memory();
+        exit( EXIT_SUCCESS );
+    }
 }
 
 void process_special_keys( int key, int x, int y )
 {
-	switch ( key )
-	{
-		case GLUT_KEY_PAGE_UP:
-			++params.timer_delay_ms;
-			glutPostRedisplay();
-			break;
-			
-		case GLUT_KEY_PAGE_DOWN:
-			if ( params.timer_delay_ms > 1 )
-			{
-				--params.timer_delay_ms;
-				glutPostRedisplay();
-			}
-			break;
-		
-		case GLUT_KEY_UP:
-			if ( cur_sel_index == 0 )
-			{
-				if ( change_agent_number( params.agent_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
-			}
-			else if ( cur_sel_index == 1 )
-			{
-				if ( change_obstacle_number( params.obstacle_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
-			}
-			else
-			{
-				printf( "Unknown object index [%d]", cur_sel_index );
-			}
-			glutPostRedisplay();
-			break;
-			
-		case GLUT_KEY_DOWN:
-			if ( cur_sel_index == 0 )
-			{
-				if ( change_agent_number( params.agent_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
-			}
-			else if ( cur_sel_index == 1 )
-			{
-				if ( change_obstacle_number( params.obstacle_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
-			}
-			else
-			{
-				printf( "Unknown object index [%d]", cur_sel_index );
-			}
-			glutPostRedisplay();
-			break;
-	}
+    switch ( key )
+    {
+        case GLUT_KEY_PAGE_UP:
+            ++params.timer_delay_ms;
+            glutPostRedisplay();
+            break;
+            
+        case GLUT_KEY_PAGE_DOWN:
+            if ( params.timer_delay_ms > 1 )
+            {
+                --params.timer_delay_ms;
+                glutPostRedisplay();
+            }
+            break;
+        
+        case GLUT_KEY_UP:
+            if ( cur_sel_index == 0 )
+            {
+                if ( change_agent_number( params.agent_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+            }
+            else if ( cur_sel_index == 1 )
+            {
+                if ( change_obstacle_number( params.obstacle_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+            }
+            else
+            {
+                printf( "Unknown object index [%d]", cur_sel_index );
+            }
+            glutPostRedisplay();
+            break;
+            
+        case GLUT_KEY_DOWN:
+            if ( cur_sel_index == 0 )
+            {
+                if ( change_agent_number( params.agent_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+            }
+            else if ( cur_sel_index == 1 )
+            {
+                if ( change_obstacle_number( params.obstacle_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+            }
+            else
+            {
+                printf( "Unknown object index [%d]", cur_sel_index );
+            }
+            glutPostRedisplay();
+            break;
+    }
 }
 
 void process_mouse_buttons( int button, int state, int x, int y )
 {
-	if ( state == GLUT_DOWN )
-	{
-		if ( button == GLUT_LEFT_BUTTON )
-		{
-			x = x - stats_area_width;
-			y = params.world_height - y;
-			
-			int i;
-			
-			for ( i = 0; i < params.obstacle_number; i++ )
-			{
-				int thresh = ceil( obstacles[i]->radius / 2.0f );
-				
-				float x_o = obstacles[i]->position.x;
-				float y_o = obstacles[i]->position.y;
-				 
-				if ( ( x >= x_o - thresh ) && ( x <= x_o + thresh ) &&
-					 ( y >= y_o - thresh ) && ( y <= y_o + thresh ) )
-				{
-					inside_window = true;
-					selected_obstacle_id = i;
-					selection_active = true;
-					break;
-				}
-			}
-		}
-	}
-	else
-	{
-		inside_window = false;
-		selected_obstacle_id = -1;
-		selection_active = false;
-	}
+    if ( state == GLUT_DOWN )
+    {
+        if ( button == GLUT_LEFT_BUTTON )
+        {
+            x = x - stats_area_width;
+            y = params.world_height - y;
+            
+            int i;
+            
+            for ( i = 0; i < params.obstacle_number; i++ )
+            {
+                int thresh = ceil( obstacles[i]->radius / 2.0f );
+                
+                float x_o = obstacles[i]->position.x;
+                float y_o = obstacles[i]->position.y;
+                 
+                if ( ( x >= x_o - thresh ) && ( x <= x_o + thresh ) &&
+                     ( y >= y_o - thresh ) && ( y <= y_o + thresh ) )
+                {
+                    inside_window = true;
+                    selected_obstacle_id = i;
+                    selection_active = true;
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+        inside_window = false;
+        selected_obstacle_id = -1;
+        selection_active = false;
+    }
 }
 
 void process_mouse_entry( int state )
 {
-	if ( state == GLUT_LEFT ) { inside_window = false; }
-	else { inside_window = true; }
+    if ( state == GLUT_LEFT ) { inside_window = false; }
+    else { inside_window = true; }
 }
 
 void process_mouse_active_motion( int x, int y )
 {
-	if ( selection_active && selected_obstacle_id != -1 && inside_window )
-	{
-		obstacles[selected_obstacle_id]->position.x = x - stats_area_width;
-		obstacles[selected_obstacle_id]->position.y = params.world_height - y ;
-		
-		glutPostRedisplay();
-	}
+    if ( selection_active && selected_obstacle_id != -1 && inside_window )
+    {
+        obstacles[selected_obstacle_id]->position.x = x - stats_area_width;
+        obstacles[selected_obstacle_id]->position.y = params.world_height - y ;
+        
+        glutPostRedisplay();
+    }
 }
 
 void run_gui( int time )
 {
-	if ( running )
-	{
-		move_agents();
-		glutPostRedisplay();
-	}
-	
-	glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
+    if ( running )
+    {
+        move_agents();
+        glutPostRedisplay();
+    }
+    
+    glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
 }
 
 void update_reach(void)
 {
-	int a1, a2;
-	
-	for ( a1 = 0; a1 < params.agent_number; a1++ )
-	{
-		Agent *agent1 = agents[a1];
-		Vector2f agent1_pos = agent1->position;
-	
-		if ( !agent1->goal_reached )
-		{
-			for ( a2 = 0; a2 < params.agent_number; a2++ )
-			{
-				Agent *agent2 = agents[a2];
-				Vector2f agent2_pos = agent2->position;
-	
-				if ( agent2->goal_reached )
-				{
-					double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
-	
-					if ( distance <= params.range_coefficient * params.R )
-					{
-						agent1->goal_reached = true;
-						++stats.reached_goal;
-						stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-						break;
-					}
-				}
-			}
-		}
-	}
+    int a1, a2;
+    
+    for ( a1 = 0; a1 < params.agent_number; a1++ )
+    {
+        Agent *agent1 = agents[a1];
+        Vector2f agent1_pos = agent1->position;
+    
+        if ( !agent1->goal_reached )
+        {
+            for ( a2 = 0; a2 < params.agent_number; a2++ )
+            {
+                Agent *agent2 = agents[a2];
+                Vector2f agent2_pos = agent2->position;
+    
+                if ( agent2->goal_reached )
+                {
+                    double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
+    
+                    if ( distance <= params.range_coefficient * params.R )
+                    {
+                        agent1->goal_reached = true;
+                        ++stats.reached_goal;
+                        stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void run_cli( void )
 {
-	char *environments[3] = { "nf_p_01.dat", "nf_p_05.dat", "nf_p_09.dat" };
+    char *environments[3] = { "nf_p_01.dat", "nf_p_05.dat", "nf_p_09.dat" };
     double env_probs[3] = { 0.12, 0.55, 0.89 };
-	
-	// How accurate is our integral approximation
-	int interval_number = 100;
-	
-	int e, n;
+    
+    // How accurate is our integral approximation
+    int interval_number = 100;
+    
+    int e, n;
 
-	for ( e = 0; e < 3; e++ )
-	{
+    for ( e = 0; e < 3; e++ )
+    {
         if ( load_scenario( environments[e] ) == -1 ) { exit( EXIT_FAILURE ); }
 
-		FILE *p_results;
-		p_results = fopen( params.results_filename, "w+" );
+        FILE *p_results;
+        p_results = fopen( params.results_filename, "w+" );
 
-		if ( p_results == NULL )
-		{
-			printf( "Error opening file [%s]!", params.results_filename );
-			exit( EXIT_FAILURE );
-		}
-		
-		output_simulation_parameters( p_results );
-		fflush( p_results );
+        if ( p_results == NULL )
+        {
+            printf( "Error opening file [%s]!", params.results_filename );
+            exit( EXIT_FAILURE );
+        }
+        
+        output_simulation_parameters( p_results );
+        fflush( p_results );
 
-		int mean_diff_P[4] = { 0 };
-		int mean_diff_P_hat[4] = { 0 };
-		int means_overlap[2] = { 0 };
-		
-		int index = 0;
-		int counter = 1;
+        int mean_diff_P[4] = { 0 };
+        int mean_diff_P_hat[4] = { 0 };
+        int means_overlap[2] = { 0 };
+        
+        int index = 0;
+        int counter = 1;
 
-		for ( n = 0; n < params.n_number; n++ )
-		{
-			params.k_array[params.k_number] = params.n_array[n];
-			nn = params.n_array[n];
-			change_agent_number( params.n_array[n] );
-			
-			int i, j;
-			
-			/***************** Calculate ground truth - big_P_prime *********************************/
-			printf( "Calculating P' (ground truth from simulation)\n" );
-			
-			double big_P_prime[params.n_array[n] + 1];
-			double increment = 1.0 / params.runs_number;
-			
-			for ( i = 0; i <= params.n_array[n]; i++ )
-			{
-				big_P_prime[i] = 0;
-			}
-			
-			double small_p = 0.0;
-	
-	        srand( ( unsigned int ) time( NULL ) );
-	        
-			for ( i = 0; i < params.runs_number; i++ )
-			{
+        for ( n = 0; n < params.n_number; n++ )
+        {
+            params.k_array[params.k_number] = params.n_array[n];
+            nn = params.n_array[n];
+            change_agent_number( params.n_array[n] );
+            
+            int i, j;
+            
+            /***************** Calculate ground truth - big_P_prime *********************************/
+            printf( "Calculating P' (ground truth from simulation)\n" );
+            
+            double big_P_prime[params.n_array[n] + 1];
+            double increment = 1.0 / params.runs_number;
+            
+            for ( i = 0; i <= params.n_array[n]; i++ )
+            {
+                big_P_prime[i] = 0;
+            }
+            
+            double small_p = 0.0;
+    
+            srand( ( unsigned int ) time( NULL ) );
+            
+            for ( i = 0; i < params.runs_number; i++ )
+            {
                 if ( params.run_simulation )
                 {
                     restart_simulation();
-				
-		            int agent;
-		        
-		            for ( agent = 0; agent < params.agent_number; agent++ )
-		            {
-		                deploy_agent( agents[agent] );
-		            }
-		        
-		            while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-		            {
-		                move_agents();
-		            }
+                
+                    int agent;
+                
+                    for ( agent = 0; agent < params.agent_number; agent++ )
+                    {
+                        deploy_agent( agents[agent] );
+                    }
+                
+                    while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
+                    {
+                        move_agents();
+                    }
 
-		            if ( params.enable_agent_agent_f )
-		            {
-		        	    update_reach();
-		            }
+                    if ( params.enable_agent_agent_f )
+                    {
+                        update_reach();
+                    }
                 }
                 else
                 {
-				    reset_statistics();
+                    reset_statistics();
 
                     for ( j = 0; j < params.agent_number; j++ )
                     {
@@ -2351,87 +2422,87 @@ void run_cli( void )
                 
                     stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
                 }
-		        
-		        for ( j = 0; j <= stats.reached_goal; j++ )
-		        {
-		        	big_P_prime[j] += increment;
-		        }
-		        
-		        small_p += stats.reach_ratio;
-		        
-		        if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
-			}
-			
-			small_p /= params.runs_number;
-			
-			printf( "P' calculation finished\n\n\n" );
-			/*******************************************************************************************/
-			
-			int ab, k, y, l;
-			
-			for ( ab = 0; ab < params.a_b_number; ab++ )
-			{
-				alpha = params.alpha_array[ab];
-				beta = params.beta_array[ab];
-	
-				for ( k = 0; k <= params.k_number; k++ )
-				{
-					change_agent_number( params.k_array[k] );
-					kk = params.k_array[k];
-					
-					fprintf( p_results, "#index %d, small_p = %f, n = %d, k = %d, alpha = %.2f, beta = %.2f\n", index, small_p, nn, kk, alpha, beta );
-					fprintf( p_results, "#n\t\t\tk\t\t\ty\t\t\tbig_P_mean\t\t\tbig_P_prime\t\t\tbig_P_hat_mean\t\t\terror1\t\t\terror2" );
-					fprintf( p_results, "\t\t\tbig_P_std\t\t\tbig_P_hat_std\t\t\tbig_P_var\t\t\tbig_P_hat_var\n" );
-					
-					double *big_P_array;
-					double *big_P_hat_array;
+                
+                for ( j = 0; j <= stats.reached_goal; j++ )
+                {
+                    big_P_prime[j] += increment;
+                }
+                
+                small_p += stats.reach_ratio;
+                
+                if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
+            }
+            
+            small_p /= params.runs_number;
+            
+            printf( "P' calculation finished\n\n\n" );
+            /*******************************************************************************************/
+            
+            int ab, k, y, l;
+            
+            for ( ab = 0; ab < params.a_b_number; ab++ )
+            {
+                alpha = params.alpha_array[ab];
+                beta = params.beta_array[ab];
+    
+                for ( k = 0; k <= params.k_number; k++ )
+                {
+                    change_agent_number( params.k_array[k] );
+                    kk = params.k_array[k];
+                    
+                    fprintf( p_results, "#index %d, small_p = %f, n = %d, k = %d, alpha = %.2f, beta = %.2f\n", index, small_p, nn, kk, alpha, beta );
+                    fprintf( p_results, "#n\t\t\tk\t\t\ty\t\t\tbig_P_mean\t\t\tbig_P_prime\t\t\tbig_P_hat_mean\t\t\terror1\t\t\terror2" );
+                    fprintf( p_results, "\t\t\tbig_P_std\t\t\tbig_P_hat_std\t\t\tbig_P_var\t\t\tbig_P_hat_var\n" );
+                    
+                    double *big_P_array;
+                    double *big_P_hat_array;
 
-					big_P_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
-					big_P_hat_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
+                    big_P_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
+                    big_P_hat_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
 
-					if ( big_P_array == NULL || big_P_hat_array == NULL )
-					{
-						printf( "Error allocating memory for big_P_array or big_P_hat_array!" );
-						exit( EXIT_FAILURE );
-					}
-					
-					double big_P_mean[nn + 1];
-					double big_P_hat_mean[nn + 1];
-					
-					for ( j = 0; j <= nn; j++ )
-					{
-						big_P_mean[j] = 0.0;
-						big_P_hat_mean[j] = 0.0;
-					}
-					//double phat = 0.0;
-			        srand( ( unsigned int ) time( NULL ) );
-			        
-					for ( j = 0; j < params.runs_number; j++ )
-					{
+                    if ( big_P_array == NULL || big_P_hat_array == NULL )
+                    {
+                        printf( "Error allocating memory for big_P_array or big_P_hat_array!" );
+                        exit( EXIT_FAILURE );
+                    }
+                    
+                    double big_P_mean[nn + 1];
+                    double big_P_hat_mean[nn + 1];
+                    
+                    for ( j = 0; j <= nn; j++ )
+                    {
+                        big_P_mean[j] = 0.0;
+                        big_P_hat_mean[j] = 0.0;
+                    }
+                    //double phat = 0.0;
+                    srand( ( unsigned int ) time( NULL ) );
+                    
+                    for ( j = 0; j < params.runs_number; j++ )
+                    {
                         if ( params.run_simulation )
                         {
                             restart_simulation();
-						
-				            int agent;
-				        
-				            for ( agent = 0; agent < params.agent_number; agent++ )
-				            {
-				                deploy_agent( agents[agent] );
-				            }
-				        
-				            while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-				            {
-				                move_agents();
-				            }
-				        
-				            if ( params.enable_agent_agent_f )
-				            {
-				        	    update_reach();
-				            }
+                        
+                            int agent;
+                        
+                            for ( agent = 0; agent < params.agent_number; agent++ )
+                            {
+                                deploy_agent( agents[agent] );
+                            }
+                        
+                            while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
+                            {
+                                move_agents();
+                            }
+                        
+                            if ( params.enable_agent_agent_f )
+                            {
+                                update_reach();
+                            }
                         }
                         else
                         {
-						    reset_statistics();
+                            reset_statistics();
                         
                             int u;
                         
@@ -2444,199 +2515,199 @@ void run_cli( void )
                             stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
                         }
                         
-						for ( y = 1; y <= nn; y++ )
-						{
-							yy = y;
+                        for ( y = 1; y <= nn; y++ )
+                        {
+                            yy = y;
 
-							/***************** Calculate big_P ***************************************************************/
-							double big_P = 0.0;
+                            /***************** Calculate big_P ***************************************************************/
+                            double big_P = 0.0;
 
-							for ( l = y; l <= nn; l++ )
-							{
-								// exp( gammaln( n + 1 ) ) == fac( n )
-								double n_choose_l =  exp( gammaln( nn + 1.0 ) - gammaln( l + 1.0 ) - gammaln( nn - l + 1.0 ) );
-								big_P += n_choose_l * pow( stats.reach_ratio, l ) * pow( 1.0 - stats.reach_ratio, nn - l );
-							}
-							
-							if ( big_P > 1.0 ) { big_P = 1.0; }
-							/*************************************************************************************************/
-							
-							/***************** Calculate big_P_hat ***********************************************************/
-							ppHat = stats.reach_ratio;
-							
-							double big_P_hat = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+                            for ( l = y; l <= nn; l++ )
+                            {
+                                // exp( gammaln( n + 1 ) ) == fac( n )
+                                double n_choose_l =  exp( gammaln( nn + 1.0 ) - gammaln( l + 1.0 ) - gammaln( nn - l + 1.0 ) );
+                                big_P += n_choose_l * pow( stats.reach_ratio, l ) * pow( 1.0 - stats.reach_ratio, nn - l );
+                            }
+                            
+                            if ( big_P > 1.0 ) { big_P = 1.0; }
+                            /*************************************************************************************************/
+                            
+                            /***************** Calculate big_P_hat ***********************************************************/
+                            ppHat = stats.reach_ratio;
+                            
+                            double big_P_hat = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
 
-							if ( big_P_hat > 1.0 ) { big_P_hat = 1.0; }
-							/*************************************************************************************************/
-							
-							big_P_array[y * params.runs_number + j] = big_P;
-							big_P_hat_array[y * params.runs_number + j] = big_P_hat;
-							
-							big_P_mean[y] += big_P / params.runs_number;
-							big_P_hat_mean[y] += big_P_hat / params.runs_number;
-							
-							//printf( "%d\t\t\t%f\t\t\t%f\t\t\t%f\n", j, stats.reach_ratio, big_P, big_P_hat );
-						}
-						
-				        if ( j % 100 == 0 ) { printf( "j = %d, n = %d, k = %d\n", j, params.n_array[n], params.k_array[k] ); }
-					}
-					
-					//printf( "\t\t\t%f\t\t\t%f\t\t\t%f\n", phat, big_P_mean[18], big_P_hat_mean[18] );
-			        
-					for ( y = 1; y <= nn; y++ )
-					{
-						double big_P_sum = 0.0;
-						double big_P_hat_sum = 0.0;
-						
-						for ( j = 0; j < params.runs_number; j++ )
-						{
-							big_P_sum += pow( big_P_array[y * params.runs_number + j] - big_P_mean[y], 2.0 );
-							big_P_hat_sum += pow( big_P_hat_array[y * params.runs_number + j] - big_P_hat_mean[y], 2.0 );
-						}
-						
-						double big_P_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_sum );
-						double big_P_hat_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_hat_sum );
-						
-						double big_P_var = pow( big_P_std_dev, 2.0 );
-						double big_P_hat_var = pow( big_P_hat_std_dev, 2.0 );
-						
-						double error1 = fabs( big_P_hat_mean[y] - big_P_mean[y] );
-						double error2 = fabs( big_P_hat_mean[y] - big_P_prime[y] );
-						
-						fprintf( p_results, "%d\t\t\t%d\t\t\t%d\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f",
-								 params.n_array[n], params.k_array[k], y, big_P_mean[y], big_P_prime[y], big_P_hat_mean[y], error1, error2 );
-						fprintf( p_results, "\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f\n",
-								 big_P_std_dev, big_P_hat_std_dev, big_P_var, big_P_hat_var );
-						
-						// diff_index of 0 = means are within 1 P std deviation
-						int diff_index = floor( error1 / big_P_std_dev );
-						
-						if ( diff_index < 3 ) { ++mean_diff_P[diff_index]; }
-						else { ++mean_diff_P[3]; }
-						
-						// diff_index of 0 = means are within 1 P-hat std deviation
-						diff_index = floor( error1 / big_P_hat_std_dev );
-						
-						if ( diff_index < 3 ) { ++mean_diff_P_hat[diff_index]; }
-						else { ++mean_diff_P_hat[3]; }
-						
-						if ( ( big_P_mean[y] + big_P_std_dev >= big_P_hat_mean[y] + big_P_hat_std_dev &&
-							   big_P_mean[y] - big_P_std_dev <= big_P_hat_mean[y] + big_P_hat_std_dev ) ||
-							 ( big_P_mean[y] + big_P_std_dev <= big_P_hat_mean[y] + big_P_hat_std_dev &&
-							   big_P_mean[y] - big_P_std_dev >= big_P_hat_mean[y] + big_P_hat_std_dev ) )
-						{
-							++means_overlap[0];
-						}
-						else
-						{
-							++means_overlap[1];
-						}
-						
-						++counter;						
-					}
+                            if ( big_P_hat > 1.0 ) { big_P_hat = 1.0; }
+                            /*************************************************************************************************/
+                            
+                            big_P_array[y * params.runs_number + j] = big_P;
+                            big_P_hat_array[y * params.runs_number + j] = big_P_hat;
+                            
+                            big_P_mean[y] += big_P / params.runs_number;
+                            big_P_hat_mean[y] += big_P_hat / params.runs_number;
+                            
+                            //printf( "%d\t\t\t%f\t\t\t%f\t\t\t%f\n", j, stats.reach_ratio, big_P, big_P_hat );
+                        }
+                        
+                        if ( j % 100 == 0 ) { printf( "j = %d, n = %d, k = %d\n", j, params.n_array[n], params.k_array[k] ); }
+                    }
+                    
+                    //printf( "\t\t\t%f\t\t\t%f\t\t\t%f\n", phat, big_P_mean[18], big_P_hat_mean[18] );
+                    
+                    for ( y = 1; y <= nn; y++ )
+                    {
+                        double big_P_sum = 0.0;
+                        double big_P_hat_sum = 0.0;
+                        
+                        for ( j = 0; j < params.runs_number; j++ )
+                        {
+                            big_P_sum += pow( big_P_array[y * params.runs_number + j] - big_P_mean[y], 2.0 );
+                            big_P_hat_sum += pow( big_P_hat_array[y * params.runs_number + j] - big_P_hat_mean[y], 2.0 );
+                        }
+                        
+                        double big_P_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_sum );
+                        double big_P_hat_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_hat_sum );
+                        
+                        double big_P_var = pow( big_P_std_dev, 2.0 );
+                        double big_P_hat_var = pow( big_P_hat_std_dev, 2.0 );
+                        
+                        double error1 = fabs( big_P_hat_mean[y] - big_P_mean[y] );
+                        double error2 = fabs( big_P_hat_mean[y] - big_P_prime[y] );
+                        
+                        fprintf( p_results, "%d\t\t\t%d\t\t\t%d\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f",
+                                 params.n_array[n], params.k_array[k], y, big_P_mean[y], big_P_prime[y], big_P_hat_mean[y], error1, error2 );
+                        fprintf( p_results, "\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f\n",
+                                 big_P_std_dev, big_P_hat_std_dev, big_P_var, big_P_hat_var );
+                        
+                        // diff_index of 0 = means are within 1 P std deviation
+                        int diff_index = floor( error1 / big_P_std_dev );
+                        
+                        if ( diff_index < 3 ) { ++mean_diff_P[diff_index]; }
+                        else { ++mean_diff_P[3]; }
+                        
+                        // diff_index of 0 = means are within 1 P-hat std deviation
+                        diff_index = floor( error1 / big_P_hat_std_dev );
+                        
+                        if ( diff_index < 3 ) { ++mean_diff_P_hat[diff_index]; }
+                        else { ++mean_diff_P_hat[3]; }
+                        
+                        if ( ( big_P_mean[y] + big_P_std_dev >= big_P_hat_mean[y] + big_P_hat_std_dev &&
+                               big_P_mean[y] - big_P_std_dev <= big_P_hat_mean[y] + big_P_hat_std_dev ) ||
+                             ( big_P_mean[y] + big_P_std_dev <= big_P_hat_mean[y] + big_P_hat_std_dev &&
+                               big_P_mean[y] - big_P_std_dev >= big_P_hat_mean[y] + big_P_hat_std_dev ) )
+                        {
+                            ++means_overlap[0];
+                        }
+                        else
+                        {
+                            ++means_overlap[1];
+                        }
+                        
+                        ++counter;                        
+                    }
 
-					fprintf( p_results, "\n\n" );
-					fflush( p_results );
+                    fprintf( p_results, "\n\n" );
+                    fflush( p_results );
 
-					++index;
-				}
-			}
-			
-			for ( j = 0; j < 3; j++ )
-			{
-				printf( "%.2f per cent of the time means are within %d P stdandard deviation(s)\n", ( ( double ) mean_diff_P[j] / ( double ) counter ), j + 1 );
-				printf( "%.2f per cent of the time means are within %d P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[j] / ( double ) counter ), j + 1 );
-			}
-			
-			printf( "%.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
-			printf( "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
-			
-			printf( "\n\n" );
-			
-			printf( "%.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
-		}
-		
-		int j;
-		
-		for ( j = 0; j < 3; j++ )
-		{
-			fprintf( p_results, "%.2f per cent of the time means are within %d P stdandard deviation(s)\n", ( ( double ) mean_diff_P[j] / ( double ) counter ), j + 1 );
-		}
-		
-		fprintf( p_results, "%.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
-		
-		for ( j = 0; j < 3; j++ )
-		{
-			fprintf( p_results, "%.2f per cent of the time means are within %d P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[j] / ( double ) counter ), j + 1 );
-		}
-		
-		fprintf( p_results, "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
-		fprintf( p_results, "\n\n" );
-		fprintf( p_results, "%.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
-		
-		fclose( p_results );
-	}
+                    ++index;
+                }
+            }
+            
+            for ( j = 0; j < 3; j++ )
+            {
+                printf( "%.2f per cent of the time means are within %d P stdandard deviation(s)\n", ( ( double ) mean_diff_P[j] / ( double ) counter ), j + 1 );
+                printf( "%.2f per cent of the time means are within %d P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[j] / ( double ) counter ), j + 1 );
+            }
+            
+            printf( "%.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
+            printf( "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
+            
+            printf( "\n\n" );
+            
+            printf( "%.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
+        }
+        
+        int j;
+        
+        for ( j = 0; j < 3; j++ )
+        {
+            fprintf( p_results, "%.2f per cent of the time means are within %d P stdandard deviation(s)\n", ( ( double ) mean_diff_P[j] / ( double ) counter ), j + 1 );
+        }
+        
+        fprintf( p_results, "%.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
+        
+        for ( j = 0; j < 3; j++ )
+        {
+            fprintf( p_results, "%.2f per cent of the time means are within %d P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[j] / ( double ) counter ), j + 1 );
+        }
+        
+        fprintf( p_results, "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
+        fprintf( p_results, "\n\n" );
+        fprintf( p_results, "%.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
+        
+        fclose( p_results );
+    }
 }
 
 void print_usage( char *program_name )
 {
-	printf( "usage: %s -c config_filename\n", program_name );
+    printf( "usage: %s -c config_filename\n", program_name );
 }
 
 int main ( int argc, char **argv )
 {
-	if ( argc < 3 )
-	{
-		print_usage( argv[0] );
-		return EXIT_FAILURE;
-	}
-	
-	if ( strcmp( "-c", argv[1] ) == 0 )
-	{
-		if ( load_scenario( argv[2] ) != 0 ) { return EXIT_FAILURE; }
-	}
-	else
-	{
-		print_usage( argv[0] );
-		return EXIT_FAILURE;
-	}
-	
-	output_simulation_parameters( stdout );
-	
-	if ( mode == GUI )
-	{
-	    glutInit( &argc, argv );
-	    glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB );
-	    glutInitWindowSize( params.world_width + stats_area_width, params.world_height + help_area_height );
-	    glutInitWindowPosition( 100, 100 );
-	    glutCreateWindow( "Robotic Swarm Simulation" );
-	    
-	    initialize_graphics();
-	    
-	    glutDisplayFunc( draw_all );
-
-	    glutKeyboardFunc( process_normal_keys );
-	    glutSpecialFunc( process_special_keys );
-
-	    glutMouseFunc( process_mouse_buttons );
-		glutEntryFunc( process_mouse_entry );
-		glutMotionFunc( process_mouse_active_motion );
-
-	    glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
-	
-	    glutMainLoop();
-	}
-	else if ( mode == CLI )
-	{
-		run_cli();
-	}
-	else
-	{
-		printf( "Unknown view mode [%d], exiting!", mode );
-		return EXIT_FAILURE;
-	}
-	
-	free_memory();
+    if ( argc < 3 )
+    {
+        print_usage( argv[0] );
+        return EXIT_FAILURE;
+    }
     
-	return EXIT_SUCCESS;
+    if ( strcmp( "-c", argv[1] ) == 0 )
+    {
+        if ( load_scenario( argv[2] ) != 0 ) { return EXIT_FAILURE; }
+    }
+    else
+    {
+        print_usage( argv[0] );
+        return EXIT_FAILURE;
+    }
+    
+    output_simulation_parameters( stdout );
+    
+    if ( mode == GUI )
+    {
+        glutInit( &argc, argv );
+        glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB );
+        glutInitWindowSize( params.world_width + stats_area_width, params.world_height + help_area_height );
+        glutInitWindowPosition( 100, 100 );
+        glutCreateWindow( "Robotic Swarm Simulation" );
+        
+        initialize_graphics();
+        
+        glutDisplayFunc( draw_all );
+
+        glutKeyboardFunc( process_normal_keys );
+        glutSpecialFunc( process_special_keys );
+
+        glutMouseFunc( process_mouse_buttons );
+        glutEntryFunc( process_mouse_entry );
+        glutMotionFunc( process_mouse_active_motion );
+
+        glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
+    
+        glutMainLoop();
+    }
+    else if ( mode == CLI )
+    {
+        run_cli();
+    }
+    else
+    {
+        printf( "Unknown view mode [%d], exiting!", mode );
+        return EXIT_FAILURE;
+    }
+    
+    free_memory();
+    
+    return EXIT_SUCCESS;
 }
