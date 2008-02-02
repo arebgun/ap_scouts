@@ -1360,6 +1360,7 @@ void restart_simulation( void )
         agents[i]->position.y = agents[i]->i_position.y;
         agents[i]->velocity.x = 0.0f;
         agents[i]->velocity.y = 0.0f;
+        agents[i]->collided = false;
         agents[i]->goal_reached = false;
         
         memcpy( agents[i]->color, agent_color, 3 * sizeof( float ) );
@@ -1644,6 +1645,12 @@ void move_agents( void )
         double force_x = 0.0f;
         double force_y = 0.0f;
         
+        // TODO: put friction to config file
+        float friction = 0.5f;
+        
+        agent->velocity.x *= friction;
+        agent->velocity.y *= friction;
+        
         /************************** Calculate force between an obstacle and an agent ***********************/
         if ( params.enable_agent_obstacle_f )
         {
@@ -1890,19 +1897,26 @@ inline void draw_agent_connectivity( void )
     {
         Agent *a1 = agents[i];
         Vector2f a1_pos = a1->position;
-
+        
         for ( j = i; j < params.agent_number; j++ )
         {
             Agent *a2 = agents[j];
             Vector2f a2_pos = a2->position;
-            
+
             float distance = sqrt( pow( a1_pos.x - a2_pos.x, 2 ) + pow( a1_pos.y - a2_pos.y, 2 ) );
 
             if ( distance <= params.range_coefficient * params.R )
             {
                 glBegin( GL_LINES );
-                    glVertex2f( a1_pos.x, a1_pos.y );
-                    glVertex2f( a2_pos.x, a2_pos.y );
+                    if ( a1_pos.x < 0.0f ) { glVertex2f( 0.0f, a1_pos.y ); }
+                    else if ( a1_pos.y < 0.0f ) { glVertex2f( a1_pos.x, 0.0f ); }
+                    else if ( a1_pos.x < 0.0f && a1_pos.y < 0.0f ) { glVertex2f( 0.0f, 0.0f ); }
+                    else { glVertex2f( a1_pos.x, a1_pos.y ); }
+
+                    if ( a2_pos.x < 0.0f ) { glVertex2f( 0.0f, a2_pos.y ); }
+                    else if ( a2_pos.y < 0.0f ) { glVertex2f( a2_pos.x, 0.0f ); }
+                    else if ( a2_pos.x < 0.0f && a2_pos.y < 0.0f ) { glVertex2f( 0.0f, 0.0f ); }
+                    else { glVertex2f( a2_pos.x, a2_pos.y ); }
                 glEnd();
             }
         }
@@ -2280,8 +2294,15 @@ void process_mouse_active_motion( int x, int y )
 {
     if ( selection_active && selected_obstacle_id != -1 && inside_window )
     {
-        obstacles[selected_obstacle_id]->position.x = x - stats_area_width;
-        obstacles[selected_obstacle_id]->position.y = params.world_height - y ;
+        Obstacle *obs = obstacles[selected_obstacle_id];
+        Vector2f *obs_pos = &( obs->position );
+        
+        obs_pos->x = x - stats_area_width;
+        obs_pos->y = params.world_height - y;
+        
+        // prevent moving obstacle to the information and statistics area
+        if ( obs_pos->x - obs->radius < 0.0f ) { obs_pos->x = obs->radius; }
+        if ( obs_pos->y - obs->radius < 0.0f ) { obs_pos->y = obs->radius; }
         
         glutPostRedisplay();
     }
