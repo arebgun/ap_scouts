@@ -238,6 +238,8 @@ Agent **agents = NULL;
 Obstacle **obstacles = NULL;
 Goal *goal = NULL;
 
+bool ( *agent_reached_goal )( Agent * ) = NULL;
+
 bool running;
 
 bool inside_window = false;
@@ -1007,6 +1009,51 @@ void reset_statistics( void )
     stats.collided = 0;
 }
 
+/**
+ * \fn bool agent_reached_goal_actual( Agent *agent )
+ * \brief decide if agent reached the goal (agent should actually "touch" the goal)
+ * \param agent pointer to an agent
+ * \return true if agent reached the goal, false otherwise
+ */
+bool agent_reached_goal_actual( Agent *agent )
+{
+    Vector2f g_pos = goal->position;
+    Vector2f a_pos = agent->position;
+    
+    float g_x1 = g_pos.x - goal->width / 2.0f;
+    float g_y1 = g_pos.y - goal->width / 2.0f;
+    
+    float g_x2 = g_pos.x + goal->width / 2.0f;
+    float g_y2 = g_pos.y + goal->width / 2.0f;
+    
+    if ( a_pos.x >= g_x1 && a_pos.y >= g_y1 &&
+         a_pos.x <= g_x2 && a_pos.y <= g_y2 )
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+/**
+ * \fn bool agent_reached_goal_radius( Agent *agent )
+ * \brief decide if agent reached the goal (agent is within some predefined distance to the center of the goal)
+ * \param agent pointer to an agent
+ * \return true if agent reached the goal, false otherwise
+ */
+bool agent_reached_goal_radius( Agent *agent )
+{
+    Vector2f g_pos = goal->position;
+    Vector2f a_pos = agent->position;
+    
+    double distance_to_obj = sqrt( pow( a_pos.x - g_pos.x, 2 ) + pow( a_pos.y - g_pos.y, 2 ) );
+
+    if ( distance_to_obj < params.range_coefficient * params.R ) { return true; }
+    else { return false; }
+}
+
 void initialize_simulation( void )
 {
     running = false;
@@ -1061,6 +1108,9 @@ void initialize_simulation( void )
     params.runs_number = 10;
     params.run_simulation = false;
     params.initialize_from_file = false;
+    
+    // set function to use when deciding wheter agent reached a goal
+    agent_reached_goal = agent_reached_goal_actual;
     
     // Reset statistics
     reset_statistics();    
@@ -1376,20 +1426,6 @@ void initialize_graphics( void )
     glOrtho( -stats_area_width, params.world_width, -help_area_height, params.world_height, 0.0, 100.0 );
 }
 
-bool agent_reached_goal( Agent *agent )
-{
-    Vector2f goal_pos = goal->position;
-    Vector2f agent_pos = agent->position;
-
-    if ( fabs( goal_pos.x - agent_pos.x ) < goal->width / 2.0f &&
-         fabs( goal_pos.y - agent_pos.y ) < goal->width / 2.0f )
-    {
-        return true;
-    }
-
-    return false;
-}
-
 int change_agent_number( int agent_number )
 {
     int i;    
@@ -1521,111 +1557,110 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
             distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
             break;
     }
-    
-    double f = 0.0f;
 
-    if ( distance_to_obj != 0 )
+    distance_to_obj = distance_to_obj != 0 ? distance_to_obj : distance_to_obj + 0.1;
+    
+    double f = 0.0;
+    
+    switch( params.force_law )
     {
-        switch( params.force_law )
-        {
-            case NEWTONIAN:
-                switch( obj_type )
-                {
-                    case AGENT:
-                        if ( distance_to_obj <= params.range_coefficient * params.R )
-                        {
-                            f = params.G_agent_agent * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_agent );
-                            
-                            if ( distance_to_obj < params.R ) { f = -f; }
-                            if ( f > params.max_f_agent_agent_n ) { f = params.max_f_agent_agent_n; }
-                            if ( f < -params.max_f_agent_agent_n ) { f = -params.max_f_agent_agent_n; }
-                        }
-                        break;
+        case NEWTONIAN:
+            switch( obj_type )
+            {
+                case AGENT:
+                    if ( distance_to_obj <= params.range_coefficient * params.R )
+                    {
+                        f = params.G_agent_agent * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_agent );
 
-                    case GOAL:
-                        f = params.G_agent_goal * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_goal );
-                        
-                        if ( f > params.max_f_agent_goal_n ) { f = params.max_f_agent_goal_n; }
-                        break;
-                        
-                    case OBSTACLE:
-                        if ( distance_to_obj <= params.range_coefficient * params.R )
-                        {
-                            f = -( params.G_agent_obstacle * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_obstacle ) );
-                            
-                            if ( f < -params.max_f_agent_obstacle_n ) { f = -params.max_f_agent_obstacle_n; }
-                        }
-                        break;
-                }
-                break;
-                
-            case LENNARD_JONES:
-                switch( obj_type )
-                {
-                    float epsilon, sigma;
-                    float c, d;
-                    double lhs, rhs;
-                    
-                    // agent-agent interactions, repulsive and attractive components
-                    case AGENT:
-                        if ( distance_to_obj <= params.range_coefficient * params.R )
-                        {
-                            epsilon = params.epsilon_agent_agent;
-                            c = params.c_agent_agent;
-                            d = params.d_agent_agent;
-                            sigma = params.R;
-                            
-                            lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
-                            rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
-                            
-                            f = 24.0 * epsilon * ( lhs - rhs );
-                            
-                            if ( isinf( f ) == 1 ) { f = DBL_MAX; }
-                            else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
-                            
-                            if ( f > params.max_f_agent_agent_lj ) { f = params.max_f_agent_agent_lj; }
-                            if ( f < -params.max_f_agent_agent_lj ) { f = -params.max_f_agent_agent_lj; }
-                        }
-                        break;
-                        
-                    // agent-obstacle interactions, repulsive component only
-                    case OBSTACLE:
-                        if ( distance_to_obj <= params.range_coefficient * params.R )
-                        {
-                            epsilon = params.epsilon_agent_obstacle;
-                            d = params.d_agent_obstacle;
-                            sigma = ( ( Obstacle * ) object )->radius + 1.0f;
-                            
-                            rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
-    
-                            f = -24.0 * epsilon * rhs;
-                            
-                            if ( isinf( f ) == 1 ) { f = DBL_MAX; }
-                            else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
-                            
-                            if ( f < -params.max_f_agent_obstacle_lj ) { f = -params.max_f_agent_obstacle_lj; }
-                            if ( f > params.max_f_agent_obstacle_lj ) { f = params.max_f_agent_obstacle_lj; }
-                        }
-                        break;
-                        
-                    // agent-goal interactions, attractive component only
-                    case GOAL:
-                        epsilon = params.epsilon_agent_goal;
-                        c = params.c_agent_goal;
-                        sigma = pow( params.R, 2.0f ) * 5.0f;
-                        
+                        if ( distance_to_obj < params.R ) { f = -f; }
+                        if ( f > params.max_f_agent_agent_n ) { f = params.max_f_agent_agent_n; }
+                        if ( f < -params.max_f_agent_agent_n ) { f = -params.max_f_agent_agent_n; }
+                    }
+                    break;
+
+                case GOAL:
+                    f = params.G_agent_goal * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_goal );
+
+                    if ( f > params.max_f_agent_goal_n ) { f = params.max_f_agent_goal_n; }
+                    break;
+
+                case OBSTACLE:
+                    if ( distance_to_obj <= params.range_coefficient * params.R )
+                    {
+                        f = -( params.G_agent_obstacle * agent->mass * obj_mass / pow( distance_to_obj, params.p_agent_obstacle ) );
+
+                        if ( f < -params.max_f_agent_obstacle_n ) { f = -params.max_f_agent_obstacle_n; }
+                    }
+                    break;
+            }
+            break;
+
+        case LENNARD_JONES:
+            switch( obj_type )
+            {
+                float epsilon, sigma;
+                float c, d;
+                double lhs, rhs;
+
+                // agent-agent interactions, repulsive and attractive components
+                case AGENT:
+                    if ( distance_to_obj <= params.range_coefficient * params.R )
+                    {
+                        epsilon = params.epsilon_agent_agent;
+                        c = params.c_agent_agent;
+                        d = params.d_agent_agent;
+                        sigma = params.R;
+
                         lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
-                        
-                        f = 24.0 * epsilon * lhs;
+                        rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
+
+                        f = 24.0 * epsilon * ( lhs - rhs );
 
                         if ( isinf( f ) == 1 ) { f = DBL_MAX; }
                         else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
-                        
-                        if ( f > params.max_f_agent_goal_lj ) { f = params.max_f_agent_goal_lj; }
-                        break;
-                }
-                break;
-        }
+
+                        if ( f > params.max_f_agent_agent_lj ) { f = params.max_f_agent_agent_lj; }
+                        if ( f < -params.max_f_agent_agent_lj ) { f = -params.max_f_agent_agent_lj; }
+                    }
+                    break;
+
+                // agent-obstacle interactions, repulsive component only
+                case OBSTACLE:
+                    if ( distance_to_obj <= params.range_coefficient * params.R )
+                    {
+                        epsilon = params.epsilon_agent_obstacle;
+                        d = params.d_agent_obstacle;
+                        sigma = ( ( Obstacle * ) object )->radius + 1.0f;
+
+                        rhs = 2.0 * d * pow( sigma, 12.0 ) / pow( distance_to_obj, 13.0 );
+
+                        f = -24.0 * epsilon * rhs;
+
+                        if ( isinf( f ) == 1 ) { f = DBL_MAX; }
+                        else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
+
+                        if ( f < -params.max_f_agent_obstacle_lj ) { f = -params.max_f_agent_obstacle_lj; }
+                        if ( f > params.max_f_agent_obstacle_lj ) { f = params.max_f_agent_obstacle_lj; }
+                    }
+                    break;
+
+                // agent-goal interactions, attractive component only
+                case GOAL:
+                    epsilon = params.epsilon_agent_goal;
+                    c = params.c_agent_goal;
+                    sigma = pow( params.R, 2.0f ) * 5.0f;
+
+                    lhs = c * pow( sigma, 6.0 ) / pow( distance_to_obj, 7.0 );
+
+                    f = 24.0 * epsilon * lhs;
+
+                    if ( isinf( f ) == 1 ) { f = DBL_MAX; }
+                    else if ( isinf( f ) == -1 ) { f = DBL_MIN; }
+
+                    if ( f > params.max_f_agent_goal_lj ) { f = params.max_f_agent_goal_lj; }
+                    break;
+            }
+            break;
     }
     
     return f;
@@ -1717,7 +1752,7 @@ void move_agents( void )
         agent->n_position.x += agent->n_velocity.x;
         agent->n_position.y += agent->n_velocity.y;
         
-        // calculate number of agents that reached the goal by "touching" it
+        // calculate number of agents that reached the goal
         if ( !agents[i]->goal_reached && agent_reached_goal( agents[i] ) )
         {
             agents[i]->goal_reached = true;
