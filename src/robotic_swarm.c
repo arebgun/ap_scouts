@@ -161,6 +161,7 @@ typedef struct s_params
     bool enable_agent_agent_f;
     
     float R;
+    float friction_coefficient;
     float range_coefficient;
     float max_V; 
     ForceLaw force_law;
@@ -196,6 +197,7 @@ typedef struct s_params
     int time_limit;
     int runs_number;
     bool run_simulation;
+    float env_probability;
     
     bool initialize_from_file;
     char *scenario_filename;
@@ -372,6 +374,10 @@ int read_config_file( char *p_filename )
             {
                 params.R = atof( value );
             }
+            else if ( strcmp( "friction_coefficient", parameter ) == 0 )
+            {
+                params.friction_coefficient = atof( value );
+            }
             else if ( strcmp( "range_coefficient", parameter ) == 0 )
             {
                 params.range_coefficient = atof( value );
@@ -479,6 +485,10 @@ int read_config_file( char *p_filename )
             else if ( strcmp( "run_simulation", parameter ) == 0 )
             {
                 params.run_simulation = atoi( value );
+            }
+            else if ( strcmp( "env_probability", parameter ) == 0 )
+            {
+                params.env_probability = atof( value );
             }
             else if ( strcmp( "initialize_from_file", parameter ) == 0 )
             {
@@ -625,6 +635,7 @@ void output_simulation_parameters( FILE *output )
     fprintf( output, "# enable_agent_obstacle_f = %d\n", params.enable_agent_obstacle_f );
     fprintf( output, "# enable_agent_agent_f = %d\n", params.enable_agent_agent_f );
     fprintf( output, "# R = %.2f\n", params.R );
+    fprintf( output, "# friction_coefficient = %.2f\n", params.friction_coefficient );
     fprintf( output, "# range_coefficient = %.2f\n", params.range_coefficient );
     fprintf( output, "# max_V = %.2f\n", params.max_V );
     fprintf( output, "# force_law = %d\n", params.force_law );
@@ -652,6 +663,7 @@ void output_simulation_parameters( FILE *output )
     fprintf( output, "# time_limit = %d\n", params.time_limit );
     fprintf( output, "# runs_number = %d\n", params.runs_number );
     fprintf( output, "# run_simulation = %d\n", params.run_simulation );
+    fprintf( output, "# env_probability = %.2f\n", params.env_probability );
     fprintf( output, "# initialize_from_file = %d\n", params.initialize_from_file );
     fprintf( output, "# scenario_filename = %s\n", params.scenario_filename );
     fprintf( output, "# results_filename = %s\n", params.results_filename );
@@ -1054,6 +1066,44 @@ bool agent_reached_goal_radius( Agent *agent )
     else { return false; }
 }
 
+bool agent_reached_goal_time_limit_chain( Agent *agent )
+{
+	bool result = false;
+	
+	if ( stats.time_step >= params.time_limit )
+	{
+	    int a2;
+	    
+	    if ( agent_reached_goal_radius( agent ) )
+	    {
+	    	result = true;
+		}
+	    else
+	    {
+	        Vector2f agent1_pos = agent->position;
+	    
+	        for ( a2 = 0; a2 < params.agent_number; a2++ )
+	        {
+	            Agent *agent2 = agents[a2];
+	            Vector2f agent2_pos = agent2->position;
+	
+	            if ( agent2->goal_reached )
+	            {
+	                double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
+	                
+	                if ( distance <= params.range_coefficient * params.R )
+	                {
+	                	result = true;
+	                	break;
+	                }
+	            }
+	        }
+	    }
+	}
+
+	return result;
+}
+
 void initialize_simulation( void )
 {
     running = false;
@@ -1080,6 +1130,7 @@ void initialize_simulation( void )
     params.enable_agent_obstacle_f = 1;
     params.enable_agent_agent_f = 0;
     params.R = 50.0f;
+    params.friction_coefficient = 0.5f;
     params.range_coefficient = 1.5f;
     params.force_law = 0;
     params.max_V = 0.5f;
@@ -1107,10 +1158,11 @@ void initialize_simulation( void )
     params.time_limit = 1000;
     params.runs_number = 10;
     params.run_simulation = false;
+    params.env_probability = 0.9f;
     params.initialize_from_file = false;
     
     // set function to use when deciding wheter agent reached a goal
-    agent_reached_goal = agent_reached_goal_actual;
+    agent_reached_goal = agent_reached_goal_radius;
     
     // Reset statistics
     reset_statistics();    
@@ -1126,9 +1178,6 @@ int save_scenario( char *filename )
         int i;
 
         // World parameters
-        fprintf( config, "view_mode                %d    # 0 - batch (CLI), 1 - GUI\n", mode );
-        fprintf( config, "\n" );
-        
         fprintf( config, "world_width              %d    # Simulation area width\n",  params.world_width );
         fprintf( config, "world_height             %d    # Simulation area height\n", params.world_height );
         fprintf( config, "\n" );
@@ -1169,10 +1218,11 @@ int save_scenario( char *filename )
         fprintf( config, "\n" );
 
         // General physics parameters
-        fprintf( config, "R                        %f    # Desired distance R\n",               params.R );
-        fprintf( config, "range_coefficient        %f    # Agent visual range coefficient\n",   params.range_coefficient );
-        fprintf( config, "max_V                    %f    # Maximum agent velocity\n",           params.max_V );
-        fprintf( config, "force_law                %d    # 0 - Newtonian, 1 - Lennard-Jones\n", params.force_law );
+        fprintf( config, "R                        %f    # Desired distance R\n",               		params.R );
+        fprintf( config, "friction_coefficient     %f    # Friction coefficient (for stabilization)\n", params.friction_coefficient );
+        fprintf( config, "range_coefficient        %f    # Agent visual range coefficient\n",   		params.range_coefficient );
+        fprintf( config, "max_V                    %f    # Maximum agent velocity\n",           		params.max_V );
+        fprintf( config, "force_law                %d    # 0 - Newtonian, 1 - Lennard-Jones\n", 		params.force_law );
         fprintf( config, "\n" );
 
          // Newtonian force law parameters
@@ -1216,6 +1266,7 @@ int save_scenario( char *filename )
         fprintf( config, "time_limit               %d    # CLI only - time limit per run\n", params.time_limit );
         fprintf( config, "runs_number              %d    # CLI only - number of runs\n",     params.runs_number );
         fprintf( config, "run_simulation           %d    # CLI only - run simulator to get probabilies or use random number generator, 0 - RNG, 1 - simulation\n", params.run_simulation );
+        fprintf( config, "env_probability		   %f	 # CLI only - used when run_simulation = 0\n", params.env_probability );
         fprintf( config, "\n" );
 
         fprintf( config, "initialize_from_file     %d    # Initialize all objects state from scenario file, 0 - disable, 1 - enable\n", params.initialize_from_file );
@@ -1328,6 +1379,7 @@ int load_scenario( char *filename )
     
     // Read configuration
     if ( read_config_file( filename ) == -1 ) { return -1; }
+    output_simulation_parameters( stdout );
     
     // Load scenario if necessary
     if ( params.initialize_from_file )
@@ -1368,8 +1420,6 @@ int load_scenario( char *filename )
                 fscanf( scenario, "%f %f", &(o->position.x), &(o->position.y) );
             }
             /************************************************************************************************************/
-
-            output_simulation_parameters( stdout );
         }
         else
         {
@@ -1680,11 +1730,8 @@ void move_agents( void )
         double force_x = 0.0f;
         double force_y = 0.0f;
         
-        // TODO: put friction to config file
-        float friction = 0.5f;
-        
-        agent->velocity.x *= friction;
-        agent->velocity.y *= friction;
+        agent->velocity.x *= params.friction_coefficient;
+        agent->velocity.y *= params.friction_coefficient;
         
         /************************** Calculate force between an obstacle and an agent ***********************/
         if ( params.enable_agent_obstacle_f )
@@ -2387,17 +2434,20 @@ void update_reach(void)
     }
 }
 
-void run_cli( void )
+void run_cli( int argc, char **argv )
 {
-    char *environments[3] = { "nf_p_01.dat", "nf_p_05.dat", "nf_p_09.dat" };
-    double env_probs[3] = { 0.12, 0.55, 0.89 };
+	// skip program name and view mode arguments
+	int env_number = argc - 2;	
+    char *environments[env_number];
+    
+    memcpy( environments, &argv[2], env_number * sizeof( char * ) );
     
     // How accurate is our integral approximation
     int interval_number = 100;
     
     int e, n;
-
-    for ( e = 0; e < 3; e++ )
+    
+    for ( e = 0; e < env_number; e++ )
     {
         if ( load_scenario( environments[e] ) == -1 ) { exit( EXIT_FAILURE ); }
 
@@ -2433,11 +2483,9 @@ void run_cli( void )
             
             double big_P_prime[params.n_array[n] + 1];
             double increment = 1.0 / params.runs_number;
-            
-            for ( i = 0; i <= params.n_array[n]; i++ )
-            {
-                big_P_prime[i] = 0;
-            }
+
+            // initialize big_P_prime array to all 0's
+            memset( big_P_prime, 0, sizeof( big_P_prime ) );
             
             double small_p = 0.0;
     
@@ -2460,11 +2508,15 @@ void run_cli( void )
                     {
                         move_agents();
                     }
+                    
+                    // TODO: remove printf's
+                    printf( "inside runs_number loop\n" );
+                    printf( "reached_goal = %d\n", stats.reached_goal );
 
-                    if ( params.enable_agent_agent_f )
-                    {
-                        update_reach();
-                    }
+                    if ( params.enable_agent_agent_f ) { update_reach(); }
+                    
+                    // TODO: remove printf's
+                    printf( "reached_goal = %d\n", stats.reached_goal );
                 }
                 else
                 {
@@ -2473,7 +2525,7 @@ void run_cli( void )
                     for ( j = 0; j < params.agent_number; j++ )
                     {
                         double random = ( double ) rand() / ( double ) RAND_MAX;
-                        if ( random <= env_probs[e] ) { ++stats.reached_goal; }
+                        if ( random <= params.env_probability ) { ++stats.reached_goal; }
                     }
                 
                     stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
@@ -2486,7 +2538,7 @@ void run_cli( void )
                 
                 small_p += stats.reach_ratio;
                 
-                if ( i % 100 == 0 ) { printf( "\ti = %d\n", i ); }
+                if ( ( i != 0 ) && ( i % 100 == 0 ) ) { printf( "\ti = %d, \tp = %.2f\n", i, small_p / i ); }
             }
             
             small_p /= params.runs_number;
@@ -2525,12 +2577,12 @@ void run_cli( void )
                     double big_P_mean[nn + 1];
                     double big_P_hat_mean[nn + 1];
                     
-                    for ( j = 0; j <= nn; j++ )
-                    {
-                        big_P_mean[j] = 0.0;
-                        big_P_hat_mean[j] = 0.0;
-                    }
+                    // initialize big_P_mean and big_P_hat_mean arrays to all 0's
+                    memset( big_P_mean, 0, sizeof( big_P_mean ) );
+                    memset( big_P_hat_mean, 0, sizeof( big_P_hat_mean ) );
+
                     //double phat = 0.0;
+                    
                     srand( ( unsigned int ) time( NULL ) );
                     
                     for ( j = 0; j < params.runs_number; j++ )
@@ -2551,10 +2603,7 @@ void run_cli( void )
                                 move_agents();
                             }
                         
-                            if ( params.enable_agent_agent_f )
-                            {
-                                update_reach();
-                            }
+                            //if ( params.enable_agent_agent_f ) { update_reach(); }
                         }
                         else
                         {
@@ -2707,7 +2756,11 @@ void run_cli( void )
 
 void print_usage( char *program_name )
 {
-    printf( "usage: %s -c config_filename\n", program_name );
+    printf( "usage: %s [view_mode] [scenario_1, scenario_2, ...]\n\n", program_name );
+    printf( "\t\tviewmode - cli for command-line (batch mode)\n" );
+    printf( "\t\t           gui for full user interface mode\n\n" );
+    printf( "\t\tscenario_1, ... - one or more configuration files\n");
+    printf( "\t\tNote: when using GUI mode only the first scenraio is used.\n" );
 }
 
 int main ( int argc, char **argv )
@@ -2718,20 +2771,24 @@ int main ( int argc, char **argv )
         return EXIT_FAILURE;
     }
     
-    if ( strcmp( "-c", argv[1] ) == 0 )
+    if ( strcasecmp( "cli", argv[1] ) == 0 )
     {
-        if ( load_scenario( argv[2] ) != 0 ) { return EXIT_FAILURE; }
+    	mode = CLI;
+    }
+    else if ( strcasecmp( "gui", argv[1] ) == 0 )
+    {
+    	mode = GUI;
     }
     else
     {
-        print_usage( argv[0] );
-        return EXIT_FAILURE;
+    	printf( "WARNING: Unknown view mode supplied: [%s]. Using GUI view mode.\n", argv[1] );
+    	mode = GUI;
     }
-    
-    output_simulation_parameters( stdout );
     
     if ( mode == GUI )
     {
+        if ( load_scenario( argv[2] ) != 0 ) { return EXIT_FAILURE; }
+        
         glutInit( &argc, argv );
         glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB );
         glutInitWindowSize( params.world_width + stats_area_width, params.world_height + help_area_height );
@@ -2755,12 +2812,7 @@ int main ( int argc, char **argv )
     }
     else if ( mode == CLI )
     {
-        run_cli();
-    }
-    else
-    {
-        printf( "Unknown view mode [%d], exiting!", mode );
-        return EXIT_FAILURE;
+        run_cli( argc, argv );
     }
     
     free_memory();
