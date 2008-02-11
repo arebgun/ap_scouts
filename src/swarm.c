@@ -1,9 +1,9 @@
 /*
  ============================================================================
- Name        : robotic_swarm.cpp
+ Name        : swarm.c
  Author      : Antons Rebguns
- Version     : 0.3.0
- Copyright   : Copyright(c) 2007
+ Version     : 0.4.0
+ Copyright   : Copyright(c) 2007, 2008
  Description : Robotic swarm simulator (OpenGL)
  ============================================================================
  */
@@ -19,6 +19,10 @@
 #include "GL/gl.h"
 #include "GL/glut.h"
 
+#include "defs.h"
+#include "swarm.h"
+#include "graphics.h"
+
 /*************** TEMPORARY *************************/
 double alpha;
 double beta;
@@ -27,209 +31,6 @@ int yy;
 int kk;
 int nn;
 /***************************************************/
-
-typedef enum e_viewmode
-{
-    CLI,
-    GUI,
-    
-} Viewmode;
-
-typedef enum e_obj_type
-{
-    AGENT,
-    OBSTACLE,
-    GOAL,
-    
-} ObjectType;
-
-/**
- * \struct Vector2f
- * \brief  Represents a vector in 2D space.
- */
-typedef struct s_vec2f
-{
-    GLfloat x;
-    GLfloat y;
-    
-} Vector2f;
-
-/**
- * \struct Agent
- * \brief  Represents a robot.
- */
-typedef struct s_agent
-{
-    int id;
-    
-    Vector2f i_position;    // Agent deployment (initial) position
-    Vector2f i_velocity;    // Agent initial velocity
-    
-    Vector2f position;      // Agent current position vector
-    Vector2f velocity;      // Agent current velocity vector
-
-    Vector2f n_position;    // Agent new (for lock step) position
-    Vector2f n_velocity;    // Agent new (for lock step) velocity
-
-    float radius;           // Agent size
-    float mass;             // Agent mass
-    
-    bool collided;          // true, if agent collided with obstacle
-    bool goal_reached;      // true, if reached goal, false otherwise
-    
-    GLfloat color[3];
-    
-} Agent;
-
-/**
- * \struct Goal
- * \brief  Represents a goal.
- */
-typedef struct s_goal
-{
-    int id;
-    
-    Vector2f position;
-    
-    float width;
-    float mass;
-
-    GLfloat color[3];
-    
-} Goal;
-
-/**
- * \struct Obstacle
- * \brief  Represents an obstacle.
- */
-typedef struct s_obstacle
-{
-    int id;
-    
-    Vector2f position;
-    
-    float radius;
-    float mass;
-    
-    GLfloat color[3];
-    
-} Obstacle;
-
-typedef enum e_quadrant
-{
-    NW, N, NE,
-    W,  C, E,
-    SW, S, SE,
-    
-} Quadrant;
-
-typedef enum e_force_law
-{
-    NEWTONIAN,
-    LENNARD_JONES,
-    
-} ForceLaw;
-
-typedef struct s_params
-{
-    int world_width;
-    int world_height;
-    int timer_delay_ms;
-    
-    unsigned int goal_random_seed;
-    float goal_width;
-    float goal_mass;
-    Quadrant goal_quadrant;
-    
-    unsigned int agent_random_seed;
-    int agent_number;
-    float agent_radius;
-    float agent_mass;
-    int deployment_width;
-    int deployment_height;
-    Quadrant deployment_quadrant;    
-    
-    unsigned int obstacle_random_seed;
-    int obstacle_number;
-    float obstacle_radius;
-    float obstacle_radius_min;
-    float obstacle_radius_max;
-    float obstacle_mass;
-    
-    bool enable_agent_goal_f;
-    bool enable_agent_obstacle_f;
-    bool enable_agent_agent_f;
-    
-    float R;
-    float friction_coefficient;
-    float range_coefficient;
-    float max_V; 
-    ForceLaw force_law;
-    
-    float G_agent_agent;            // Newtonian - Gravitational force of agent-agent interactions
-    float G_agent_obstacle;         // Newtonian - Gravitational force of agent-obstacle interactions
-    float G_agent_goal;             // Newtonian - Gravitational force of agent-goal interactions
-    
-    float p_agent_agent;            // Newtonian - (distance_between_objects) ^ p of agent-agent interactions
-    float p_agent_obstacle;         // Newtonian - (distance_between_objects) ^ p of agent-obstacle interactions
-    float p_agent_goal;             // Newtonian - (distance_between_objects) ^ p of agent-goal interactions
-    
-    float max_f_agent_agent_n;      // Newtonian - agent-agent force cutoff
-    float max_f_agent_obstacle_n;   // Newtonian - agent-obstacle force cutoff
-    float max_f_agent_goal_n;       // Newtonian - agent-goal force cutoff
-    
-    float epsilon_agent_agent;      // LJ - Strength of agent-agent interactions
-    float epsilon_agent_obstacle;   // LJ - Strength of agent-obstacle interactions
-    float epsilon_agent_goal;       // LJ - Strength of agent-goal interactions
-
-    float c_agent_agent;            // LJ - Attractive agent-agent parameter
-    float c_agent_obstacle;         // LJ - Attractive agent-obstacle parameter
-    float c_agent_goal;             // LJ - Attractive agent-goal parameter
-
-    float d_agent_agent;            // LJ - Repulsive agent-agent parameter
-    float d_agent_obstacle;         // LJ - Repulsive agent-obstacle parameter
-    float d_agent_goal;             // LJ - Repulsive agent-goal parameter
-    
-    float max_f_agent_agent_lj;     // LJ - agent-agent force cutoff
-    float max_f_agent_obstacle_lj;  // LJ - agent-obstacle force cutoff
-    float max_f_agent_goal_lj;      // LJ - agent-goal force cutoff
-    
-    int time_limit;
-    int runs_number;
-    bool run_simulation;
-    float env_probability;
-    
-    bool initialize_from_file;
-    char *scenario_filename;
-    char *results_filename;
-    
-    int n_number;
-    int k_number;
-    int a_b_number;
-    int *n_array;
-    int *k_array;
-    float *alpha_array;
-    float *beta_array;
-    
-} Parameters;
-
-typedef struct s_statistics
-{
-    int time_step;
-    int reached_goal;
-    float reach_ratio;
-    int collided;
-    
-} Statistics;
-
-int help_area_height = 100;
-int stats_area_width = 150;
-
-GLfloat agent_color[3] = { 0.0f, 0.2f, 1.0f };
-GLfloat agent_color_coll[3] = { 1.0f, 0.0f, 0.0f };
-GLfloat agent_color_conn[3] = { 0.8f, 0.8f, 0.8f };
-GLfloat goal_color[3] = { 1.0f, 0.0f, 0.2f };
-GLfloat obstacle_color[3] = { 0.0f, 0.4f, 0.0f };
 
 Viewmode mode;
 
@@ -243,18 +44,6 @@ Goal *goal = NULL;
 bool ( *agent_reached_goal )( Agent * ) = NULL;
 
 bool running;
-
-bool inside_window = false;
-bool selection_active = false;
-int selected_obstacle_id = -1;
-
-int increments[6] = { 1, 5, 10, 20, 50, 100 };
-int cur_inc_index = 0;
-
-char *selections[3] = { "AGENT", "OBSTACLE", "GOAL" };
-int cur_sel_index = 0;
-
-bool show_connectivity = false;
 
 /**
  * \fn int read_config_file( char *p_filename )
@@ -1018,7 +807,8 @@ void reset_statistics( void )
     stats.time_step = 0;
     stats.reach_ratio = 0.0f;
     stats.reached_goal = 0;
-    stats.collided = 0;
+    stats.collisions = 0;
+    stats.collision_ratio = 0.0f;
 }
 
 /**
@@ -1333,7 +1123,7 @@ int save_scenario( char *filename )
             int i;
             
             // Statistics
-            fprintf( scenario, "%d %d %f %d\n", stats.time_step, stats.reached_goal, stats.reach_ratio, stats.collided );
+            fprintf( scenario, "%d %d %f %d %f\n", stats.time_step, stats.reached_goal, stats.reach_ratio, stats.collisions, stats.collision_ratio );
 
             // Current values for goal
             fprintf( scenario, "%d %f %f %f %f\n", goal->id, goal->mass, goal->width, goal->position.x, goal->position.y );
@@ -1392,7 +1182,7 @@ int load_scenario( char *filename )
             int i;
         
             // Statistics
-            fscanf( scenario, "%d %d %f %d", &stats.time_step, &stats.reached_goal, &stats.reach_ratio, &stats.collided );
+            fscanf( scenario, "%d %d %f %d %f", &stats.time_step, &stats.reached_goal, &stats.reach_ratio, &stats.collisions, &stats.collision_ratio );
 
             /******************************* Current values for all objects **********************************************/
             // Create simulation objects
@@ -1583,8 +1373,8 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 {
     Vector2f agent_pos = agent->position;
     Vector2f obj_pos;
-    float obj_mass;
-    double distance_to_obj;
+    float obj_mass = 0.0f;
+    double distance_to_obj = 0.0f;
     
     switch( obj_type )
     {
@@ -1800,12 +1590,12 @@ void move_agents( void )
         agent->n_position.y += agent->n_velocity.y;
         
         // calculate number of agents that reached the goal
-        if ( !agents[i]->goal_reached && agent_reached_goal( agents[i] ) )
-        {
-            agents[i]->goal_reached = true;
-            stats.reached_goal++;
-            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-        }
+//        if ( !agents[i]->goal_reached && agent_reached_goal( agents[i] ) )
+//        {
+//            agents[i]->goal_reached = true;
+//            stats.reached_goal++;
+//            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+//        }
         
         // calculate number of agent-obstacle collisions
         for ( j = 0; j < params.obstacle_number; j++ )
@@ -1824,7 +1614,8 @@ void move_agents( void )
                 agent->collided = true;
                 memcpy( agent->color, agent_color_coll, 3 * sizeof( float ) );
                 
-                ++stats.collided;
+                stats.collisions++;
+                stats.collision_ratio = ( float ) stats.collisions / ( float ) params.agent_number;
             }
         }
     }
@@ -1934,271 +1725,6 @@ double f( double p )
 }
 
 /****************************************************************************************/
-
-void draw_string( char *s )
-{
-    int i;
-    
-    for ( i = 0; i < strlen( s ); i++ )
-    {
-        glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
-    }
-}
-
-inline void draw_goal( Goal *goal )
-{
-    float x1 = goal->position.x - goal->width / 2;
-    float y1 = goal->position.y + goal->width / 2;
-    float x2 = goal->position.x + goal->width / 2;
-    float y2 = goal->position.y - goal->width / 2;
-
-    glColor3fv( goal->color );
-    glRectf( x1, y1, x2, y2 );
-}
-
-inline void draw_agent( Agent *agent )
-{
-    if ( agent->position.x >= 0.0f && agent->position.y >= 0.0f )
-    {
-        glPointSize( agent->radius );
-        glColor3fv( agent->color );
-    
-        glBegin( GL_POINTS );
-            glVertex2f( agent->position.x, agent->position.y );
-        glEnd();
-    }
-}
-
-inline void draw_agent_connectivity( void )
-{
-    int i, j;
-    
-    glColor3fv( agent_color_conn );
-
-    for ( i = 0; i < params.agent_number; i++ )
-    {
-        Agent *a1 = agents[i];
-        Vector2f a1_pos = a1->position;
-        
-        for ( j = i; j < params.agent_number; j++ )
-        {
-            Agent *a2 = agents[j];
-            Vector2f a2_pos = a2->position;
-
-            float distance = sqrt( pow( a1_pos.x - a2_pos.x, 2 ) + pow( a1_pos.y - a2_pos.y, 2 ) );
-
-            if ( distance <= params.range_coefficient * params.R )
-            {
-                glBegin( GL_LINES );
-                    if ( a1_pos.x < 0.0f ) { glVertex2f( 0.0f, a1_pos.y ); }
-                    else if ( a1_pos.y < 0.0f ) { glVertex2f( a1_pos.x, 0.0f ); }
-                    else if ( a1_pos.x < 0.0f && a1_pos.y < 0.0f ) { glVertex2f( 0.0f, 0.0f ); }
-                    else { glVertex2f( a1_pos.x, a1_pos.y ); }
-
-                    if ( a2_pos.x < 0.0f ) { glVertex2f( 0.0f, a2_pos.y ); }
-                    else if ( a2_pos.y < 0.0f ) { glVertex2f( a2_pos.x, 0.0f ); }
-                    else if ( a2_pos.x < 0.0f && a2_pos.y < 0.0f ) { glVertex2f( 0.0f, 0.0f ); }
-                    else { glVertex2f( a2_pos.x, a2_pos.y ); }
-                glEnd();
-            }
-        }
-    }
-}
-
-inline void draw_obstacle( Obstacle *obstacle )
-{
-    glColor3fv( obstacle->color );
-
-    glPushMatrix();
-        glTranslatef( obstacle->position.x, obstacle->position.y, 0.0f );
-        glutSolidSphere( obstacle->radius, 20, 20 );
-    glPopMatrix();
-}
-
-inline void draw_params_stats( void )
-{
-    // Draw simulation parameters on screen
-    
-    char label[100];
-    int line = 1;
-    int line_offset = 13;
-    int screen_offset_x = 10 - stats_area_width;
-    int screen_offset_y = 10;
-    
-    glColor3f( 0.7f, 0.0f, 0.6f );
-    
-    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - line * line_offset );
-    sprintf( label, "Agent #: %d", params.agent_number );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-    sprintf( label, "Obstacle #: %d", params.obstacle_number );
-    draw_string( label );
-
-    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-    sprintf( label, "Timer Delay: %d", params.timer_delay_ms );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-    sprintf( label, "Max Velocity: %.2f", params.max_V );
-    draw_string( label );
-    
-    ++line;
-    
-    switch ( params.force_law )    
-    {
-        case NEWTONIAN:
-            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G Force A-A: %.2f", params.G_agent_agent );
-            draw_string( label );
-            
-            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G Force A-O: %.2f", params.G_agent_obstacle );
-            draw_string( label );
-            
-            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G Force A-G: %.2f", params.G_agent_goal );
-            draw_string( label );
-            
-            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p Power A-A: %.2f", params.p_agent_agent );
-            draw_string( label );
-            
-            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p Power A-O: %.2f", params.p_agent_obstacle );
-            draw_string( label );
-            
-            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p Power A-G: %.2f", params.p_agent_goal );
-            draw_string( label );
-            break;
-            
-        case LENNARD_JONES:
-            break;
-    }
-    
-    ++line;
-    
-    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-    sprintf( label, "Reached Goal #: %d", stats.reached_goal );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-    sprintf( label, "Reach Ratio: %.2f%%", stats.reach_ratio * 100.0f );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-    sprintf( label, "Collisions: %d", stats.collided );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-    sprintf( label, "Time Step: %d", stats.time_step );
-    draw_string( label );
-    
-    glColor3f( 0.0f, 0.0f, 0.0f );
-    
-    glBegin( GL_LINES );
-        glVertex2f( 0.0f, 0.0f );
-        glVertex2f( 0.0f, params.world_height );
-    glEnd();
-}
-
-inline void draw_instructions( void )
-{
-    // Draw simulation instructions (help)
-    
-    char label[100];
-    int line = 1;
-    int line_offset = 13;
-    int screen_offset = 10;
-    
-    glColor3f( 0.0f, 0.0f, 0.0f );
-    
-    glRasterPos2i( screen_offset, -3 * screen_offset - line * line_offset );
-    sprintf( label, "'S' -- Start/Stop the simualtion" );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
-    sprintf( label, "'R' -- Restart the simulation" );
-    draw_string( label );
-
-    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
-    sprintf( label, "'PageUp' -- Increase timer delay (slower)" );
-    draw_string( label );
-
-    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
-    sprintf( label, "'PageDown' -- Decrease timer delay (faster)" );
-    draw_string( label );
-    
-    line = 1;
-    
-    glRasterPos2i( screen_offset + 300, -3 * screen_offset - line * line_offset );
-    sprintf( label, "'I' -- Change object increment/decrement" );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
-    sprintf( label, "'A' -- Selects agent # to be incremented/decremented" );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
-    sprintf( label, "'UP' -- Increments # of objects" );
-    draw_string( label );
-    
-    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
-    sprintf( label, "'DOWN' -- Decrements # of objects" );
-    draw_string( label );
-    
-    if ( running )
-    {
-        glColor3f( 0.0f, 0.5f, 0.0f );
-        glRasterPos2i( params.world_width - 70, -help_area_height + line_offset );
-        sprintf( label, "RUNNING" );
-        draw_string( label );
-    }
-    else
-    {
-        glColor3f( 0.5f, 0.0f, 0.0f );
-        glRasterPos2i( params.world_width - 70, -help_area_height + line_offset );
-        sprintf( label, "STOPPED" );
-        draw_string( label );
-    }
-    
-    glColor3f( 0.0f, 0.0f, 0.0f );
-    glRasterPos2i( params.world_width - 170, -help_area_height + line_offset );
-    sprintf( label, "%s [%3d]", selections[cur_sel_index], increments[cur_inc_index] );
-    draw_string( label );
-    
-    glBegin( GL_LINES );
-        glVertex2f( 0.0f, 0.0f );
-        glVertex2f( params.world_width, 0.0f );
-    glEnd();
-}
-
-void draw_all( void )
-{
-    int i;
-    
-    glClear( GL_COLOR_BUFFER_BIT );
-    
-    draw_goal( goal );
-    
-    for ( i = 0; i < params.obstacle_number; i++ )
-    {
-        draw_obstacle( obstacles[i] );
-    }
-    
-    if ( show_connectivity ) { draw_agent_connectivity(); }
-
-    for( i = 0; i < params.agent_number; i++ )
-    {
-        draw_agent( agents[i] );
-    }
-    
-    draw_params_stats();
-    draw_instructions();
-
-    glutSwapBuffers();
-}
 
 void process_normal_keys( unsigned char key, int x, int y )
 {
@@ -2392,7 +1918,7 @@ void process_mouse_active_motion( int x, int y )
 
 void run_gui( int time )
 {
-    if ( running )
+    if ( running && stats.time_step < params.time_limit )
     {
         move_agents();
         glutPostRedisplay();
@@ -2409,13 +1935,21 @@ void update_reach(void)
     {
         Agent *agent1 = agents[a1];
         Vector2f agent1_pos = agent1->position;
-    
+        
         if ( !agent1->goal_reached )
         {
             for ( a2 = 0; a2 < params.agent_number; a2++ )
             {
                 Agent *agent2 = agents[a2];
                 Vector2f agent2_pos = agent2->position;
+                
+                if ( agent_reached_goal_radius(agent1) )
+                {
+                    agent1->goal_reached = true;
+                    ++stats.reached_goal;
+                    stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+                    break;
+                }
     
                 if ( agent2->goal_reached )
                 {
@@ -2509,14 +2043,7 @@ void run_cli( int argc, char **argv )
                         move_agents();
                     }
                     
-                    // TODO: remove printf's
-                    printf( "inside runs_number loop\n" );
-                    printf( "reached_goal = %d\n", stats.reached_goal );
-
                     if ( params.enable_agent_agent_f ) { update_reach(); }
-                    
-                    // TODO: remove printf's
-                    printf( "reached_goal = %d\n", stats.reached_goal );
                 }
                 else
                 {
@@ -2603,7 +2130,7 @@ void run_cli( int argc, char **argv )
                                 move_agents();
                             }
                         
-                            //if ( params.enable_agent_agent_f ) { update_reach(); }
+                            if ( params.enable_agent_agent_f ) { update_reach(); }
                         }
                         else
                         {
