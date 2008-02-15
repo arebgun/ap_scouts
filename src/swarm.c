@@ -2,7 +2,7 @@
  ============================================================================
  Name        : swarm.c
  Author      : Antons Rebguns
- Version     : 0.4.0
+ Version     : 0.4.1
  Copyright   : Copyright(c) 2007, 2008
  Description : Robotic swarm simulator (OpenGL)
  ============================================================================
@@ -324,7 +324,7 @@ int read_config_file( char *p_filename )
             }
             else if ( strcmp( "k_array", parameter ) == 0 )
             {
-                params.k_array = ( int * ) calloc( params.k_number + 1, sizeof( int ) );
+                params.k_array = ( int * ) calloc( params.k_number, sizeof( int ) );
 
                 if ( params.k_array == NULL )
                 {
@@ -847,8 +847,8 @@ bool agent_reached_goal_actual( Agent *agent )
  */
 bool agent_reached_goal_radius( Agent *agent )
 {
-    Vector2f g_pos = goal->position;
     Vector2f a_pos = agent->position;
+    Vector2f g_pos = goal->position;
     
     double distance_to_obj = sqrt( pow( a_pos.x - g_pos.x, 2 ) + pow( a_pos.y - g_pos.y, 2 ) );
 
@@ -856,42 +856,32 @@ bool agent_reached_goal_radius( Agent *agent )
     else { return false; }
 }
 
-bool agent_reached_goal_time_limit_chain( Agent *agent )
+bool agent_reached_goal_chain( Agent *agent )
 {
-	bool result = false;
-	
-	if ( stats.time_step >= params.time_limit )
-	{
-	    int a2;
-	    
-	    if ( agent_reached_goal_radius( agent ) )
-	    {
-	    	result = true;
-		}
-	    else
-	    {
-	        Vector2f agent1_pos = agent->position;
-	    
-	        for ( a2 = 0; a2 < params.agent_number; a2++ )
-	        {
-	            Agent *agent2 = agents[a2];
-	            Vector2f agent2_pos = agent2->position;
-	
-	            if ( agent2->goal_reached )
-	            {
-	                double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
-	                
-	                if ( distance <= params.range_coefficient * params.R )
-	                {
-	                	result = true;
-	                	break;
-	                }
-	            }
-	        }
-	    }
+    if ( agent_reached_goal_radius( agent ) )
+    {
+    	return true;
 	}
+    else
+    {
+        Vector2f agent1_pos = agent->position;
+        
+        int i;
 
-	return result;
+        for ( i = 0; i < params.agent_number; i++ )
+        {
+            Agent *agent2 = agents[i];
+            Vector2f agent2_pos = agent2->position;
+
+            if ( agent2->goal_reached )
+            {
+                double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
+                if ( distance <= params.range_coefficient * params.R ) { return true; }
+            }
+        }
+    }
+
+	return false;
 }
 
 void initialize_simulation( void )
@@ -952,7 +942,7 @@ void initialize_simulation( void )
     params.initialize_from_file = false;
     
     // set function to use when deciding wheter agent reached a goal
-    agent_reached_goal = agent_reached_goal_radius;
+    agent_reached_goal = agent_reached_goal_chain;
     
     // Reset statistics
     reset_statistics();    
@@ -1590,12 +1580,12 @@ void move_agents( void )
         agent->n_position.y += agent->n_velocity.y;
         
         // calculate number of agents that reached the goal
-//        if ( !agents[i]->goal_reached && agent_reached_goal( agents[i] ) )
-//        {
-//            agents[i]->goal_reached = true;
-//            stats.reached_goal++;
-//            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-//        }
+        if ( !agents[i]->goal_reached && agent_reached_goal_actual( agents[i] ) )
+        {
+            agents[i]->goal_reached = true;
+            stats.reached_goal++;
+            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+        }
         
         // calculate number of agent-obstacle collisions
         for ( j = 0; j < params.obstacle_number; j++ )
@@ -1868,13 +1858,13 @@ void process_mouse_buttons( int button, int state, int x, int y )
             
             for ( i = 0; i < params.obstacle_number; i++ )
             {
-                int thresh = ceil( obstacles[i]->radius / 2.0f );
+                int radius = obstacles[i]->radius;
                 
                 float x_o = obstacles[i]->position.x;
                 float y_o = obstacles[i]->position.y;
                  
-                if ( ( x >= x_o - thresh ) && ( x <= x_o + thresh ) &&
-                     ( y >= y_o - thresh ) && ( y <= y_o + thresh ) )
+                if ( ( x >= x_o - radius ) && ( x <= x_o + radius ) &&
+                     ( y >= y_o - radius ) && ( y <= y_o + radius ) )
                 {
                     inside_window = true;
                     selected_obstacle_id = i;
@@ -1916,56 +1906,34 @@ void process_mouse_active_motion( int x, int y )
     }
 }
 
+void update_reach(void)
+{
+    int i;
+    
+    for ( i = 0; i < params.agent_number; i++ )
+    {
+        Agent *agent1 = agents[i];
+        
+    	if ( !agent1->goal_reached && agent_reached_goal( agent1 ) )
+    	{
+            agent1->goal_reached = true;
+            stats.reached_goal++;
+            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+    	}
+    }
+}
+
 void run_gui( int time )
 {
-    if ( running && stats.time_step < params.time_limit )
+    if ( running )
     {
-        move_agents();
-        glutPostRedisplay();
+    	if ( stats.time_step < params.time_limit ) { move_agents(); }
+    	else { update_reach(); }
+    	
+		glutPostRedisplay();
     }
     
     glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
-}
-
-void update_reach(void)
-{
-    int a1, a2;
-    
-    for ( a1 = 0; a1 < params.agent_number; a1++ )
-    {
-        Agent *agent1 = agents[a1];
-        Vector2f agent1_pos = agent1->position;
-        
-        if ( !agent1->goal_reached )
-        {
-            for ( a2 = 0; a2 < params.agent_number; a2++ )
-            {
-                Agent *agent2 = agents[a2];
-                Vector2f agent2_pos = agent2->position;
-                
-                if ( agent_reached_goal_radius(agent1) )
-                {
-                    agent1->goal_reached = true;
-                    ++stats.reached_goal;
-                    stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-                    break;
-                }
-    
-                if ( agent2->goal_reached )
-                {
-                    double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
-    
-                    if ( distance <= params.range_coefficient * params.R )
-                    {
-                        agent1->goal_reached = true;
-                        ++stats.reached_goal;
-                        stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-                        break;
-                    }
-                }
-            }
-        }
-    }
 }
 
 void run_cli( int argc, char **argv )
@@ -2006,7 +1974,6 @@ void run_cli( int argc, char **argv )
 
         for ( n = 0; n < params.n_number; n++ )
         {
-            params.k_array[params.k_number] = params.n_array[n];
             nn = params.n_array[n];
             change_agent_number( params.n_array[n] );
             
@@ -2043,7 +2010,7 @@ void run_cli( int argc, char **argv )
                         move_agents();
                     }
                     
-                    if ( params.enable_agent_agent_f ) { update_reach(); }
+                    update_reach();
                 }
                 else
                 {
@@ -2080,7 +2047,7 @@ void run_cli( int argc, char **argv )
                 alpha = params.alpha_array[ab];
                 beta = params.beta_array[ab];
     
-                for ( k = 0; k <= params.k_number; k++ )
+                for ( k = 0; k < params.k_number; k++ )
                 {
                     change_agent_number( params.k_array[k] );
                     kk = params.k_array[k];
@@ -2130,7 +2097,7 @@ void run_cli( int argc, char **argv )
                                 move_agents();
                             }
                         
-                            if ( params.enable_agent_agent_f ) { update_reach(); }
+                            update_reach();
                         }
                         else
                         {
