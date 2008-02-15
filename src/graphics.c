@@ -2,22 +2,22 @@
  ============================================================================
  Name        : graphics.c
  Author      : Antons Rebguns
- Version     : 0.4.0
+ Version     : 0.4.1
  Copyright   : Copyright(c) 2007, 2008
  Description : Robotic swarm simulator (OpenGL)
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "GL/gl.h"
 #include "GL/glut.h"
 
-#include "graphics.h"
 #include "defs.h"
+#include "graphics.h"
 
 int help_area_height = 100;
 int stats_area_width = 150;
@@ -39,6 +39,15 @@ char *selections[3] = { "AGENT", "OBSTACLE", "GOAL" };
 int cur_sel_index = 0;
 
 bool show_connectivity = false;
+
+void initialize_graphics( void )
+{
+    glClearColor( 1.0f, 1.0f, 1.0f, 0.0f );
+
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+    glOrtho( -stats_area_width, params.world_width, -help_area_height, params.world_height, 0.0, 100.0 );
+}
 
 void draw_all( void )
 {

@@ -8,20 +8,21 @@
  ============================================================================
  */
 
+#include <float.h>
+#include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
-#include <math.h>
 #include <time.h>
-#include <float.h>
 
 #include "GL/gl.h"
 #include "GL/glut.h"
 
 #include "defs.h"
-#include "swarm.h"
 #include "graphics.h"
+#include "input.h"
+#include "swarm.h"
 
 /*************** TEMPORARY *************************/
 double alpha;
@@ -1247,15 +1248,6 @@ void restart_simulation( void )
     }
 }
 
-void initialize_graphics( void )
-{
-    glClearColor( 1.0f, 1.0f, 1.0f, 0.0f );
-
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
-    glOrtho( -stats_area_width, params.world_width, -help_area_height, params.world_height, 0.0, 100.0 );
-}
-
 int change_agent_number( int agent_number )
 {
     int i;    
@@ -1580,9 +1572,9 @@ void move_agents( void )
         agent->n_position.y += agent->n_velocity.y;
         
         // calculate number of agents that reached the goal
-        if ( !agents[i]->goal_reached && agent_reached_goal_actual( agents[i] ) )
+        if ( !agent->goal_reached && agent_reached_goal_actual( agent ) )
         {
-            agents[i]->goal_reached = true;
+            agent->goal_reached = true;
             stats.reached_goal++;
             stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
         }
@@ -1715,196 +1707,6 @@ double f( double p )
 }
 
 /****************************************************************************************/
-
-void process_normal_keys( unsigned char key, int x, int y )
-{
-    if ( key == 's' || key == 'S' )
-    {
-        running = !running;
-        glutPostRedisplay();
-    }
-    else if ( key == 'r' || key == 'R' )
-    {
-        restart_simulation();
-        glutPostRedisplay();
-    }
-    else if ( key == 'i' || key == 'I' )
-    {
-        ++cur_inc_index;
-        cur_inc_index %= 6;
-        glutPostRedisplay();
-    }
-    else if ( key == 'a' || key == 'A' )
-    {
-        cur_sel_index = 0;        // AGENT
-        glutPostRedisplay();
-    }
-    else if ( key == 'o' || key == 'O' )
-    {
-        cur_sel_index = 1;        // OBSTACLE
-        glutPostRedisplay();
-    }
-    else if ( key == 'd' )
-    {
-        if ( save_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
-        glutPostRedisplay();
-    }
-    else if ( key == 'D' )
-    {
-        if ( !params.initialize_from_file )
-        {
-            params.initialize_from_file = true;
-            if ( save_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
-            params.initialize_from_file = false;
-        }
-        else
-        {
-            if ( save_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
-        }
-        glutPostRedisplay();
-    }
-    else if ( key == 'l' )
-    {
-        if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
-        glutPostRedisplay();
-    }
-    else if ( key == 'L' )
-    {
-        if ( !params.initialize_from_file )
-        {
-            params.initialize_from_file = true;
-            if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
-            params.initialize_from_file = false;
-        }
-        else
-        {
-            if ( load_scenario( "scenario.dat" ) != 0 ) { exit( EXIT_FAILURE ); }
-        }
-        glutPostRedisplay();
-    }
-    else if ( key == 'c' || key == 'C')
-    {
-        show_connectivity = show_connectivity ? false : true;
-        glutPostRedisplay();
-    }
-    else if ( key == 'q' || key == 'Q' )
-    {
-        free_memory();
-        exit( EXIT_SUCCESS );
-    }
-}
-
-void process_special_keys( int key, int x, int y )
-{
-    switch ( key )
-    {
-        case GLUT_KEY_PAGE_UP:
-            ++params.timer_delay_ms;
-            glutPostRedisplay();
-            break;
-            
-        case GLUT_KEY_PAGE_DOWN:
-            if ( params.timer_delay_ms > 1 )
-            {
-                --params.timer_delay_ms;
-                glutPostRedisplay();
-            }
-            break;
-        
-        case GLUT_KEY_UP:
-            if ( cur_sel_index == 0 )
-            {
-                if ( change_agent_number( params.agent_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
-            }
-            else if ( cur_sel_index == 1 )
-            {
-                if ( change_obstacle_number( params.obstacle_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
-            }
-            else
-            {
-                printf( "Unknown object index [%d]", cur_sel_index );
-            }
-            glutPostRedisplay();
-            break;
-            
-        case GLUT_KEY_DOWN:
-            if ( cur_sel_index == 0 )
-            {
-                if ( change_agent_number( params.agent_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
-            }
-            else if ( cur_sel_index == 1 )
-            {
-                if ( change_obstacle_number( params.obstacle_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
-            }
-            else
-            {
-                printf( "Unknown object index [%d]", cur_sel_index );
-            }
-            glutPostRedisplay();
-            break;
-    }
-}
-
-void process_mouse_buttons( int button, int state, int x, int y )
-{
-    if ( state == GLUT_DOWN )
-    {
-        if ( button == GLUT_LEFT_BUTTON )
-        {
-            x = x - stats_area_width;
-            y = params.world_height - y;
-            
-            int i;
-            
-            for ( i = 0; i < params.obstacle_number; i++ )
-            {
-                int radius = obstacles[i]->radius;
-                
-                float x_o = obstacles[i]->position.x;
-                float y_o = obstacles[i]->position.y;
-                 
-                if ( ( x >= x_o - radius ) && ( x <= x_o + radius ) &&
-                     ( y >= y_o - radius ) && ( y <= y_o + radius ) )
-                {
-                    inside_window = true;
-                    selected_obstacle_id = i;
-                    selection_active = true;
-                    break;
-                }
-            }
-        }
-    }
-    else
-    {
-        inside_window = false;
-        selected_obstacle_id = -1;
-        selection_active = false;
-    }
-}
-
-void process_mouse_entry( int state )
-{
-    if ( state == GLUT_LEFT ) { inside_window = false; }
-    else { inside_window = true; }
-}
-
-void process_mouse_active_motion( int x, int y )
-{
-    if ( selection_active && selected_obstacle_id != -1 && inside_window )
-    {
-        Obstacle *obs = obstacles[selected_obstacle_id];
-        Vector2f *obs_pos = &( obs->position );
-        
-        obs_pos->x = x - stats_area_width;
-        obs_pos->y = params.world_height - y;
-        
-        // prevent moving obstacle to the information and statistics area
-        if ( obs_pos->x - obs->radius < 0.0f ) { obs_pos->x = obs->radius; }
-        if ( obs_pos->y - obs->radius < 0.0f ) { obs_pos->y = obs->radius; }
-        
-        glutPostRedisplay();
-    }
-}
 
 void update_reach(void)
 {

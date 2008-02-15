@@ -2,7 +2,7 @@
  ============================================================================
  Name        : graphics.h
  Author      : Antons Rebguns
- Version     : 0.4.0
+ Version     : 0.4.1
  Copyright   : Copyright(c) 2007, 2008
  Description : Robotic swarm simulator (OpenGL)
  ============================================================================
@@ -45,6 +45,7 @@ int cur_sel_index;
 
 bool show_connectivity;
 
+void initialize_graphics( void );
 void draw_all( void );
 inline void draw_string( char *s );
 inline void draw_goal( Goal *goal );

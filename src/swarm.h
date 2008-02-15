@@ -2,7 +2,7 @@
  ============================================================================
  Name        : swarm.h
  Author      : Antons Rebguns
- Version     : 0.4.0
+ Version     : 0.4.1
  Copyright   : Copyright(c) 2007, 2008
  Description : Robotic swarm simulator (OpenGL)
  ============================================================================
@@ -11,8 +11,8 @@
 #ifndef SWARM_H_
 #define SWARM_H_
 
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "defs.h"
 
