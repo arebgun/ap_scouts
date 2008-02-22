@@ -9,6 +9,7 @@
  */
 
 #include <float.h>
+#include <limits.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -310,7 +311,7 @@ int read_config_file( char *p_filename )
                 
                 if ( params.n_array == NULL )
                 {
-                    printf( "Error while allocating memory for n_array!" );
+                    printf( "ERROR: allocating memory for n_array failed!" );
                     return -1;
                 }
                 
@@ -329,7 +330,7 @@ int read_config_file( char *p_filename )
 
                 if ( params.k_array == NULL )
                 {
-                    printf( "Error while allocating memory for k_array!" );
+                    printf( "ERROR: allocating memory for k_array failed!" );
                     return -1;
                 }
                 
@@ -348,7 +349,7 @@ int read_config_file( char *p_filename )
 
                 if ( params.alpha_array == NULL )
                 {
-                    printf( "Error while allocating memory for alpha_array!" );
+                    printf( "ERROR: allocating memory for alpha_array failed!" );
                     return -1;
                 }
                 
@@ -367,7 +368,7 @@ int read_config_file( char *p_filename )
 
                 if ( params.beta_array == NULL )
                 {
-                    printf( "Error while allocating memory for beta_array!" );
+                    printf( "ERROR: allocating memory for beta_array failed!" );
                     return -1;
                 }
                 
@@ -500,7 +501,7 @@ int create_goal( void )
     
     if ( goal == NULL )
     {
-        printf( "Error while allocating memory for goal!" );
+        printf( "ERROR: allocating memory for a goal failed!" );
         return -1;
     }
     
@@ -669,7 +670,7 @@ Agent *create_agent( int id )
     
     if ( agent == NULL )
     {
-        printf( "Error while allocating memory for an agent!" );
+        printf( "ERROR: allocating memory for an agent failed!" );
         return NULL;
     }
     
@@ -694,7 +695,7 @@ int create_swarm( void )
     
     if ( agents == NULL )
     {
-        printf( "Error while allocating memory for agents array!" );
+        printf( "ERROR: allocating memory for agents array failed!" );
         return -1;
     }
     
@@ -710,7 +711,7 @@ int create_swarm( void )
         
         if ( agents[i] == NULL )
         {
-            printf( "Error while allocating memory for agent %d!", i );
+            printf( "ERROR: allocating memory for agent %d failed!", i );
             return -1;
         }
     }
@@ -724,7 +725,7 @@ Obstacle *create_obstacle( int id, bool random_radius, float radius_range )
     
     if ( obstacle == NULL )
     {
-        printf( "Error while allocating memory for obstacle!" );
+        printf( "ERROR: allocating memory for an obstacle failed!" );
         return NULL;
     }
     
@@ -753,7 +754,7 @@ int create_obstacle_course( void )
     
     if ( obstacles == NULL )
     {
-        printf( "Error while allocating memory for obstacles array!" );
+        printf( "ERROR: allocating memory for an obstacles array failed!" );
         return -1;
     }
     
@@ -772,7 +773,7 @@ int create_obstacle_course( void )
         
         if ( obstacles[i] == NULL )
         {
-            printf( "Error while allocating memory for obstacle %d!", i );
+            printf( "ERROR: allocating memory for obstacle %d failed!", i );
             return -1;
         }
     }
@@ -1259,7 +1260,7 @@ int change_agent_number( int agent_number )
         
         if ( agents == NULL )
         {
-            printf( "Error while expanding memory for agents array!" );
+            printf( "ERROR: expanding memory for agents array failed!" );
             return -1;
         }
         
@@ -1276,7 +1277,7 @@ int change_agent_number( int agent_number )
         
         if ( agents == NULL )
         {
-            printf( "Error while shrinking memory for agents array!" );
+            printf( "ERROR: shrinking memory for agents array failed!" );
             return -1;
         }
         
@@ -1288,7 +1289,7 @@ int change_agent_number( int agent_number )
         
         if ( agents == NULL )
         {
-            printf( "Error while shrinking memory for agents array!" );
+            printf( "ERROR: shrinking memory for agents array failed!" );
             return -1;
         }
         
@@ -1309,7 +1310,7 @@ int change_obstacle_number( int obstacle_number )
         
         if ( obstacles == NULL )
         {
-            printf( "Error while expanding memory for obstacles array!" );
+            printf( "ERROR: expanding memory for obstacles array failed!" );
             return -1;
         }
         
@@ -1329,7 +1330,7 @@ int change_obstacle_number( int obstacle_number )
         
         if ( agents == NULL )
         {
-            printf( "Error while shrinking memory for obstacles array!" );
+            printf( "ERROR: shrinking memory for obstacles array failed!" );
             return -1;
         }
         
@@ -1341,7 +1342,7 @@ int change_obstacle_number( int obstacle_number )
         
         if ( agents == NULL )
         {
-            printf( "Error while shrinking memory for obstacles array!" );
+            printf( "ERROR: shrinking memory for obstacles array failed!" );
             return -1;
         }
         
@@ -1738,6 +1739,12 @@ void run_gui( int time )
     glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
 }
 
+/*
+ * big_P_prime - "ground truth" obtained by running the simulation with
+ *               agent_number number of agents runs_number number of times.
+ * big_P       - approximation of big_P_prime obtained using Bernoulli trials.
+ * big_P_hat   - approximation of big_P_prime obtained using proposed formula.
+ */
 void run_cli( int argc, char **argv )
 {
 	// skip program name and view mode arguments
@@ -1760,7 +1767,7 @@ void run_cli( int argc, char **argv )
 
         if ( p_results == NULL )
         {
-            printf( "Error opening file [%s]!", params.results_filename );
+            printf( "ERROR: Unable to open file [%s]!", params.results_filename );
             exit( EXIT_FAILURE );
         }
         
@@ -1781,7 +1788,7 @@ void run_cli( int argc, char **argv )
             
             int i, j;
             
-            /***************** Calculate ground truth - big_P_prime *********************************/
+            /*************************** Calculate ground truth - big_P_prime ************************************/
             printf( "Calculating P' (ground truth from simulation)\n" );
             
             double big_P_prime[params.n_array[n] + 1];
@@ -1834,13 +1841,13 @@ void run_cli( int argc, char **argv )
                 
                 small_p += stats.reach_ratio;
                 
-                if ( ( i != 0 ) && ( i % 100 == 0 ) ) { printf( "\ti = %d, \tp = %.2f\n", i, small_p / i ); }
+                if ( ( i != 0 ) && ( i % 100 == 0 ) ) { printf( "\ti = %d, \tp = %.2f\n", i, stats.reach_ratio ); }
             }
             
             small_p /= params.runs_number;
             
-            printf( "P' calculation finished\n\n\n" );
-            /*******************************************************************************************/
+            printf( "P' calculation finished, p = %.2f\n\n", small_p );
+            /*****************************************************************************************************/
             
             int ab, k, y, l;
             
@@ -1855,30 +1862,49 @@ void run_cli( int argc, char **argv )
                     kk = params.k_array[k];
                     
                     fprintf( p_results, "#index %d, small_p = %f, n = %d, k = %d, alpha = %.2f, beta = %.2f\n", index, small_p, nn, kk, alpha, beta );
-                    fprintf( p_results, "#n\t\t\tk\t\t\ty\t\t\tbig_P_mean\t\t\tbig_P_prime\t\t\tbig_P_hat_mean\t\t\terror1\t\t\terror2" );
-                    fprintf( p_results, "\t\t\tbig_P_std\t\t\tbig_P_hat_std\t\t\tbig_P_var\t\t\tbig_P_hat_var\n" );
+                    fprintf( p_results, "#n\t\t\tk\t\t\ty" );
+                    fprintf( p_results, "\t\t\tbig_P_prime\t\t\tbig_P_mean\t\t\tbig_P_hat_mean\t\t\tbig_P_hat_plus_mean" );
+                    fprintf( p_results, "\t\terror1\t\t\t\t\terror2\t\t\t\terror3" );
+                    fprintf( p_results, "\t\t\t\tbig_P_std\t\t\tbig_P_hat_std\t\tbig_P_hat_plus_std" );
+                    fprintf( p_results, "\tbig_P_var\t\t\tbig_P_hat_var\t\tbig_P_hat_plus_var" );
+                    fprintf( p_results, "\t\tbig_P_bias\t\tbig_P_hat_bias\t\tbig_P_hat_plus_bias" );
+                    fprintf( p_results, "\t\tbig_P_mse\t\tbig_P_hat_mse\t\tbig_P_hat_plus_mse\n" );
                     
                     double *big_P_array;
                     double *big_P_hat_array;
+                    double *big_P_hat_plus_array;
 
                     big_P_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
                     big_P_hat_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
+                    big_P_hat_plus_array = ( double * ) calloc( ( nn + 1 ) * params.runs_number, sizeof( double ) );
 
-                    if ( big_P_array == NULL || big_P_hat_array == NULL )
+                    if ( big_P_array == NULL )
                     {
-                        printf( "Error allocating memory for big_P_array or big_P_hat_array!" );
+                        printf( "ERROR: allocating memory for big_P_array failed!" );
+                        exit( EXIT_FAILURE );
+                    }
+                    
+                    if ( big_P_hat_array == NULL )
+                    {
+                        printf( "ERROR: allocating memory for big_P_hat_array failed!" );
+                        exit( EXIT_FAILURE );
+                    }
+
+                    if ( big_P_hat_plus_array == NULL )
+                    {
+                        printf( "ERROR: allocating memory for big_P_hat_plus_array failed!" );
                         exit( EXIT_FAILURE );
                     }
                     
                     double big_P_mean[nn + 1];
                     double big_P_hat_mean[nn + 1];
+                    double big_P_hat_plus_mean[nn + 1];
                     
                     // initialize big_P_mean and big_P_hat_mean arrays to all 0's
                     memset( big_P_mean, 0, sizeof( big_P_mean ) );
                     memset( big_P_hat_mean, 0, sizeof( big_P_hat_mean ) );
+                    memset( big_P_hat_plus_mean, 0, sizeof( big_P_hat_plus_mean ) );
 
-                    //double phat = 0.0;
-                    
                     srand( ( unsigned int ) time( NULL ) );
                     
                     for ( j = 0; j < params.runs_number; j++ )
@@ -1904,22 +1930,20 @@ void run_cli( int argc, char **argv )
                         else
                         {
                             reset_statistics();
-                        
+
                             int u;
-                        
+
                             for ( u = 0; u < params.agent_number; u++ )
                             {
                                 double random = ( double ) rand() / ( double ) RAND_MAX;
                                 if ( random <= small_p ) { ++stats.reached_goal; }
                             }
-                        
+
                             stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
                         }
                         
                         for ( y = 1; y <= nn; y++ )
                         {
-                            yy = y;
-
                             /***************** Calculate big_P ***************************************************************/
                             double big_P = 0.0;
 
@@ -1934,61 +1958,133 @@ void run_cli( int argc, char **argv )
                             /*************************************************************************************************/
                             
                             /***************** Calculate big_P_hat ***********************************************************/
+                            yy = y;
                             ppHat = stats.reach_ratio;
                             
                             double big_P_hat = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
-
                             if ( big_P_hat > 1.0 ) { big_P_hat = 1.0; }
                             /*************************************************************************************************/
                             
+                            /***************** Calculate big_P_hat_plus ******************************************************/
+                            double big_P_hat_plus = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+                            if ( big_P_hat_plus > 1.0 ) { big_P_hat_plus = 1.0; }
+                            /*************************************************************************************************/
+                                                        
                             big_P_array[y * params.runs_number + j] = big_P;
                             big_P_hat_array[y * params.runs_number + j] = big_P_hat;
+                            big_P_hat_plus_array[y * params.runs_number + j] = big_P_hat_plus;
                             
                             big_P_mean[y] += big_P / params.runs_number;
                             big_P_hat_mean[y] += big_P_hat / params.runs_number;
-                            
-                            //printf( "%d\t\t\t%f\t\t\t%f\t\t\t%f\n", j, stats.reach_ratio, big_P, big_P_hat );
+                            big_P_hat_plus_mean[y] += big_P_hat_plus / params.runs_number;
                         }
                         
                         if ( j % 100 == 0 ) { printf( "j = %d, n = %d, k = %d\n", j, params.n_array[n], params.k_array[k] ); }
                     }
                     
-                    //printf( "\t\t\t%f\t\t\t%f\t\t\t%f\n", phat, big_P_mean[18], big_P_hat_mean[18] );
-                    
                     for ( y = 1; y <= nn; y++ )
                     {
                         double big_P_sum = 0.0;
                         double big_P_hat_sum = 0.0;
+                        double big_P_hat_plus_sum = 0.0;
                         
                         for ( j = 0; j < params.runs_number; j++ )
                         {
                             big_P_sum += pow( big_P_array[y * params.runs_number + j] - big_P_mean[y], 2.0 );
                             big_P_hat_sum += pow( big_P_hat_array[y * params.runs_number + j] - big_P_hat_mean[y], 2.0 );
+                            big_P_hat_plus_sum += pow( big_P_hat_plus_array[y * params.runs_number + j] - big_P_hat_plus_mean[y], 2.0 );
                         }
                         
+                        // calculate standard deviation
                         double big_P_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_sum );
                         double big_P_hat_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_hat_sum );
+                        double big_P_hat_plus_std_dev = sqrt( ( 1.0 / params.runs_number ) * big_P_hat_plus_sum );
                         
+                        // calculate variance 
                         double big_P_var = pow( big_P_std_dev, 2.0 );
                         double big_P_hat_var = pow( big_P_hat_std_dev, 2.0 );
+                        double big_P_hat_plus_var = pow( big_P_hat_plus_std_dev, 2.0 );
                         
-                        double error1 = fabs( big_P_hat_mean[y] - big_P_mean[y] );
-                        double error2 = fabs( big_P_hat_mean[y] - big_P_prime[y] );
+                        /**************************************************** Calculate bias ***************************************************************/
+    					double big_P_bias = 0.0;
+    					double big_P_hat_bias = 0.0;
+    					double big_P_hat_plus_bias = 0.0;
+    					
+    					int s;
+    					
+    					for ( s = 0; s <= params.k_array[k]; s++ )
+    					{
+    						double small_p_hat = ( double ) s / ( double ) params.k_array[k];
+    						
+                            /***************** Calculate big_P *********************************************************************************************/
+                            double big_P = 0.0;
+
+                            for ( l = y; l <= params.n_array[n]; l++ )
+                            {
+                                // exp( gammaln( n + 1 ) ) == fac( n )
+                                double n_choose_l =  exp( gammaln( params.n_array[n] + 1.0 ) - gammaln( l + 1.0 ) - gammaln( params.n_array[n] - l + 1.0 ) );
+                                big_P += n_choose_l * pow( small_p_hat, l ) * pow( 1.0 - small_p_hat, params.n_array[n] - l );
+                            }
+                            
+                            if ( big_P > 1.0 ) { big_P = 1.0; }
+                            /*******************************************************************************************************************************/
+                            
+                            /***************** Calculate big_P_hat *****************************************************************************************/
+                            yy = y;
+                            ppHat = small_p_hat;
+                            
+                            double big_P_hat = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+                            if ( big_P_hat > 1.0 ) { big_P_hat = 1.0; }
+                            /*******************************************************************************************************************************/
+                            
+                            // TODO: new formula for calculating P^+
+                            /***************** Calculate big_P_hat_plus ************************************************************************************/
+                            double big_P_hat_plus = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+                            if ( big_P_hat_plus > 1.0 ) { big_P_hat_plus = 1.0; }
+                            /*******************************************************************************************************************************/
+                                                        
+    						double k_choose_s = exp( gammaln( params.k_array[k] + 1.0 ) - gammaln( s + 1.0 ) - gammaln( params.k_array[k] - s + 1.0 ) );
+    						double bernoulli = k_choose_s * pow( small_p, s ) * pow( 1.0 - small_p, params.k_array[k] - s );
+    						
+    						big_P_bias += big_P * bernoulli;
+    						big_P_hat_bias += big_P_hat * bernoulli;
+    						big_P_hat_plus_bias += big_P_hat_plus * bernoulli;
+    					}
+    					
+    					big_P_bias -= big_P_prime[y];
+    					big_P_hat_bias -= big_P_prime[y];
+    					big_P_hat_plus_bias -= big_P_prime[y];
+    					
+    					double big_P_mse = pow( big_P_bias, 2.0 ) + big_P_var;
+    					double big_P_hat_mse = pow( big_P_hat_bias, 2.0 ) + big_P_hat_var;
+    					double big_P_hat_plus_mse = pow( big_P_hat_plus_bias, 2.0 ) + big_P_hat_plus_var;
+    					/***********************************************************************************************************************************/
                         
-                        fprintf( p_results, "%d\t\t\t%d\t\t\t%d\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f",
-                                 params.n_array[n], params.k_array[k], y, big_P_mean[y], big_P_prime[y], big_P_hat_mean[y], error1, error2 );
-                        fprintf( p_results, "\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t%f\n",
-                                 big_P_std_dev, big_P_hat_std_dev, big_P_var, big_P_hat_var );
+                        double error1 = big_P_mean[y] - big_P_prime[y];
+                        double error2 = big_P_hat_mean[y] - big_P_prime[y];
+                        double error3 = big_P_hat_plus_mean[y] - big_P_prime[y];
+                        
+                        fprintf( p_results, "%d\t\t\t%d\t\t\t%d", params.n_array[n], params.k_array[k], y );
+                        fprintf( p_results, "\t\t\t%f\t\t\t%f\t\t\t%f\t\t\t\t%f", big_P_prime[y], big_P_mean[y], big_P_hat_mean[y], big_P_hat_plus_mean[y] );
+                        fprintf( p_results, "\t\t\t\t%f\t\t\t%f\t\t\t%f", error1, error2, error3 );
+                        fprintf( p_results, "\t\t\t%f\t\t\t%f\t\t\t%f", big_P_std_dev, big_P_hat_std_dev, big_P_hat_plus_std_dev );
+                        fprintf( p_results, "\t\t\t%f\t\t\t%f\t\t\t%f", big_P_var, big_P_hat_var, big_P_hat_plus_var );
+                        fprintf( p_results, "\t\t%f\t\t%f\t\t%f", big_P_bias, big_P_hat_bias, big_P_hat_plus_bias );
+                        fprintf( p_results, "\t\t%f\t\t%f\t\t%f\n", big_P_mse, big_P_hat_mse, big_P_hat_plus_mse );
+                        
+                        int diff_index = INT_MAX;
+                        
+                        if ( big_P_std_dev != 0.0 ) { diff_index = floor( error1 / big_P_std_dev ); }
                         
                         // diff_index of 0 = means are within 1 P std deviation
-                        int diff_index = floor( error1 / big_P_std_dev );
-                        
                         if ( diff_index < 3 ) { ++mean_diff_P[diff_index]; }
                         else { ++mean_diff_P[3]; }
                         
-                        // diff_index of 0 = means are within 1 P-hat std deviation
-                        diff_index = floor( error1 / big_P_hat_std_dev );
+                        diff_index = INT_MAX;
                         
+                        if ( big_P_hat_std_dev != 0.0 ) { diff_index = floor( error1 / big_P_hat_std_dev ); }
+                        
+                        // diff_index of 0 = means are within 1 P-hat std deviation
                         if ( diff_index < 3 ) { ++mean_diff_P_hat[diff_index]; }
                         else { ++mean_diff_P_hat[3]; }
                         
@@ -2004,15 +2100,21 @@ void run_cli( int argc, char **argv )
                             ++means_overlap[1];
                         }
                         
-                        ++counter;                        
+                        ++counter;
                     }
 
                     fprintf( p_results, "\n\n" );
                     fflush( p_results );
 
                     ++index;
+                    
+                    if ( big_P_array != NULL ) { free( big_P_array ); }
+                    if ( big_P_hat_array != NULL ) { free( big_P_hat_array ); }
+                    if ( big_P_hat_plus_array != NULL ) { free( big_P_hat_plus_array ); }
                 }
             }
+            
+            printf( "\n" );
             
             for ( j = 0; j < 3; j++ )
             {
@@ -2021,11 +2123,10 @@ void run_cli( int argc, char **argv )
             }
             
             printf( "%.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
-            printf( "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
-            
-            printf( "\n\n" );
+            printf( "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
             
             printf( "%.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
+            printf( "\n\n" );
         }
         
         int j;
@@ -2053,10 +2154,10 @@ void run_cli( int argc, char **argv )
 void print_usage( char *program_name )
 {
     printf( "usage: %s [view_mode] [scenario_1, scenario_2, ...]\n\n", program_name );
-    printf( "\t\tviewmode - cli for command-line (batch mode)\n" );
-    printf( "\t\t           gui for full user interface mode\n\n" );
-    printf( "\t\tscenario_1, ... - one or more configuration files\n");
-    printf( "\t\tNote: when using GUI mode only the first scenraio is used.\n" );
+    printf( "\tviewmode - cli for command-line (batch mode)\n" );
+    printf( "\t           gui for full user interface mode\n\n" );
+    printf( "\tscenario_1, ... - one or more configuration files\n");
+    printf( "\tNote: when using GUI mode only the first scenraio is used.\n" );
 }
 
 int main ( int argc, char **argv )
