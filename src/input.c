@@ -1,11 +1,21 @@
 /*
- ============================================================================
- Name        : input.c
- Author      : Antons Rebguns
- Version     : 0.4.1
- Copyright   : Copyright(c) 2007, 2008
- Description : Robotic swarm simulator (OpenGL)
- ============================================================================
+ * This file is part of Robotic Swarm Simulator.
+ * 
+ * Copyright (C) 2007, 2008 Antons Rebguns <anton at cs dot uwyo dot edu>.
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+ * for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
 #include <stdlib.h>
@@ -156,7 +166,7 @@ void process_mouse_buttons( int button, int state, int x, int y )
             
             int i;
             
-            for ( i = 0; i < params.obstacle_number; i++ )
+            for ( i = 0; i < params.obstacle_number; ++i )
             {
                 int radius = obstacles[i]->radius;
                 

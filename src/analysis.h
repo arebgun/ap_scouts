@@ -18,13 +18,17 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
-#ifndef INPUT_H_
-#define INPUT_H_
+#ifndef ANALYSIS_H_
+#define ANALYSIS_H_
 
-void process_normal_keys( unsigned char key, int x, int y );
-void process_special_keys( int key, int x, int y );
-void process_mouse_buttons( int button, int state, int x, int y );
-void process_mouse_entry( int state );
-void process_mouse_active_motion( int x, int y );
+double approximation( double a, double b, double ( *func ) ( double ) );
+double gaussian_quadrature( double a, double b, int n, double ( *func ) ( double ) );
+double gammaln( double xx );    
+double beta_function( double z, double w );
+double incomplete_beta( double t );
+double f( double p );
+void analyze( int argc, char **argv );
+void print_usage( char *program_name );
+int main( int argc, char **argv );
 
-#endif /*INPUT_H_*/
+#endif /*ANALYSIS_H_*/

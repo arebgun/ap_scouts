@@ -1,11 +1,21 @@
 /*
- ============================================================================
- Name        : graphics.c
- Author      : Antons Rebguns
- Version     : 0.4.1
- Copyright   : Copyright(c) 2007, 2008
- Description : Robotic swarm simulator (OpenGL)
- ============================================================================
+ * This file is part of Robotic Swarm Simulator.
+ * 
+ * Copyright (C) 2007, 2008 Antons Rebguns <anton at cs dot uwyo dot edu>.
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+ * for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
 #include <math.h>
@@ -57,14 +67,14 @@ void draw_all( void )
     
     draw_goal( goal );
     
-    for ( i = 0; i < params.obstacle_number; i++ )
+    for ( i = 0; i < params.obstacle_number; ++i )
     {
         draw_obstacle( obstacles[i] );
     }
     
     if ( show_connectivity ) { draw_agent_connectivity(); }
 
-    for( i = 0; i < params.agent_number; i++ )
+    for( i = 0; i < params.agent_number; ++i )
     {
         draw_agent( agents[i] );
     }
@@ -79,7 +89,7 @@ inline void draw_string( char *s )
 {
     int i;
     
-    for ( i = 0; i < strlen( s ); i++ )
+    for ( i = 0; i < strlen( s ); ++i )
     {
         glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
     }
@@ -115,12 +125,12 @@ inline void draw_agent_connectivity( void )
     
     glColor3fv( agent_color_conn );
 
-    for ( i = 0; i < params.agent_number; i++ )
+    for ( i = 0; i < params.agent_number; ++i )
     {
         Agent *a1 = agents[i];
         Vector2f a1_pos = a1->position;
         
-        for ( j = i; j < params.agent_number; j++ )
+        for ( j = i; j < params.agent_number; ++j )
         {
             Agent *a2 = agents[j];
             Vector2f a2_pos = a2->position;
