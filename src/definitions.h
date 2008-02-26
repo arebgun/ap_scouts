@@ -18,12 +18,10 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
-#ifndef DEFS_H_
-#define DEFS_H_
+#ifndef DEFINITIONS_H_
+#define DEFINITIONS_H_
 
 #include <stdbool.h>
-
-#include "GL/gl.h"
 
 typedef enum e_viewmode
 {
@@ -46,8 +44,8 @@ typedef enum e_obj_type
  */
 typedef struct s_vec2f
 {
-    GLfloat x;
-    GLfloat y;
+    float x;
+    float y;
     
 } Vector2f;
 
@@ -74,7 +72,7 @@ typedef struct s_agent
     bool collided;          // true, if agent collided with obstacle
     bool goal_reached;      // true, if reached goal, false otherwise
     
-    GLfloat color[3];
+    float color[3];
     
 } Agent;
 
@@ -91,7 +89,7 @@ typedef struct s_goal
     float width;
     float mass;
 
-    GLfloat color[3];
+    float color[3];
     
 } Goal;
 
@@ -108,7 +106,7 @@ typedef struct s_obstacle
     float radius;
     float mass;
     
-    GLfloat color[3];
+    float color[3];
     
 } Obstacle;
 
@@ -220,4 +218,22 @@ typedef struct s_statistics
     
 } Statistics;
 
-#endif /*DEFS_H_*/
+float agent_color[3];
+float agent_color_coll[3];
+float agent_color_conn[3];
+
+float goal_color[3];
+float obstacle_color[3];
+
+Parameters params;
+Statistics stats;
+
+Agent **agents;
+Obstacle **obstacles;
+Goal *goal;
+
+bool ( *agent_reached_goal )( Agent * );
+
+bool running;
+
+#endif /*DEFINITIONS_H_*/

@@ -26,17 +26,11 @@
 #include "GL/gl.h"
 #include "GL/glut.h"
 
-#include "defs.h"
+#include "definitions.h"
 #include "graphics.h"
 
 int help_area_height = 100;
 int stats_area_width = 150;
-
-GLfloat agent_color[3] = { 0.0f, 0.2f, 1.0f };
-GLfloat agent_color_coll[3] = { 1.0f, 0.0f, 0.0f };
-GLfloat agent_color_conn[3] = { 0.8f, 0.8f, 0.8f };
-GLfloat goal_color[3] = { 1.0f, 0.0f, 0.2f };
-GLfloat obstacle_color[3] = { 0.0f, 0.4f, 0.0f };
 
 bool inside_window = false;
 bool selection_active = false;

@@ -27,26 +27,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "GL/gl.h"
-#include "GL/glut.h"
-
-#include "defs.h"
-#include "graphics.h"
-#include "input.h"
+#include "definitions.h"
 #include "swarm.h"
-
-Viewmode mode;
-
-Parameters params;
-Statistics stats;
-
-Agent **agents = NULL;
-Obstacle **obstacles = NULL;
-Goal *goal = NULL;
-
-bool ( *agent_reached_goal )( Agent * ) = NULL;
-
-bool running;
 
 /**
  * \fn int read_config_file( char *p_filename )
@@ -66,11 +48,7 @@ int read_config_file( char *p_filename )
         
         while ( fscanf( p_config, "%100s%100s%*[^\n]", parameter, value ) != EOF )
         {
-            if ( strcasecmp( "view_mode", parameter ) == 0 )
-            {
-                mode = atoi( value );
-            }
-            else if ( strcasecmp( "world_width", parameter ) == 0 )
+            if ( strcasecmp( "world_width", parameter ) == 0 )
             {
                 params.world_width = atoi( value );
             }
@@ -390,7 +368,7 @@ int read_config_file( char *p_filename )
     }
     else
     {
-        printf( "Error opening configuration file: \"%s\"!\n", p_filename );
+        printf( "ERROR: failed to open configuration file: \"%s\"!\n", p_filename );
         return -1;
     }
     
@@ -677,6 +655,7 @@ Agent *create_agent( int id )
     
     agent->id = id;
     agent->mass = params.agent_mass;
+    agent->collided = false;
     agent->goal_reached = false;
     agent->radius = params.agent_radius;
     agent->velocity.x = 0.0f;
@@ -1048,7 +1027,7 @@ int save_scenario( char *filename )
         // Batch parameters
         fprintf( config, "time_limit               %d    # CLI only - time limit per run\n", params.time_limit );
         fprintf( config, "runs_number              %d    # CLI only - number of runs\n",     params.runs_number );
-        fprintf( config, "run_simulation           %d    # CLI only - run simulator to get probabilies or use random number generator, 0 - RNG, 1 - simulation\n", params.run_simulation );
+        fprintf( config, "run_simulation           %d    # CLI only - run simulator to get probabilities or use random number generator, 0 - RNG, 1 - simulation\n", params.run_simulation );
         fprintf( config, "env_probability		   %f	 # CLI only - used when run_simulation = 0\n", params.env_probability );
         fprintf( config, "\n" );
 
@@ -1573,14 +1552,6 @@ void move_agents( void )
         agent->n_position.x += agent->n_velocity.x;
         agent->n_position.y += agent->n_velocity.y;
         
-        // calculate number of agents that reached the goal
-        if ( !agent->goal_reached && agent_reached_goal_actual( agent ) )
-        {
-            agent->goal_reached = true;
-            ++stats.reached_goal;
-            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-        }
-        
         // calculate number of agent-obstacle collisions
         for ( j = 0; j < params.obstacle_number; ++j )
         {
@@ -1617,330 +1588,31 @@ void move_agents( void )
     ++stats.time_step;
 }
 
-void update_reach(void)
+void update_reach( void )
 {
+	bool changed;
     int i;
     
-    for ( i = 0; i < params.agent_number; ++i )
+    do
     {
-        Agent *agent1 = agents[i];
-        
-    	if ( !agent1->goal_reached && agent_reached_goal( agent1 ) )
-    	{
-            agent1->goal_reached = true;
-            ++stats.reached_goal;
-            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-    	}
-    }
-}
-
-void run_gui( int time )
-{
-    if ( running )
-    {
-    	if ( stats.time_step < params.time_limit ) { move_agents(); }
-    	else { update_reach(); }
+    	changed = false;
     	
-		glutPostRedisplay();
-    }
-    
-    glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
-}
-
-void run_cli( int argc, char **argv )
-{
-	// skip program name and view mode arguments
-	int env_number = argc - 2;	
-    char *environments[env_number];
-    
-    memcpy( environments, &argv[2], env_number * sizeof( char * ) );
-    
-    int e, n;
-    
-    for ( e = 0; e < env_number; ++e )
-    {
-        if ( load_scenario( environments[e] ) == -1 ) { exit( EXIT_FAILURE ); }
-
-        char *raw_filename = NULL;
-        
-        if ( asprintf( &raw_filename, "raw_%s", params.results_filename ) < 0 )
+        for ( i = 0; i < params.agent_number; ++i )
         {
-            printf( "ERROR: allocating memory failed!" );
-            exit( EXIT_FAILURE );
+            Agent *agent1 = agents[i];
+            
+        	if ( !agent1->goal_reached )
+        	{
+        		if ( agent_reached_goal( agent1 ) )
+        		{
+	                agent1->goal_reached = true;
+	                ++stats.reached_goal;
+	                changed = true;
+        		}
+        	}
         }
-        
-        FILE *p_results;
-        FILE *p_raw_results;
-        
-        p_results = fopen( params.results_filename, "w+" );
-        p_raw_results = fopen( raw_filename, "w+" );
-
-        if ( p_results == NULL )
-        {
-            printf( "ERROR: Unable to open file [%s]!", params.results_filename );
-            exit( EXIT_FAILURE );
-        }
-        
-        if ( p_raw_results == NULL )
-        {
-            printf( "ERROR: Unable to open file [%s]!", raw_filename );
-            exit( EXIT_FAILURE );
-        }
-        
-        fprintf( p_raw_results, "reconstructed_%s\n", params.results_filename );
-        fprintf( p_raw_results, "%d ", params.runs_number );
-        fprintf( p_raw_results, "%d ", params.n_number );
-        fprintf( p_raw_results, "%d ", params.k_number );
-        fprintf( p_raw_results, "%d\n", params.a_b_number );
-        
-        output_simulation_parameters( p_results );
-        fflush( p_results );
-
-        for ( n = 0; n < params.n_number; ++n )
-        {
-            change_agent_number( params.n_array[n] );
-            
-        	fprintf( p_raw_results, "%d\n", params.n_array[n] );        	
-            
-            int i, j;
-            
-            /*************************** Calculate ground truth - big_P_prime ************************************/
-            printf( "\n\nCalculating P' (ground truth from simulation)\n" );
-            
-            double big_P_prime[params.n_array[n] + 1];
-            double increment = 1.0 / params.runs_number;
-
-            // initialize big_P_prime array to all 0's
-            memset( big_P_prime, 0, sizeof( big_P_prime ) );
-            
-            double small_p = 0.0;
-    
-            srand( ( unsigned int ) time( NULL ) );
-            
-            for ( i = 0; i < params.runs_number; ++i )
-            {
-                if ( params.run_simulation )
-                {
-                    restart_simulation();
-                
-                    int agent;
-                
-                    for ( agent = 0; agent < params.agent_number; ++agent )
-                    {
-                        deploy_agent( agents[agent] );
-                    }
-                
-                    while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-                    {
-                        move_agents();
-                    }
-                    
-                    update_reach();
-                }
-                else
-                {
-                    reset_statistics();
-
-                    for ( j = 0; j < params.agent_number; ++j )
-                    {
-                        double random = ( double ) rand() / ( double ) RAND_MAX;
-                        if ( random <= params.env_probability ) { ++stats.reached_goal; }
-                    }
-                
-                    stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-                }
-                
-                for ( j = 0; j <= stats.reached_goal; ++j )
-                {
-                    big_P_prime[j] += increment;
-                }
-                
-                small_p += stats.reach_ratio;
-                
-                if ( i % 100 == 0 ) { printf( "\ti = %d, \tp = %.2f\n", i, stats.reach_ratio ); }
-            }
-            
-            small_p /= params.runs_number;
-            
-            printf( "P' calculation finished, p = %.2f\n\n", small_p );
-            
-            fprintf( p_raw_results, "%g\n", small_p );
-            
-            for ( i = 0; i <= params.n_array[n]; ++i )
-            {
-            	fprintf( p_raw_results, "%g\n", big_P_prime[i] );
-			}
-            /*****************************************************************************************************/
-            
-            int ab, k;
-            
-            for ( ab = 0; ab < params.a_b_number; ++ab )
-            {
-                fprintf( p_raw_results, "%g ", params.alpha_array[ab] );
-                fprintf( p_raw_results, "%g\n", params.beta_array[ab] );
-    
-                for ( k = 0; k < params.k_number; ++k )
-                {
-                    change_agent_number( params.k_array[k] );
-                    
-                    fprintf( p_raw_results, "%d\n", params.k_array[k] );
-                    
-                    double *big_P_array;
-                    double *big_P_hat_array;
-                    double *big_P_hat_plus_array;
-
-                    big_P_array = ( double * ) calloc( ( params.n_array[n] + 1 ) * params.runs_number, sizeof( double ) );
-                    big_P_hat_array = ( double * ) calloc( ( params.n_array[n] + 1 ) * params.runs_number, sizeof( double ) );
-                    big_P_hat_plus_array = ( double * ) calloc( ( params.n_array[n] + 1 ) * params.runs_number, sizeof( double ) );
-
-                    if ( big_P_array == NULL )
-                    {
-                        printf( "ERROR: allocating memory for big_P_array failed!" );
-                        exit( EXIT_FAILURE );
-                    }
-                    
-                    if ( big_P_hat_array == NULL )
-                    {
-                        printf( "ERROR: allocating memory for big_P_hat_array failed!" );
-                        exit( EXIT_FAILURE );
-                    }
-
-                    if ( big_P_hat_plus_array == NULL )
-                    {
-                        printf( "ERROR: allocating memory for big_P_hat_plus_array failed!" );
-                        exit( EXIT_FAILURE );
-                    }
-                    
-                    double big_P_mean[params.n_array[n] + 1];
-                    double big_P_hat_mean[params.n_array[n] + 1];
-                    double big_P_hat_plus_mean[params.n_array[n] + 1];
-                    
-                    // initialize big_P_mean and big_P_hat_mean arrays to all 0's
-                    memset( big_P_mean, 0, sizeof( big_P_mean ) );
-                    memset( big_P_hat_mean, 0, sizeof( big_P_hat_mean ) );
-                    memset( big_P_hat_plus_mean, 0, sizeof( big_P_hat_plus_mean ) );
-
-                    srand( ( unsigned int ) time( NULL ) );
-                    
-                    for ( j = 0; j < params.runs_number; ++j )
-                    {
-                        if ( params.run_simulation )
-                        {
-                            restart_simulation();
-                        
-                            int agent;
-                        
-                            for ( agent = 0; agent < params.agent_number; ++agent )
-                            {
-                                deploy_agent( agents[agent] );
-                            }
-                        
-                            while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-                            {
-                                move_agents();
-                            }
-                        
-                            update_reach();
-                        }
-                        else
-                        {
-                            reset_statistics();
-
-                            int u;
-
-                            for ( u = 0; u < params.agent_number; ++u )
-                            {
-                                double random = ( double ) rand() / ( double ) RAND_MAX;
-                                if ( random <= small_p ) { ++stats.reached_goal; }
-                            }
-
-                            stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-                        }
-                        
-                        fprintf( p_raw_results, "%g\n", stats.reach_ratio );
-
-                        if ( j % 100 == 0 ) { printf( "j = %d, n = %d, k = %d\n", j, params.n_array[n], params.k_array[k] ); }
-                    }
-
-                    fprintf( p_results, "\n\n" );
-                    fflush( p_raw_results );
-
-                    if ( big_P_array != NULL ) { free( big_P_array ); }
-                    if ( big_P_hat_array != NULL ) { free( big_P_hat_array ); }
-                    if ( big_P_hat_plus_array != NULL ) { free( big_P_hat_plus_array ); }
-                }
-            }            
-        }
-        
-        fclose( p_results );
-        fclose( p_raw_results );
     }
-}
+    while( changed );
 
-void print_usage( char *program_name )
-{
-	printf( "Robotic Swarm Simulator (C with GLUT/OpenGL) v0.5.0.\n" );
-	printf( "Copyright (C) 2007, 2008 Antons Rebguns <anton at cs dot uwyo dot edu>\n\n" );
-    printf( "Usage: %s [view_mode] [scenario_1, scenario_2, ...]\n\n", program_name );
-    printf( "\tviewmode - cli for command-line (batch mode)\n" );
-    printf( "\t           gui for full user interface mode\n\n" );
-    printf( "\tscenario_1, ... - one or more configuration files\n");
-    printf( "\tNote: when using GUI mode only the first scenraio is used.\n" );
-}
-
-int main( int argc, char **argv )
-{
-    if ( argc < 3 )
-    {
-        print_usage( argv[0] );
-        return EXIT_FAILURE;
-    }
-    
-    if ( strcasecmp( "cli", argv[1] ) == 0 )
-    {
-    	mode = CLI;
-    }
-    else if ( strcasecmp( "gui", argv[1] ) == 0 )
-    {
-    	mode = GUI;
-    }
-    else
-    {
-    	printf( "WARNING: Unknown view mode supplied: [%s]. Using GUI view mode.\n", argv[1] );
-    	mode = GUI;
-    }
-    
-    if ( mode == GUI )
-    {
-        if ( load_scenario( argv[2] ) != 0 ) { return EXIT_FAILURE; }
-        
-        glutInit( &argc, argv );
-        glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB );
-        glutInitWindowSize( params.world_width + stats_area_width, params.world_height + help_area_height );
-        glutInitWindowPosition( 100, 100 );
-        glutCreateWindow( "Robotic Swarm Simulation" );
-        
-        initialize_graphics();
-        
-        glutDisplayFunc( draw_all );
-
-        glutKeyboardFunc( process_normal_keys );
-        glutSpecialFunc( process_special_keys );
-
-        glutMouseFunc( process_mouse_buttons );
-        glutEntryFunc( process_mouse_entry );
-        glutMotionFunc( process_mouse_active_motion );
-
-        glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
-    
-        glutMainLoop();
-    }
-    else if ( mode == CLI )
-    {
-        run_cli( argc, argv );
-    }
-    
-    free_memory();
-    
-    return EXIT_SUCCESS;
+    stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
 }

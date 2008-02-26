@@ -18,34 +18,11 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
-#ifndef GRAPHICS_H_
-#define GRAPHICS_H_
+#ifndef SWARM_GUI_H_
+#define SWARM_GUI_H_
 
-#include "definitions.h"
+void run_gui( int time );
+void print_usage( char *program_name );
+int main( int argc, char **argv );
 
-int help_area_height;
-int stats_area_width;
-
-bool inside_window;
-bool selection_active;
-int selected_obstacle_id;
-
-int increments[6];
-int cur_inc_index;
-
-char *selections[3];
-int cur_sel_index;
-
-bool show_connectivity;
-
-void initialize_graphics( void );
-void draw_all( void );
-inline void draw_string( char *s );
-inline void draw_goal( Goal *goal );
-inline void draw_agent( Agent *agent );
-inline void draw_agent_connectivity( void );
-inline void draw_obstacle( Obstacle *obstacle );
-inline void draw_params_stats( void );
-inline void draw_instructions( void );
-
-#endif /*GRAPHICS_H_*/
+#endif /*SWARM_GUI_H_*/

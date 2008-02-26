@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "defs.h"
+#include "definitions.h"
 
 int read_config_file( char *p_filename );
 void output_simulation_parameters( FILE *output );

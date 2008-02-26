@@ -18,34 +18,24 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
-#ifndef GRAPHICS_H_
-#define GRAPHICS_H_
+#include <stdlib.h>
 
 #include "definitions.h"
 
-int help_area_height;
-int stats_area_width;
+float agent_color[3] = { 0.0f, 0.2f, 1.0f };
+float agent_color_coll[3] = { 1.0f, 0.0f, 0.0f };
+float agent_color_conn[3] = { 0.8f, 0.8f, 0.8f };
 
-bool inside_window;
-bool selection_active;
-int selected_obstacle_id;
+float goal_color[3] = { 1.0f, 0.0f, 0.2f };
+float obstacle_color[3] = { 0.0f, 0.4f, 0.0f };
 
-int increments[6];
-int cur_inc_index;
+Parameters params;
+Statistics stats;
 
-char *selections[3];
-int cur_sel_index;
+Agent **agents = NULL;
+Obstacle **obstacles = NULL;
+Goal *goal = NULL;
 
-bool show_connectivity;
+bool ( *agent_reached_goal )( Agent * ) = NULL;
 
-void initialize_graphics( void );
-void draw_all( void );
-inline void draw_string( char *s );
-inline void draw_goal( Goal *goal );
-inline void draw_agent( Agent *agent );
-inline void draw_agent_connectivity( void );
-inline void draw_obstacle( Obstacle *obstacle );
-inline void draw_params_stats( void );
-inline void draw_instructions( void );
-
-#endif /*GRAPHICS_H_*/
+bool running = false;
