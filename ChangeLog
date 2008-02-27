@@ -1,0 +1,212 @@
+2008-02-23 06:25  anton
+
+	* Makefile, src/analysis.c, src/analysis.h, src/defs.h,
+	  src/graphics.c, src/graphics.h, src/input.c, src/input.h,
+	  src/swarm.c, src/swarm.h: - Split simulation from analysis, two
+	  separate programs now
+	  - Added license to all files
+
+2008-02-22 17:06  anton
+
+	* Makefile, scenario, scenario.dat, src/swarm.c: - Put a stub
+	  method for calculating P^+
+	  - Fixed a bug in error2 calculation
+	  - Fixed a bug in standard deviation calculation
+	  - Added a Makefile
+
+2008-02-15 20:28  anton
+
+	* src/defs.h, src/graphics.c, src/graphics.h, src/input.c,
+	  src/input.h, src/swarm.c, src/swarm.h: - Separated input handling
+	  functions from main code.
+
+2008-02-15 03:10  anton
+
+	* src/swarm.c, src/swarm.h: - Few minor fixes: removed k = n case
+	  from CLI mode, cleaned up goal reach calculation.
+
+2008-02-11 03:13  anton
+
+	* src/defs.h, src/graphics.c, src/graphics.h, src/robotic_swarm.c,
+	  src/swarm.c, src/swarm.h: - Split simulator code into several
+	  files.
+
+2008-02-08 07:12  anton
+
+	* config.ini, src/robotic_swarm.c: - Added friction parameter to
+	  config file.
+	  
+	  - Added environment probability parameter to config file.
+	  
+	  - Removed view mode from config, specify in command line instead.
+	  
+	  - Now can specify one or more scenarios to be run (config files)
+	  from command line.
+
+2008-02-06 22:32  anton
+
+	* config.ini: - Minor tweak to LJ force parameters.
+	  
+	  - Timer delay to 1, runs faster OOTB.
+
+2008-02-06 22:29  anton
+
+	* src/robotic_swarm.c: - Fixed the handling of zero-distance
+	  between objects, now when object are very close (or "on top" of
+	  each other) the force will be at ~maximum.
+	  
+	  - Added on more function to decide if agent has reached the goal,
+	  now using generic function pointer that points to the actual
+	  function.
+
+2008-02-02 04:39  anton
+
+	* src/robotic_swarm.c: Fixed bug in restart_simulation - collided
+	  field was not set to false.
+	  Can't move obstacles outside of the simulation area anymore.
+	  Don't draw agent connectivity lines outside of the simulation
+	  area.
+
+2008-02-01 07:52  anton
+
+	* config.ini, scenario, src/robotic_swarm.c: Added the ability to
+	  show connectivity lines between agents.
+	  Added agent-obstacle collisions counting.
+	  LJ force parameters work as expected now (i.e. good parameters).
+
+2007-12-06 07:48  anton
+
+	* config.ini, scenario, scenario.dat, src/robotic_swarm.c: Changed
+	  how scenario files are saved and loaded (separate config and
+	  scenario files).
+	  Added no-simulation option for batch mode (using rnadom number
+	  genrator instead).
+
+2007-11-22 00:12  anton
+
+	* config.ini, scenarios, scenarios/nf_p_01.dat,
+	  scenarios/nf_p_03.dat, scenarios/nf_p_05.dat,
+	  scenarios/nf_p_07.dat, scenarios/nf_p_09.dat,
+	  src/robotic_swarm.c: Some statistical additions.
+	  Fixed force bug.
+
+2007-10-17 03:39  anton
+
+	* src/robotic_swarm.c: Stable version.
+
+2007-10-10 07:20  anton
+
+	* src/robotic_swarm.c: Fixed bug in reach ratio calculation with
+	  enabled agent-agent LJ forces.
+
+2007-10-09 00:43  anton
+
+	* src/robotic_swarm.c: Bug fix in Agent-Agent LJ force calculation
+	  - swap lhs with rhs, jeebus!
+
+2007-10-05 21:31  anton
+
+	* config.ini, scenario.dat, src/robotic_swarm.c: Experiment ready
+	  code.
+
+2007-09-24 03:41  anton
+
+	* config.ini, scenario.dat, src/robotic_swarm.c: Updated scenario
+	  saving/loading functions to include new simulation parameters.
+
+2007-09-23 19:01  anton
+
+	* config.ini, src/robotic_swarm.c: Fixed nan in probabilty
+	  calculation.
+
+2007-09-21 21:45  anton
+
+	* config.ini, src/robotic_swarm.c: Alpha and beta parameters are
+	  in.
+
+2007-09-20 21:00  anton
+
+	* config.ini, src/robotic_swarm.c: Adding alpha and beta parameters
+	  configurable through the config file.
+
+2007-09-12 01:44  anton
+
+	* config.ini, src/robotic_swarm.c: Integration works correctly now.
+
+2007-09-10 22:00  anton
+
+	* config.ini, src/robotic_swarm.c: Preliminary experiment
+	  implementation
+
+2007-08-26 04:42  anton
+
+	* config.ini, src/robotic_swarm.c: Rewrite of forces calculation
+	  function.
+
+2007-08-24 05:13  anton
+
+	* config.ini, scenario.dat, src/robotic_swarm.c: Save/Load scenario
+	  functionality working again. Changed UI layout a bit.
+
+2007-08-23 07:53  anton
+
+	* config.ini, src/robotic_swarm.c: Added interactions between
+	  agents. More parameters in config file.
+	  NOTE: finish LJ force law implementation, scenario
+	  loading/saving.
+
+2007-08-20 15:31  anton
+
+	* src/robotic_swarm.c: Some minor tweaks.
+
+2007-08-19 18:21  anton
+
+	* src/robotic_swarm.c: Changed the way change_agent_number and
+	  change_obstacle_number work: now if we shrink by the number
+	  that's bigger than current number of agents/obstacles, it just
+	  changes to 1.
+
+2007-08-19 18:15  anton
+
+	* config.ini, src/robotic_swarm.c: Added agent's mass and radius as
+	  paramters to config file.
+
+2007-08-19 15:57  anton
+
+	* config.ini, src/robotic_swarm.c: Moved some hardcoded CLI
+	  parameters from code to confog file.
+
+2007-08-15 07:22  anton
+
+	* src/robotic_swarm.c: Fixed some bugs.
+
+2007-08-09 03:27  anton
+
+	* scenario.dat: scenario file
+
+2007-07-31 14:26  anton
+
+	* src/robotic_swarm.c: Fixed memory leak.
+
+2007-07-31 04:56  anton
+
+	* config.ini, src/robotic_swarm.c: Can now save and load a complete
+	  scenario.
+
+2007-07-28 03:00  anton
+
+	* src/robotic_swarm.c: Feature parity with java code, except for
+	  multiple goals.
+
+2007-07-27 08:02  anton
+
+	* src/robotic_swarm.c: Can increment/decrement number of agents on
+	  the fly.
+	  CLI mode works.
+
+2007-07-27 01:32  anton
+
+	* branches, tags, ., config.ini, src, src/robotic_swarm.c: Initial
+	  commit. Simulator has GUI mode fully working, need to add CLI
+	  (batch).
+

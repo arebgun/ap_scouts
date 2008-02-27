@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "analysis.h"
+
 /*************** TEMPORARY *************************/
 double alpha;
 double beta;
@@ -136,8 +138,8 @@ double f( double p )
  */
 void analyze( int argc, char **argv )
 {
-	// skip program name
-	int env_number = argc - 1;	
+    // skip program name
+    int env_number = argc - 1;    
     char *raw_filenames[env_number];
     
     memcpy( raw_filenames, &argv[1], env_number * sizeof( char * ) );
@@ -194,7 +196,7 @@ void analyze( int argc, char **argv )
 
         for ( n = 0; n < n_number; ++n )
         {
-            fscanf( p_raw_results, "%d", &nn );        	
+            fscanf( p_raw_results, "%d", &nn );            
 
             int i, j;
             
@@ -208,8 +210,8 @@ void analyze( int argc, char **argv )
             
             for ( i = 0; i <= nn; ++i )
             {
-            	fscanf( p_raw_results, "%lf", &( big_P_prime[i] ) );
-			}
+                fscanf( p_raw_results, "%lf", &( big_P_prime[i] ) );
+            }
             
             printf( "P' calculation finished, p = %.2f\n\n", small_p );
             /*****************************************************************************************************/
@@ -337,16 +339,16 @@ void analyze( int argc, char **argv )
                         double big_P_hat_plus_var = pow( big_P_hat_plus_std_dev, 2.0 );
                         
                         /**************************************************** Calculate bias ***************************************************************/
-    					double big_P_bias = 0.0;
-    					double big_P_hat_bias = 0.0;
-    					double big_P_hat_plus_bias = 0.0;
-    					
-    					int s;
-    					
-    					for ( s = 0; s <= kk; ++s )
-    					{
-    						double small_p_hat = ( double ) s / ( double ) kk;
-    						
+                        double big_P_bias = 0.0;
+                        double big_P_hat_bias = 0.0;
+                        double big_P_hat_plus_bias = 0.0;
+                        
+                        int s;
+                        
+                        for ( s = 0; s <= kk; ++s )
+                        {
+                            double small_p_hat = ( double ) s / ( double ) kk;
+                            
                             /***************** Calculate big_P *********************************************************************************************/
                             double big_P = 0.0;
 
@@ -374,22 +376,22 @@ void analyze( int argc, char **argv )
                             if ( big_P_hat_plus > 1.0 ) { big_P_hat_plus = 1.0; }
                             /*******************************************************************************************************************************/
                                                         
-    						double k_choose_s = exp( gammaln( kk + 1.0 ) - gammaln( s + 1.0 ) - gammaln( kk - s + 1.0 ) );
-    						double bernoulli = k_choose_s * pow( small_p, s ) * pow( 1.0 - small_p, kk - s );
-    						
-    						big_P_bias += big_P * bernoulli;
-    						big_P_hat_bias += big_P_hat * bernoulli;
-    						big_P_hat_plus_bias += big_P_hat_plus * bernoulli;
-    					}
-    					
-    					big_P_bias -= big_P_prime[y];
-    					big_P_hat_bias -= big_P_prime[y];
-    					big_P_hat_plus_bias -= big_P_prime[y];
-    					
-    					double big_P_mse = pow( big_P_bias, 2.0 ) + big_P_var;
-    					double big_P_hat_mse = pow( big_P_hat_bias, 2.0 ) + big_P_hat_var;
-    					double big_P_hat_plus_mse = pow( big_P_hat_plus_bias, 2.0 ) + big_P_hat_plus_var;
-    					/***********************************************************************************************************************************/
+                            double k_choose_s = exp( gammaln( kk + 1.0 ) - gammaln( s + 1.0 ) - gammaln( kk - s + 1.0 ) );
+                            double bernoulli = k_choose_s * pow( small_p, s ) * pow( 1.0 - small_p, kk - s );
+                            
+                            big_P_bias += big_P * bernoulli;
+                            big_P_hat_bias += big_P_hat * bernoulli;
+                            big_P_hat_plus_bias += big_P_hat_plus * bernoulli;
+                        }
+                        
+                        big_P_bias -= big_P_prime[y];
+                        big_P_hat_bias -= big_P_prime[y];
+                        big_P_hat_plus_bias -= big_P_prime[y];
+                        
+                        double big_P_mse = pow( big_P_bias, 2.0 ) + big_P_var;
+                        double big_P_hat_mse = pow( big_P_hat_bias, 2.0 ) + big_P_hat_var;
+                        double big_P_hat_plus_mse = pow( big_P_hat_plus_bias, 2.0 ) + big_P_hat_plus_var;
+                        /***********************************************************************************************************************************/
                         
                         double error1 = big_P_mean[y] - big_P_prime[y];
                         double error2 = big_P_hat_mean[y] - big_P_prime[y];
@@ -486,8 +488,8 @@ void analyze( int argc, char **argv )
 
 void print_usage( char *program_name )
 {
-	printf( "Robotic Swarm Simulator (C with GLUT/OpenGL) v0.5.0.\n" );
-	printf( "Copyright (C) 2007, 2008 Antons Rebguns <anton at cs dot uwyo dot edu>\n\n" );
+    printf( "Robotic Swarm Simulator (C with GLUT/OpenGL) v0.5.0.\n" );
+    printf( "Copyright (C) 2007, 2008 Antons Rebguns <anton at cs dot uwyo dot edu>\n\n" );
     printf( "Usage: %s [raw_filename_1, raw_filename_2, ...]\n\n", program_name );
     printf( "\traw_filename_1, ... - one or more raw data files\n");
 }
@@ -500,7 +502,7 @@ int main( int argc, char **argv )
         return EXIT_FAILURE;
     }
     
-	analyze( argc, argv );
+    analyze( argc, argv );
     
     return EXIT_SUCCESS;
 }

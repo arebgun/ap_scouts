@@ -26,6 +26,7 @@
 #include <time.h>
 
 #include "swarm.h"
+#include "swarm_cli.h"
 
 void run_cli( int argc, char **argv )
 {

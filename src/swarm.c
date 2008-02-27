@@ -842,8 +842,8 @@ bool agent_reached_goal_chain( Agent *agent )
 {
     if ( agent_reached_goal_radius( agent ) )
     {
-    	return true;
-	}
+        return true;
+    }
     else
     {
         Vector2f agent1_pos = agent->position;
@@ -863,7 +863,7 @@ bool agent_reached_goal_chain( Agent *agent )
         }
     }
 
-	return false;
+    return false;
 }
 
 void initialize_simulation( void )
@@ -980,11 +980,11 @@ int save_scenario( char *filename )
         fprintf( config, "\n" );
 
         // General physics parameters
-        fprintf( config, "R                        %f    # Desired distance R\n",               		params.R );
+        fprintf( config, "R                        %f    # Desired distance R\n",                       params.R );
         fprintf( config, "friction_coefficient     %f    # Friction coefficient (for stabilization)\n", params.friction_coefficient );
-        fprintf( config, "range_coefficient        %f    # Agent visual range coefficient\n",   		params.range_coefficient );
-        fprintf( config, "max_V                    %f    # Maximum agent velocity\n",           		params.max_V );
-        fprintf( config, "force_law                %d    # 0 - Newtonian, 1 - Lennard-Jones\n", 		params.force_law );
+        fprintf( config, "range_coefficient        %f    # Agent visual range coefficient\n",           params.range_coefficient );
+        fprintf( config, "max_V                    %f    # Maximum agent velocity\n",                   params.max_V );
+        fprintf( config, "force_law                %d    # 0 - Newtonian, 1 - Lennard-Jones\n",         params.force_law );
         fprintf( config, "\n" );
 
          // Newtonian force law parameters
@@ -1028,7 +1028,7 @@ int save_scenario( char *filename )
         fprintf( config, "time_limit               %d    # CLI only - time limit per run\n", params.time_limit );
         fprintf( config, "runs_number              %d    # CLI only - number of runs\n",     params.runs_number );
         fprintf( config, "run_simulation           %d    # CLI only - run simulator to get probabilities or use random number generator, 0 - RNG, 1 - simulation\n", params.run_simulation );
-        fprintf( config, "env_probability		   %f	 # CLI only - used when run_simulation = 0\n", params.env_probability );
+        fprintf( config, "env_probability           %f     # CLI only - used when run_simulation = 0\n", params.env_probability );
         fprintf( config, "\n" );
 
         fprintf( config, "initialize_from_file     %d    # Initialize all objects state from scenario file, 0 - disable, 1 - enable\n", params.initialize_from_file );
@@ -1590,26 +1590,26 @@ void move_agents( void )
 
 void update_reach( void )
 {
-	bool changed;
+    bool changed;
     int i;
     
     do
     {
-    	changed = false;
-    	
+        changed = false;
+        
         for ( i = 0; i < params.agent_number; ++i )
         {
             Agent *agent1 = agents[i];
             
-        	if ( !agent1->goal_reached )
-        	{
-        		if ( agent_reached_goal( agent1 ) )
-        		{
-	                agent1->goal_reached = true;
-	                ++stats.reached_goal;
-	                changed = true;
-        		}
-        	}
+            if ( !agent1->goal_reached )
+            {
+                if ( agent_reached_goal( agent1 ) )
+                {
+                    agent1->goal_reached = true;
+                    ++stats.reached_goal;
+                    changed = true;
+                }
+            }
         }
     }
     while( changed );

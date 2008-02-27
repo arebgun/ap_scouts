@@ -26,6 +26,7 @@
 #include "graphics.h"
 #include "input.h"
 #include "swarm.h"
+#include "swarm_gui.h"
 
 void run_gui( int time )
 {
