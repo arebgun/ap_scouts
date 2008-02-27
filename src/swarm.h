@@ -43,20 +43,10 @@ void initialize_simulation( void );
 int save_scenario( char *filename );
 int load_scenario( char *filename );
 void restart_simulation( void );
-void initialize_graphics( void );
 int change_agent_number( int agent_number );
 int change_obstacle_number( int obstacle_number );
 float calculate_force( Agent *agent, void *object, ObjectType obj_type );
 void move_agents( void );
-void process_normal_keys( unsigned char key, int x, int y );
-void process_special_keys( int key, int x, int y );
-void process_mouse_buttons( int button, int state, int x, int y );
-void process_mouse_entry( int state );
-void process_mouse_active_motion( int x, int y );
 void update_reach(void);
-void run_gui( int time );
-void run_cli( int argc, char **argv );
-void print_usage( char *program_name );
-int main( int argc, char **argv );
 
 #endif /*SWARM_H_*/

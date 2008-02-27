@@ -1,3 +1,25 @@
+2008-02-27 05:37  anton
+
+	* AUTHORS, COPYING, ChangeLog, INSTALL, Makefile, NEWS, README,
+	  src/analysis.c, src/swarm.c, src/swarm_cli.c, src/swarm_gui.c: -
+	  Added some missing header files
+	  - Added standard GNU documentation files
+	  - Makefile is better now
+
+2008-02-26 23:26  anton
+
+	* analysis: - Accidently committed binary, deleting
+
+2008-02-26 23:24  anton
+
+	* Makefile, analysis, src/definitions.c, src/definitions.h,
+	  src/defs.h, src/graphics.c, src/graphics.h, src/swarm.c,
+	  src/swarm.h, src/swarm_cli.c, src/swarm_cli.h, src/swarm_gui.c,
+	  src/swarm_gui.h: - Split simulator into separate GUI and CLI
+	  components
+	  - Fixed update_reach function (was not calculating reach
+	  properly)
+
 2008-02-23 06:25  anton
 
 	* Makefile, src/analysis.c, src/analysis.h, src/defs.h,

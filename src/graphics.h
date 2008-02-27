@@ -23,20 +23,20 @@
 
 #include "definitions.h"
 
-int help_area_height;
-int stats_area_width;
+extern int help_area_height;
+extern int stats_area_width;
 
-bool inside_window;
-bool selection_active;
-int selected_obstacle_id;
+extern bool inside_window;
+extern bool selection_active;
+extern int selected_obstacle_id;
 
-int increments[6];
-int cur_inc_index;
+extern int increments[6];
+extern int cur_inc_index;
 
-char *selections[3];
-int cur_sel_index;
+extern char *selections[3];
+extern int cur_sel_index;
 
-bool show_connectivity;
+extern bool show_connectivity;
 
 void initialize_graphics( void );
 void draw_all( void );

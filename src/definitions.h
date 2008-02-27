@@ -218,22 +218,22 @@ typedef struct s_statistics
     
 } Statistics;
 
-float agent_color[3];
-float agent_color_coll[3];
-float agent_color_conn[3];
+extern float agent_color[3];
+extern float agent_color_coll[3];
+extern float agent_color_conn[3];
 
-float goal_color[3];
-float obstacle_color[3];
+extern float goal_color[3];
+extern float obstacle_color[3];
 
-Parameters params;
-Statistics stats;
+extern Parameters params;
+extern Statistics stats;
 
-Agent **agents;
-Obstacle **obstacles;
-Goal *goal;
+extern Agent **agents;
+extern Obstacle **obstacles;
+extern Goal *goal;
 
-bool ( *agent_reached_goal )( Agent * );
+extern bool ( *agent_reached_goal )( Agent * );
 
-bool running;
+extern bool running;
 
 #endif /*DEFINITIONS_H_*/
