@@ -28,7 +28,7 @@ swarm_cli.o : swarm.h swarm_cli.h
 swarm_gui.o : graphics.h input.h swarm.h swarm_gui.h
 swarm.o : definitions.h swarm.h
 
-.PHONY : clean
+.PHONY : all clean
 
 clean :
 	-rm -rf swarm-gui swarm-cli analysis $(SWARM_GUI_OBJ) $(SWARM_CLI_OBJ) $(ANALYSIS_OBJ)
