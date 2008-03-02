@@ -165,7 +165,7 @@ void analyze( int argc, char **argv )
         
         if ( p_raw_results == NULL )
         {
-            printf( "ERROR: Unable to open file [%s]!", raw_filename );
+            printf( "ERROR (%s:%d): Unable to open file [%s]!", __FILE__, __LINE__, raw_filename );
             exit( EXIT_FAILURE );
         }
         
@@ -178,7 +178,7 @@ void analyze( int argc, char **argv )
 
         if ( p_results == NULL )
         {
-            printf( "ERROR: Unable to open file [%s]!", results_filename );
+            printf( "ERROR (%s:%d): Unable to open file [%s]!", __FILE__, __LINE__, results_filename );
             exit( EXIT_FAILURE );
         }
         
@@ -246,19 +246,19 @@ void analyze( int argc, char **argv )
 
                     if ( big_P_array == NULL )
                     {
-                        printf( "ERROR: allocating memory for big_P_array failed!" );
+                        printf( "ERROR (%s:%d): allocating memory for big_P_array failed!", __FILE__, __LINE__ );
                         exit( EXIT_FAILURE );
                     }
                     
                     if ( big_P_hat_array == NULL )
                     {
-                        printf( "ERROR: allocating memory for big_P_hat_array failed!" );
+                        printf( "ERROR (%s:%d): allocating memory for big_P_hat_array failed!", __FILE__, __LINE__ );
                         exit( EXIT_FAILURE );
                     }
 
                     if ( big_P_hat_plus_array == NULL )
                     {
-                        printf( "ERROR: allocating memory for big_P_hat_plus_array failed!" );
+                        printf( "ERROR (%s:%d): allocating memory for big_P_hat_plus_array failed!", __FILE__, __LINE__ );
                         exit( EXIT_FAILURE );
                     }
                     
@@ -298,9 +298,11 @@ void analyze( int argc, char **argv )
                             if ( big_P_hat > 1.0 ) { big_P_hat = 1.0; }
                             /*************************************************************************************************/
                             
+                            // TODO: new formula for calculating P^+
                             /***************** Calculate big_P_hat_plus ******************************************************/
-                            double big_P_hat_plus = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+                            double big_P_hat_plus = big_P_hat + 0.0;
                             if ( big_P_hat_plus > 1.0 ) { big_P_hat_plus = 1.0; }
+                            if ( big_P_hat_plus < 0.0 ) { big_P_hat_plus = 0.0; }
                             /*************************************************************************************************/
                                                         
                             big_P_array[y * runs_number + j] = big_P;
@@ -372,8 +374,9 @@ void analyze( int argc, char **argv )
                             
                             // TODO: new formula for calculating P^+
                             /***************** Calculate big_P_hat_plus ************************************************************************************/
-                            double big_P_hat_plus = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+                            double big_P_hat_plus = big_P_hat + 0.0;
                             if ( big_P_hat_plus > 1.0 ) { big_P_hat_plus = 1.0; }
+                            if ( big_P_hat_plus < 0.0 ) { big_P_hat_plus = 0.0; }
                             /*******************************************************************************************************************************/
                                                         
                             double k_choose_s = exp( gammaln( kk + 1.0 ) - gammaln( s + 1.0 ) - gammaln( kk - s + 1.0 ) );
@@ -467,19 +470,19 @@ void analyze( int argc, char **argv )
         
         for ( j = 0; j < 3; ++j )
         {
-            fprintf( p_results, "%.2f per cent of the time means are within %d P stdandard deviation(s)\n", ( ( double ) mean_diff_P[j] / ( double ) counter ), j + 1 );
+            fprintf( p_results, "# %.2f per cent of the time means are within %d P stdandard deviation(s)\n", ( ( double ) mean_diff_P[j] / ( double ) counter ), j + 1 );
         }
         
-        fprintf( p_results, "%.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
+        fprintf( p_results, "# %.2f per cent of the time means are within %d or more P stdandard deviation(s)\n", ( ( double ) mean_diff_P[3] / ( double ) counter ), 4 );
         
         for ( j = 0; j < 3; ++j )
         {
-            fprintf( p_results, "%.2f per cent of the time means are within %d P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[j] / ( double ) counter ), j + 1 );
+            fprintf( p_results, "# %.2f per cent of the time means are within %d P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[j] / ( double ) counter ), j + 1 );
         }
         
-        fprintf( p_results, "%.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
+        fprintf( p_results, "# %.2f per cent of the time means are within %d or more P-hat stdandard deviation(s)\n", ( ( double ) mean_diff_P_hat[3] / ( double ) counter ), 4 );
         fprintf( p_results, "\n\n" );
-        fprintf( p_results, "%.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
+        fprintf( p_results, "# %.2f per cent of the time means are overlapping\n", ( ( double ) means_overlap[0] / ( double ) counter ) );
         
         fclose( p_results );
         fclose( p_raw_results );

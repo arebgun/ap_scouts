@@ -1,3 +1,22 @@
+2008-02-28 01:52  anton
+
+	* Makefile, scenarios/nf_p_01.dat, scenarios/nf_p_03.dat,
+	  scenarios/nf_p_05.dat, scenarios/nf_p_07.dat,
+	  scenarios/nf_p_09.dat, scenarios/no_force_01.cfg,
+	  scenarios/no_force_01.dat, scenarios/no_force_03.cfg,
+	  scenarios/no_force_03.dat, scenarios/no_force_05.cfg,
+	  scenarios/no_force_05.dat, scenarios/no_force_07.cfg,
+	  scenarios/no_force_07.dat, scenarios/no_force_09.cfg,
+	  scenarios/no_force_09.dat: - Adapted old no-force scenario files
+	  to the new config file format
+	  - Minor changes in Makefile
+
+2008-02-27 07:24  anton
+
+	* ChangeLog, src/definitions.h, src/graphics.h, src/swarm.h: -
+	  Removed old function declarations from swarm.h
+	  - Added extern keyword for all global variables in header files
+
 2008-02-27 05:37  anton
 
 	* AUTHORS, COPYING, ChangeLog, INSTALL, Makefile, NEWS, README,

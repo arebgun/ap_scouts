@@ -46,7 +46,7 @@ void run_cli( int argc, char **argv )
         
         if ( asprintf( &raw_filename, "raw_%s", params.results_filename ) < 0 )
         {
-            printf( "ERROR: allocating memory failed!" );
+            printf( "ERROR (%s:%d): allocating memory failed!", __FILE__, __LINE__ );
             exit( EXIT_FAILURE );
         }
         
@@ -58,13 +58,13 @@ void run_cli( int argc, char **argv )
 
         if ( p_results == NULL )
         {
-            printf( "ERROR: Unable to open file [%s]!", params.results_filename );
+            printf( "ERROR (%s:%d): Unable to open file [%s]!", __FILE__, __LINE__, params.results_filename );
             exit( EXIT_FAILURE );
         }
         
         if ( p_raw_results == NULL )
         {
-            printf( "ERROR: Unable to open file [%s]!", raw_filename );
+            printf( "ERROR (%s:%d): Unable to open file [%s]!", __FILE__, __LINE__, raw_filename );
             exit( EXIT_FAILURE );
         }
         
@@ -176,19 +176,19 @@ void run_cli( int argc, char **argv )
 
                     if ( big_P_array == NULL )
                     {
-                        printf( "ERROR: allocating memory for big_P_array failed!" );
+                        printf( "ERROR (%s:%d): allocating memory for big_P_array failed!", __FILE__, __LINE__ );
                         exit( EXIT_FAILURE );
                     }
                     
                     if ( big_P_hat_array == NULL )
                     {
-                        printf( "ERROR: allocating memory for big_P_hat_array failed!" );
+                        printf( "ERROR (%s:%d): allocating memory for big_P_hat_array failed!", __FILE__, __LINE__ );
                         exit( EXIT_FAILURE );
                     }
 
                     if ( big_P_hat_plus_array == NULL )
                     {
-                        printf( "ERROR: allocating memory for big_P_hat_plus_array failed!" );
+                        printf( "ERROR (%s:%d): allocating memory for big_P_hat_plus_array failed!", __FILE__, __LINE__ );
                         exit( EXIT_FAILURE );
                     }
                     

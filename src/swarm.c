@@ -290,7 +290,7 @@ int read_config_file( char *p_filename )
                 
                 if ( params.n_array == NULL )
                 {
-                    printf( "ERROR: allocating memory for n_array failed!" );
+                    printf( "ERROR (%s:%d): allocating memory for n_array failed!", __FILE__, __LINE__ );
                     return -1;
                 }
                 
@@ -309,7 +309,7 @@ int read_config_file( char *p_filename )
 
                 if ( params.k_array == NULL )
                 {
-                    printf( "ERROR: allocating memory for k_array failed!" );
+                    printf( "ERROR (%s:%d): allocating memory for k_array failed!", __FILE__, __LINE__ );
                     return -1;
                 }
                 
@@ -328,7 +328,7 @@ int read_config_file( char *p_filename )
 
                 if ( params.alpha_array == NULL )
                 {
-                    printf( "ERROR: allocating memory for alpha_array failed!" );
+                    printf( "ERROR (%s:%d): allocating memory for alpha_array failed!", __FILE__, __LINE__ );
                     return -1;
                 }
                 
@@ -347,7 +347,7 @@ int read_config_file( char *p_filename )
 
                 if ( params.beta_array == NULL )
                 {
-                    printf( "ERROR: allocating memory for beta_array failed!" );
+                    printf( "ERROR (%s:%d): allocating memory for beta_array failed!", __FILE__, __LINE__ );
                     return -1;
                 }
                 
@@ -362,13 +362,13 @@ int read_config_file( char *p_filename )
             }
             else
             {
-                printf( "WARNING: Unknown parameter [%s]\n", parameter );
+                printf( "WARNING (%s:%d): Unknown parameter [%s]\n", __FILE__, __LINE__, parameter );
             }
         }
     }
     else
     {
-        printf( "ERROR: failed to open configuration file: \"%s\"!\n", p_filename );
+        printf( "ERROR (%s:%d): failed to open configuration file \"%s\"!\n", __FILE__, __LINE__, p_filename );
         return -1;
     }
     
@@ -480,7 +480,7 @@ int create_goal( void )
     
     if ( goal == NULL )
     {
-        printf( "ERROR: allocating memory for a goal failed!" );
+        printf( "ERROR (%s:%d): allocating memory for a goal failed!", __FILE__, __LINE__ );
         return -1;
     }
     
@@ -649,7 +649,7 @@ Agent *create_agent( int id )
     
     if ( agent == NULL )
     {
-        printf( "ERROR: allocating memory for an agent failed!" );
+        printf( "ERROR (%s:%d): allocating memory for an agent failed!", __FILE__, __LINE__ );
         return NULL;
     }
     
@@ -675,7 +675,7 @@ int create_swarm( void )
     
     if ( agents == NULL )
     {
-        printf( "ERROR: allocating memory for agents array failed!" );
+        printf( "ERROR (%s:%d): allocating memory for agents array failed!", __FILE__, __LINE__ );
         return -1;
     }
     
@@ -691,7 +691,7 @@ int create_swarm( void )
         
         if ( agents[i] == NULL )
         {
-            printf( "ERROR: allocating memory for agent %d failed!", i );
+            printf( "ERROR (%s:%d): allocating memory for agent %d failed!", __FILE__, __LINE__, i );
             return -1;
         }
     }
@@ -705,7 +705,7 @@ Obstacle *create_obstacle( int id, bool random_radius, float radius_range )
     
     if ( obstacle == NULL )
     {
-        printf( "ERROR: allocating memory for an obstacle failed!" );
+        printf( "ERROR (%s:%d): allocating memory for an obstacle failed!", __FILE__, __LINE__ );
         return NULL;
     }
     
@@ -734,7 +734,7 @@ int create_obstacle_course( void )
     
     if ( obstacles == NULL )
     {
-        printf( "ERROR: allocating memory for an obstacles array failed!" );
+        printf( "ERROR (%s:%d): allocating memory for an obstacles array failed!", __FILE__, __LINE__ );
         return -1;
     }
     
@@ -753,7 +753,7 @@ int create_obstacle_course( void )
         
         if ( obstacles[i] == NULL )
         {
-            printf( "ERROR: allocating memory for obstacle %d failed!", i );
+            printf( "ERROR (%s:%d): allocating memory for obstacle %d failed!", __FILE__, __LINE__, i );
             return -1;
         }
     }
@@ -1240,7 +1240,7 @@ int change_agent_number( int agent_number )
         
         if ( agents == NULL )
         {
-            printf( "ERROR: expanding memory for agents array failed!" );
+            printf( "ERROR (%s:%d): expanding memory for agents array failed!", __FILE__, __LINE__ );
             return -1;
         }
         
@@ -1257,7 +1257,7 @@ int change_agent_number( int agent_number )
         
         if ( agents == NULL )
         {
-            printf( "ERROR: shrinking memory for agents array failed!" );
+            printf( "ERROR (%s:%d): shrinking memory for agents array failed!", __FILE__, __LINE__ );
             return -1;
         }
         
@@ -1269,7 +1269,7 @@ int change_agent_number( int agent_number )
         
         if ( agents == NULL )
         {
-            printf( "ERROR: shrinking memory for agents array failed!" );
+            printf( "ERROR (%s:%d): shrinking memory for agents array failed!", __FILE__, __LINE__ );
             return -1;
         }
         
@@ -1290,7 +1290,7 @@ int change_obstacle_number( int obstacle_number )
         
         if ( obstacles == NULL )
         {
-            printf( "ERROR: expanding memory for obstacles array failed!" );
+            printf( "ERROR (%s:%d): expanding memory for obstacles array failed!", __FILE__, __LINE__ );
             return -1;
         }
         
@@ -1310,7 +1310,7 @@ int change_obstacle_number( int obstacle_number )
         
         if ( agents == NULL )
         {
-            printf( "ERROR: shrinking memory for obstacles array failed!" );
+            printf( "ERROR (%s:%d): shrinking memory for obstacles array failed!", __FILE__, __LINE__ );
             return -1;
         }
         
@@ -1322,7 +1322,7 @@ int change_obstacle_number( int obstacle_number )
         
         if ( agents == NULL )
         {
-            printf( "ERROR: shrinking memory for obstacles array failed!" );
+            printf( "ERROR (%s:%d): shrinking memory for obstacles array failed!", __FILE__, __LINE__ );
             return -1;
         }
         
