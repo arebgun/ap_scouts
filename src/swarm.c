@@ -829,10 +829,7 @@ bool agent_reached_goal_actual( Agent *agent )
  */
 bool agent_reached_goal_radius( Agent *agent )
 {
-    Vector2f a_pos = agent->position;
-    Vector2f g_pos = goal->position;
-    
-    double distance_to_obj = sqrt( pow( a_pos.x - g_pos.x, 2 ) + pow( a_pos.y - g_pos.y, 2 ) );
+    float distance_to_obj = hypotf( agent->position.x - goal->position.x, agent->position.y - goal->position.y );
 
     if ( distance_to_obj < params.range_coefficient * params.R ) { return true; }
     else { return false; }
@@ -857,7 +854,7 @@ bool agent_reached_goal_chain( Agent *agent )
 
             if ( agent2->goal_reached )
             {
-                double distance = sqrt( pow( agent1_pos.x - agent2_pos.x, 2 ) + pow( agent1_pos.y - agent2_pos.y, 2 ) );
+                float distance = hypotf( agent1_pos.x - agent2_pos.x, agent1_pos.y - agent2_pos.y );
                 if ( distance <= params.range_coefficient * params.R ) { return true; }
             }
         }
@@ -1337,30 +1334,31 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
     Vector2f agent_pos = agent->position;
     Vector2f obj_pos;
     float obj_mass = 0.0f;
-    double distance_to_obj = 0.0f;
+    float distance_to_obj = 0.0f;
     
     switch( obj_type )
     {
         case AGENT:
             obj_pos = ( ( Agent * ) object )->position;
             obj_mass = ( ( Agent * ) object )->mass;
-            distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
+            distance_to_obj = hypotf( agent_pos.x - obj_pos.x, agent_pos.y - obj_pos.y );
             break;
             
         case OBSTACLE:
             obj_pos = ( ( Obstacle * ) object )->position;
             obj_mass = ( ( Obstacle * ) object )->mass;
-            distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
+            distance_to_obj = hypotf( agent_pos.x - obj_pos.x, agent_pos.y - obj_pos.y );
             distance_to_obj -= ( ( Obstacle * ) object )->radius;
             break;
             
         case GOAL:
             obj_pos = ( ( Goal * ) object )->position;
             obj_mass = ( ( Goal * ) object )->mass;
-            distance_to_obj = sqrt( pow( agent_pos.x - obj_pos.x, 2 ) + pow( agent_pos.y - obj_pos.y, 2 ) );
+            distance_to_obj = hypotf( agent_pos.x - obj_pos.x, agent_pos.y - obj_pos.y );
             break;
     }
 
+    // prevent division by 0 later
     distance_to_obj = distance_to_obj != 0 ? distance_to_obj : distance_to_obj + 0.1;
     
     double f = 0.0;
@@ -1537,7 +1535,7 @@ void move_agents( void )
         agent->n_velocity.x += force_x / agent->mass;
         agent->n_velocity.y += force_y / agent->mass;
         
-        float velocity_magnitude = sqrt( pow( agent->n_velocity.x, 2 ) + pow( agent->n_velocity.y, 2 ) );
+        float velocity_magnitude = hypotf( agent->n_velocity.x, agent->n_velocity.y );
         
         // check if new velocity exceeds the maximum
         if ( velocity_magnitude > params.max_V )
@@ -1558,7 +1556,7 @@ void move_agents( void )
             Obstacle *obs = obstacles[j];
             Vector2f obs_pos = obs->position;
             
-            float distance_to_obs = sqrt( pow( agent_pos.x - obs_pos.x, 2 ) + pow( agent_pos.y - obs_pos.y, 2 ) );
+            float distance_to_obs = hypotf( agent_pos.x - obs_pos.x, agent_pos.y - obs_pos.y );
             distance_to_obs -= obs->radius;
             
             if ( !agent->collided &&
@@ -1612,7 +1610,7 @@ void update_reach( void )
             }
         }
     }
-    while( changed );
+    while ( changed );
 
     stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
 }

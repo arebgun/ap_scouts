@@ -129,7 +129,7 @@ inline void draw_agent_connectivity( void )
             Agent *a2 = agents[j];
             Vector2f a2_pos = a2->position;
 
-            float distance = sqrt( pow( a1_pos.x - a2_pos.x, 2 ) + pow( a1_pos.y - a2_pos.y, 2 ) );
+            float distance = hypotf( a1_pos.x - a2_pos.x, a1_pos.y - a2_pos.y );
 
             if ( distance <= params.range_coefficient * params.R )
             {

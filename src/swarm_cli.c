@@ -138,7 +138,7 @@ void run_cli( int argc, char **argv )
                 
                 small_p += stats.reach_ratio;
                 
-                if ( i % 100 == 0 ) { printf( "\ti = %d, \tp = %.2f\n", i, stats.reach_ratio ); }
+                if ( i % 10 == 0 ) { printf( "\ti = %d, \tcurrent p = %.2f, \taverage p = %.2f\n", i, stats.reach_ratio, small_p / ( i + 1 ) ); }
             }
             
             small_p /= params.runs_number;
@@ -165,42 +165,7 @@ void run_cli( int argc, char **argv )
                     change_agent_number( params.k_array[k] );
                     
                     fprintf( p_raw_results, "%d\n", params.k_array[k] );
-                    
-                    double *big_P_array;
-                    double *big_P_hat_array;
-                    double *big_P_hat_plus_array;
-
-                    big_P_array = ( double * ) calloc( ( params.n_array[n] + 1 ) * params.runs_number, sizeof( double ) );
-                    big_P_hat_array = ( double * ) calloc( ( params.n_array[n] + 1 ) * params.runs_number, sizeof( double ) );
-                    big_P_hat_plus_array = ( double * ) calloc( ( params.n_array[n] + 1 ) * params.runs_number, sizeof( double ) );
-
-                    if ( big_P_array == NULL )
-                    {
-                        printf( "ERROR (%s:%d): allocating memory for big_P_array failed!", __FILE__, __LINE__ );
-                        exit( EXIT_FAILURE );
-                    }
-                    
-                    if ( big_P_hat_array == NULL )
-                    {
-                        printf( "ERROR (%s:%d): allocating memory for big_P_hat_array failed!", __FILE__, __LINE__ );
-                        exit( EXIT_FAILURE );
-                    }
-
-                    if ( big_P_hat_plus_array == NULL )
-                    {
-                        printf( "ERROR (%s:%d): allocating memory for big_P_hat_plus_array failed!", __FILE__, __LINE__ );
-                        exit( EXIT_FAILURE );
-                    }
-                    
-                    double big_P_mean[params.n_array[n] + 1];
-                    double big_P_hat_mean[params.n_array[n] + 1];
-                    double big_P_hat_plus_mean[params.n_array[n] + 1];
-                    
-                    // initialize big_P_mean and big_P_hat_mean arrays to all 0's
-                    memset( big_P_mean, 0, sizeof( big_P_mean ) );
-                    memset( big_P_hat_mean, 0, sizeof( big_P_hat_mean ) );
-                    memset( big_P_hat_plus_mean, 0, sizeof( big_P_hat_plus_mean ) );
-
+                                        
                     srand( ( unsigned int ) time( NULL ) );
                     
                     for ( j = 0; j < params.runs_number; ++j )
@@ -240,15 +205,16 @@ void run_cli( int argc, char **argv )
                         
                         fprintf( p_raw_results, "%g\n", stats.reach_ratio );
 
-                        if ( j % 100 == 0 ) { printf( "j = %d, n = %d, k = %d\n", j, params.n_array[n], params.k_array[k] ); }
+                        // print current status/progress to standard output
+                        if ( j % 100 == 0 )
+                        {
+                            printf( "j = %d, n = %d, k = %d, a = %.2f, b = %.2f\n",
+                                     j, params.n_array[n], params.k_array[k], params.alpha_array[ab], params.beta_array[ab] );
+                        }
                     }
 
                     fprintf( p_results, "\n\n" );
                     fflush( p_raw_results );
-
-                    if ( big_P_array != NULL ) { free( big_P_array ); }
-                    if ( big_P_hat_array != NULL ) { free( big_P_hat_array ); }
-                    if ( big_P_hat_plus_array != NULL ) { free( big_P_hat_plus_array ); }
                 }
             }            
         }

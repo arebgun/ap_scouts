@@ -26,6 +26,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <gsl/gsl_integration.h>
+#include <gsl/gsl_sf.h>
+#include <gsl/gsl_statistics.h>
+
 #include "analysis.h"
 
 /*************** TEMPORARY *************************/
@@ -38,73 +42,7 @@ int nn;
 /***************************************************/
 
 /*************************** Calculate P(y|p) by Dr. A-S formula ************************/
-
-double approximation( double a, double b, double ( *func ) ( double ) )
-{
-    double c = 0.5 * ( b - a );
-    double d = 0.5 * ( b + a );
-
-    return c * ( ( 5.0 / 9.0 ) * func( c * ( -( sqrt( 3.0 / 5.0 ) ) ) + d ) +
-           ( 8.0 / 9.0 ) * func( d ) + ( 5.0 / 9.0 ) * func( c * sqrt ( 3.0 / 5.0 ) + d ) );
-}
-
-double gaussian_quadrature( double a, double b, int n, double ( *func ) ( double ) )
-{
-    double step = ( a + b ) / n;
-    double upper = a + step;
-    double lower = a;
-    double sum = 0;
-
-    int i;
-   
-    for ( i = 0; i < n; ++i )
-    {
-        double temp = approximation( lower, upper, func );
-
-        lower = upper;
-        upper += step;
-
-        sum += temp;
-    }
-
-    return ( sum > 1.0 ) ? 1.0 : sum; 
-}
-
-double gammaln( double xx )
-{
-    int j;
-    double x, y, tmp, ser;
-    static double cof[6] = { 76.18009172947146,     -86.50532032941677,
-                             24.01409824083091,     -1.231739572450155,
-                             0.1208650973866179e-2, -0.5395239384953e-5 };
-    
-    y = x = xx;
-    tmp = x + 5.5;
-    tmp -= ( x + 0.5 ) * log( tmp );
-    ser = 1.000000000190015;
-    
-    for ( j = 0; j <= 5; ++j )
-    {
-        ser += cof[j] / ++y;
-    }
-    
-    return -tmp + log( 2.5066282746310005 * ser / x );
-}
-    
-double beta_function( double z, double w )
-{
-    return exp( gammaln( z ) + gammaln( w ) - gammaln( z + w ) );
-}
-
-double incomplete_beta( double t )
-{
-    int y = yy;
-    int n = nn;
-    
-    return pow( t, y - 1 ) * pow( 1 - t, n - y );
-}
-
-double f( double p )
+double f( double p, void *params )
 {
     double a = alpha;
     double b = beta;
@@ -116,8 +54,8 @@ double f( double p )
     double r = k * pHat + a;
     double s = k * ( 1 - pHat ) + b;
     
-    double b1 = beta_function( r, s );
-    double b2 = beta_function( y, n - y + 1 );
+    double b1 = gsl_sf_beta( r, s );
+    double b2 = gsl_sf_beta( y, n - y + 1 );
     double bb = b1 * b2;
     
     double C = pow( bb, -1 );
@@ -125,7 +63,10 @@ double f( double p )
     if ( isinf( C ) == 1 ) { C = DBL_MAX; }
     else if ( isinf( C ) == -1 ) { C = DBL_MIN; }
     
-    return C * pow( p, r - 1 ) * pow( 1 - p, s - 1 ) * gaussian_quadrature( 0.0, p, 100, incomplete_beta );
+    // need to multiply by B(a,b) because gsl_sf_beta_inc returns normalized incomplete Beta
+    double beta_inc = gsl_sf_beta_inc( y, n - y + 1, p ) * gsl_sf_beta( y, n - y + 1 );
+    
+    return C * pow( p, r - 1 ) * pow( 1 - p, s - 1 ) * beta_inc;
 }
 
 /****************************************************************************************/
@@ -146,6 +87,7 @@ void analyze( int argc, char **argv )
     
     // How accurate is our integral approximation
     int interval_number = 100;
+    double relative_error = 1e-7;
     
     int runs_number = 0;
     int n_number = 0;
@@ -153,6 +95,11 @@ void analyze( int argc, char **argv )
     int a_b_number = 0;
     
     float reach_ratio = 0.0f;
+    
+    // Variables needed for integration
+    gsl_integration_workspace *w = gsl_integration_workspace_alloc( interval_number );
+    gsl_function F;
+    F.function = &f;
     
     int e, n;
     
@@ -282,9 +229,7 @@ void analyze( int argc, char **argv )
 
                             for ( l = y; l <= nn; ++l )
                             {
-                                // exp( gammaln( n + 1 ) ) == fac( n )
-                                double n_choose_l =  exp( gammaln( nn + 1.0 ) - gammaln( l + 1.0 ) - gammaln( nn - l + 1.0 ) );
-                                big_P += n_choose_l * pow( reach_ratio, l ) * pow( 1.0 - reach_ratio, nn - l );
+                                big_P += gsl_sf_choose( nn, l ) * pow( reach_ratio, l ) * pow( 1.0 - reach_ratio, nn - l );
                             }
                             
                             if ( big_P > 1.0 ) { big_P = 1.0; }
@@ -294,7 +239,10 @@ void analyze( int argc, char **argv )
                             yy = y;
                             ppHat = reach_ratio;
                             
-                            double big_P_hat = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+                            double big_P_hat = 0.0;
+                            double error = 0.0;
+                            
+                            gsl_integration_qags( &F, 0.0, 1.0, 0.0, relative_error, interval_number, w, &big_P_hat, &error );
                             if ( big_P_hat > 1.0 ) { big_P_hat = 1.0; }
                             /*************************************************************************************************/
                             
@@ -308,37 +256,29 @@ void analyze( int argc, char **argv )
                             big_P_array[y * runs_number + j] = big_P;
                             big_P_hat_array[y * runs_number + j] = big_P_hat;
                             big_P_hat_plus_array[y * runs_number + j] = big_P_hat_plus;
-                            
-                            big_P_mean[y] += big_P / runs_number;
-                            big_P_hat_mean[y] += big_P_hat / runs_number;
-                            big_P_hat_plus_mean[y] += big_P_hat_plus / runs_number;
                         }
                         
-                        if ( j % 100 == 0 ) { printf( "j = %d, n = %d, k = %d\n", j, nn, kk ); }
+                        if ( j % 100 == 0 ) { printf( "j = %d, n = %d, k = %d, a = %.2f, b = %.2f\n", j, nn, kk, alpha, beta ); }
                     }
                     
                     for ( y = 1; y <= nn; ++y )
                     {
-                        double big_P_sum = 0.0;
-                        double big_P_hat_sum = 0.0;
-                        double big_P_hat_plus_sum = 0.0;
+                        int offset = y * runs_number;
                         
-                        for ( j = 0; j < runs_number; ++j )
-                        {
-                            big_P_sum += pow( big_P_array[y * runs_number + j] - big_P_mean[y], 2.0 );
-                            big_P_hat_sum += pow( big_P_hat_array[y * runs_number + j] - big_P_hat_mean[y], 2.0 );
-                            big_P_hat_plus_sum += pow( big_P_hat_plus_array[y * runs_number + j] - big_P_hat_plus_mean[y], 2.0 );
-                        }
+                        // calculate mean
+                        big_P_mean[y] = gsl_stats_mean( big_P_array + offset, 1, runs_number );
+                        big_P_hat_mean[y] = gsl_stats_mean( big_P_hat_array + offset, 1, runs_number );
+                        big_P_hat_plus_mean[y] = gsl_stats_mean( big_P_hat_plus_array + offset, 1, runs_number );
                         
-                        // calculate standard deviation
-                        double big_P_std_dev = sqrt( ( 1.0 / runs_number ) * big_P_sum );
-                        double big_P_hat_std_dev = sqrt( ( 1.0 / runs_number ) * big_P_hat_sum );
-                        double big_P_hat_plus_std_dev = sqrt( ( 1.0 / runs_number ) * big_P_hat_plus_sum );
-
                         // calculate variance 
-                        double big_P_var = pow( big_P_std_dev, 2.0 );
-                        double big_P_hat_var = pow( big_P_hat_std_dev, 2.0 );
-                        double big_P_hat_plus_var = pow( big_P_hat_plus_std_dev, 2.0 );
+                        double big_P_var = gsl_stats_variance_m( big_P_array + offset, 1, runs_number, big_P_mean[y] );
+                        double big_P_hat_var = gsl_stats_variance_m( big_P_hat_array + offset, 1, runs_number, big_P_hat_mean[y] );
+                        double big_P_hat_plus_var = gsl_stats_variance_m( big_P_hat_plus_array + offset, 1, runs_number, big_P_hat_plus_mean[y] );
+
+                        // calculate standard deviation
+                        double big_P_std_dev = gsl_stats_sd_m( big_P_array + offset, 1, runs_number, big_P_mean[y] );
+                        double big_P_hat_std_dev = gsl_stats_sd_m( big_P_hat_array + offset, 1, runs_number, big_P_hat_mean[y] );
+                        double big_P_hat_plus_std_dev = gsl_stats_sd_m( big_P_hat_plus_array + offset, 1, runs_number, big_P_hat_plus_mean[y] );
                         
                         /**************************************************** Calculate bias ***************************************************************/
                         double big_P_bias = 0.0;
@@ -356,9 +296,7 @@ void analyze( int argc, char **argv )
 
                             for ( l = y; l <= nn; ++l )
                             {
-                                // exp( gammaln( n + 1 ) ) == fac( n )
-                                double n_choose_l =  exp( gammaln( nn + 1.0 ) - gammaln( l + 1.0 ) - gammaln( nn - l + 1.0 ) );
-                                big_P += n_choose_l * pow( small_p_hat, l ) * pow( 1.0 - small_p_hat, nn - l );
+                                big_P += gsl_sf_choose( nn, l ) * pow( small_p_hat, l ) * pow( 1.0 - small_p_hat, nn - l );
                             }
                             
                             if ( big_P > 1.0 ) { big_P = 1.0; }
@@ -368,7 +306,10 @@ void analyze( int argc, char **argv )
                             yy = y;
                             ppHat = small_p_hat;
                             
-                            double big_P_hat = gaussian_quadrature( 0.0f, 1.0f, interval_number, f );
+                            double big_P_hat = 0.0;
+                            double error = 0.0;
+                            
+                            gsl_integration_qags( &F, 0.0, 1.0, 0.0, relative_error, interval_number, w, &big_P_hat, &error );
                             if ( big_P_hat > 1.0 ) { big_P_hat = 1.0; }
                             /*******************************************************************************************************************************/
                             
@@ -379,8 +320,7 @@ void analyze( int argc, char **argv )
                             if ( big_P_hat_plus < 0.0 ) { big_P_hat_plus = 0.0; }
                             /*******************************************************************************************************************************/
                                                         
-                            double k_choose_s = exp( gammaln( kk + 1.0 ) - gammaln( s + 1.0 ) - gammaln( kk - s + 1.0 ) );
-                            double bernoulli = k_choose_s * pow( small_p, s ) * pow( 1.0 - small_p, kk - s );
+                            double bernoulli = gsl_sf_choose( kk, s ) * pow( small_p, s ) * pow( 1.0 - small_p, kk - s );
                             
                             big_P_bias += big_P * bernoulli;
                             big_P_hat_bias += big_P_hat * bernoulli;
@@ -487,6 +427,8 @@ void analyze( int argc, char **argv )
         fclose( p_results );
         fclose( p_raw_results );
     }
+    
+    gsl_integration_workspace_free( w );
 }
 
 void print_usage( char *program_name )
@@ -504,6 +446,8 @@ int main( int argc, char **argv )
         print_usage( argv[0] );
         return EXIT_FAILURE;
     }
+    
+    gsl_set_error_handler_off();
     
     analyze( argc, argv );
     

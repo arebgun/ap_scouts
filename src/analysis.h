@@ -21,12 +21,7 @@
 #ifndef ANALYSIS_H_
 #define ANALYSIS_H_
 
-double approximation( double a, double b, double ( *func ) ( double ) );
-double gaussian_quadrature( double a, double b, int n, double ( *func ) ( double ) );
-double gammaln( double xx );    
-double beta_function( double z, double w );
-double incomplete_beta( double t );
-double f( double p );
+double f( double p, void *params );
 void analyze( int argc, char **argv );
 void print_usage( char *program_name );
 int main( int argc, char **argv );
