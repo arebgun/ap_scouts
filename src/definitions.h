@@ -131,12 +131,12 @@ typedef struct s_params
     int world_height;
     int timer_delay_ms;
     
-    unsigned int goal_random_seed;
+    int goal_random_seed;
     float goal_width;
     float goal_mass;
     Quadrant goal_quadrant;
     
-    unsigned int agent_random_seed;
+    int agent_random_seed;
     int agent_number;
     float agent_radius;
     float agent_mass;
@@ -144,7 +144,7 @@ typedef struct s_params
     int deployment_height;
     Quadrant deployment_quadrant;    
     
-    unsigned int obstacle_random_seed;
+    int obstacle_random_seed;
     int obstacle_number;
     float obstacle_radius;
     float obstacle_radius_min;

@@ -1,3 +1,12 @@
+2008-03-17 03:28  anton
+
+	* ChangeLog, Makefile, src/analysis.c, src/analysis.h,
+	  src/config_editor.c, src/graphics.c, src/swarm.c,
+	  src/swarm_cli.c: - Started programming GUI for editing
+	  configuration files
+	  - Added dependency to GSL library, analysis tool runs MUCH faster
+	  now
+
 2008-03-02 06:30  anton
 
 	* ChangeLog, Makefile, src/analysis.c, src/swarm.c,

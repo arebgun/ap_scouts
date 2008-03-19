@@ -24,6 +24,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include <gsl/gsl_rng.h>
+
 #include "definitions.h"
 
 int read_config_file( char *p_filename );
@@ -48,5 +50,11 @@ int change_obstacle_number( int obstacle_number );
 float calculate_force( Agent *agent, void *object, ObjectType obj_type );
 void move_agents( void );
 void update_reach(void);
+
+extern gsl_rng *general_rng;
+
+extern gsl_rng *goal_rng;
+extern gsl_rng *obstacle_rng;
+extern gsl_rng *agent_rng;
 
 #endif /*SWARM_H_*/

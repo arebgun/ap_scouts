@@ -4,10 +4,11 @@ CFLAGS = -Wall
 
 config_editor_cflags = $(CFLAGS) `pkg-config --cflags gtk+-2.0`
 
-analysis_libs      = -lgsl -lgslcblas -lm
+common_libs        = -lgsl -lgslcblas
+analysis_libs      = $(common_libs) -lm
 config_editor_libs = `pkg-config --libs gtk+-2.0`
-swarm_gui_libs     = -lglut
-swarm_cli_libs     = -lm
+swarm_gui_libs     = $(common_libs) -lglut
+swarm_cli_libs     = $(common_libs) -lm
 
 analysis_obj      = analysis.o
 config_editor_obj = config_editor.o

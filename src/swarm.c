@@ -27,8 +27,16 @@
 #include <string.h>
 #include <time.h>
 
+#include <gsl/gsl_rng.h>
+
 #include "definitions.h"
 #include "swarm.h"
+
+gsl_rng *general_rng;
+
+gsl_rng *goal_rng;
+gsl_rng *obstacle_rng;
+gsl_rng *agent_rng;
 
 /**
  * \fn int read_config_file( char *p_filename )
@@ -484,10 +492,6 @@ int create_goal( void )
         return -1;
     }
     
-    // Initialize goal random number seed
-    if ( params.goal_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
-    else { srand( params.goal_random_seed ); }
-    
     goal->id = 0;
     goal->mass = params.goal_mass;
     goal->width = params.goal_width;
@@ -559,8 +563,8 @@ int create_goal( void )
             offset_y = 0.0f;
     }
     
-    goal->position.x = rand() % ( int ) quadrant_width + offset_x;
-    goal->position.y = rand() % ( int ) quadrant_height + offset_y;
+    goal->position.x = gsl_rng_get( goal_rng ) % ( int ) quadrant_width + offset_x;
+    goal->position.y = gsl_rng_get( goal_rng ) % ( int ) quadrant_height + offset_y;
     
     memcpy( goal->color, goal_color, 3 * sizeof( float ) );
     
@@ -636,14 +640,14 @@ void deploy_agent( Agent *agent )
             offset_y = 10.0f;
     }
     
-    agent->i_position.x = rand() % params.deployment_width + offset_x;
-    agent->i_position.y = rand() % params.deployment_height + offset_y;
+    agent->i_position.x = gsl_rng_get( agent_rng ) % params.deployment_width + offset_x;
+    agent->i_position.y = gsl_rng_get( agent_rng ) % params.deployment_height + offset_y;
     
     agent->position.x = agent->i_position.x;
     agent->position.y = agent->i_position.y;
 }
 
-Agent *create_agent( int id )
+Agent * create_agent( int id )
 {
     Agent *agent = ( Agent * ) malloc( sizeof( Agent ) );
     
@@ -679,10 +683,6 @@ int create_swarm( void )
         return -1;
     }
     
-    // Initialize agents random number seed
-    if ( params.agent_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
-    else { srand( params.agent_random_seed ); }
-
     int i;
     
     for ( i = 0; i < params.agent_number; ++i )
@@ -699,7 +699,7 @@ int create_swarm( void )
     return 0;
 }
 
-Obstacle *create_obstacle( int id, bool random_radius, float radius_range )
+Obstacle * create_obstacle( int id, bool random_radius, float radius_range )
 {
     Obstacle *obstacle = ( Obstacle * ) malloc( sizeof( Obstacle ) );
     
@@ -714,13 +714,13 @@ Obstacle *create_obstacle( int id, bool random_radius, float radius_range )
             
     if ( random_radius )
     {
-        float random = ( float ) rand() / ( float ) RAND_MAX;
+        double random = ( double ) gsl_rng_get( general_rng ) / ( double ) gsl_rng_max( general_rng );
         obstacle->radius = random * radius_range + params.obstacle_radius_min;
     } 
     else { obstacle->radius = params.obstacle_radius; }
     
-    obstacle->position.x = rand() % ( params.world_width - 20 ) + 10;
-    obstacle->position.y = rand() % ( params.world_height - 20 ) + 10;
+    obstacle->position.x = gsl_rng_get( obstacle_rng ) % ( params.world_width - 20 ) + 10;
+    obstacle->position.y = gsl_rng_get( obstacle_rng ) % ( params.world_height - 20 ) + 10;
     
     memcpy( obstacle->color, obstacle_color, 3 * sizeof( float ) );
     
@@ -737,10 +737,6 @@ int create_obstacle_course( void )
         printf( "ERROR (%s:%d): allocating memory for an obstacles array failed!", __FILE__, __LINE__ );
         return -1;
     }
-    
-    // Initialize obstacles random number seed
-    if ( params.obstacle_random_seed == 0 ) { srand( ( unsigned int ) time( NULL ) ); }
-    else { srand( params.obstacle_random_seed ); }
     
     bool random_radius = ( params.obstacle_radius == 0 ) ? true : false;
     float radius_range = params.obstacle_radius_max - params.obstacle_radius_min;
@@ -782,6 +778,11 @@ void free_memory( void )
     if ( obstacles != NULL ) { free( obstacles ); }
     if ( params.n_array != NULL ) { free( params.n_array ); }
     if ( params.k_array != NULL ) { free( params.k_array ); }
+    
+    if ( general_rng != NULL ) { gsl_rng_free( goal_rng ); }
+    if ( goal_rng != NULL ) { gsl_rng_free( goal_rng ); }
+    if ( obstacle_rng != NULL ) { gsl_rng_free( obstacle_rng ); }
+    if ( agent_rng != NULL ) { gsl_rng_free( agent_rng ); }
 }
 
 void reset_statistics( void )
@@ -922,6 +923,12 @@ void initialize_simulation( void )
     
     // set function to use when deciding wheter agent reached a goal
     agent_reached_goal = agent_reached_goal_chain;
+    
+    // initialize random number generators for all objects
+    gsl_rng_set( general_rng, 0 );
+    gsl_rng_set( goal_rng, 0 );
+    gsl_rng_set( obstacle_rng, 0 );
+    gsl_rng_set( agent_rng, 0 );
     
     // Reset statistics
     reset_statistics();    
@@ -1132,6 +1139,12 @@ int save_scenario( char *filename )
 int load_scenario( char *filename )
 {
     free_memory();
+    
+    // create random number generators for all objetcts
+    general_rng = gsl_rng_alloc( gsl_rng_ranlxs2 );
+    goal_rng = gsl_rng_alloc( gsl_rng_ranlxs2 );
+    obstacle_rng = gsl_rng_alloc( gsl_rng_ranlxs2 );
+    agent_rng = gsl_rng_alloc( gsl_rng_ranlxs2 );
 
     // Load defaults in case config file is broken
     initialize_simulation();
@@ -1139,6 +1152,18 @@ int load_scenario( char *filename )
     // Read configuration
     if ( read_config_file( filename ) == -1 ) { return -1; }
     output_simulation_parameters( stdout );
+
+    // Initialize goal random number seed
+    if ( params.goal_random_seed == -1 ) { gsl_rng_set( goal_rng, ( unsigned int ) time( NULL ) ); }
+    else { gsl_rng_set( goal_rng, params.goal_random_seed ); }
+    
+    // Initialize agents random number seed
+    if ( params.agent_random_seed == -1 ) { gsl_rng_set( agent_rng, ( unsigned int ) time( NULL ) ); }
+    else { gsl_rng_set( agent_rng, ( unsigned int ) params.agent_random_seed ); }
+    
+    // Initialize obstacles random number seed
+    if ( params.obstacle_random_seed == -1 ) { gsl_rng_set( obstacle_rng, ( unsigned int ) time( NULL ) ); }
+    else { gsl_rng_set( obstacle_rng, params.obstacle_random_seed ); }
     
     // Load scenario if necessary
     if ( params.initialize_from_file )
@@ -1212,6 +1237,11 @@ void restart_simulation( void )
     
     // Reset statistics
     reset_statistics();
+    
+    // initialize random number generators for all objects
+    gsl_rng_set( goal_rng, 0 );
+    gsl_rng_set( obstacle_rng, 0 );
+    gsl_rng_set( agent_rng, 0 );
     
     for ( i = 0; i < params.agent_number; ++i )
     {

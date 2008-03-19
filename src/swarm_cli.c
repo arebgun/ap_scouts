@@ -25,6 +25,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <gsl/gsl_rng.h>
+
 #include "swarm.h"
 #include "swarm_cli.h"
 
@@ -96,7 +98,8 @@ void run_cli( int argc, char **argv )
             
             double small_p = 0.0;
     
-            srand( ( unsigned int ) time( NULL ) );
+            gsl_rng_set( agent_rng, ( unsigned int ) time( NULL ) );
+            gsl_rng_set( general_rng, ( unsigned int ) time( NULL ) );
             
             for ( i = 0; i < params.runs_number; ++i )
             {
@@ -124,7 +127,7 @@ void run_cli( int argc, char **argv )
 
                     for ( j = 0; j < params.agent_number; ++j )
                     {
-                        double random = ( double ) rand() / ( double ) RAND_MAX;
+                        double random = ( double ) gsl_rng_get( general_rng ) / ( double ) gsl_rng_max( general_rng );
                         if ( random <= params.env_probability ) { ++stats.reached_goal; }
                     }
                 
@@ -166,7 +169,8 @@ void run_cli( int argc, char **argv )
                     
                     fprintf( p_raw_results, "%d\n", params.k_array[k] );
                                         
-                    srand( ( unsigned int ) time( NULL ) );
+                    gsl_rng_set( agent_rng, ( unsigned int ) time( NULL ) );
+                    gsl_rng_set( general_rng, ( unsigned int ) time( NULL ) );
                     
                     for ( j = 0; j < params.runs_number; ++j )
                     {
@@ -196,7 +200,7 @@ void run_cli( int argc, char **argv )
 
                             for ( u = 0; u < params.agent_number; ++u )
                             {
-                                double random = ( double ) rand() / ( double ) RAND_MAX;
+                                double random = ( double ) gsl_rng_get( general_rng ) / ( double ) gsl_rng_max( general_rng );
                                 if ( random <= small_p ) { ++stats.reached_goal; }
                             }
 
