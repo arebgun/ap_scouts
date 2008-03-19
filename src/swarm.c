@@ -33,10 +33,12 @@
 #include "swarm.h"
 
 gsl_rng *general_rng;
-
 gsl_rng *goal_rng;
 gsl_rng *obstacle_rng;
 gsl_rng *agent_rng;
+
+static float offset_x;
+static float offset_y;
 
 /**
  * \fn int read_config_file( char *p_filename )
@@ -571,14 +573,11 @@ int create_goal( void )
     return 0;
 }
 
-void deploy_agent( Agent *agent )
+void find_deployment_offset( void )
 {
     float quadrant_width = params.world_width / 3.0f;
     float quadrant_height = params.world_height / 3.0f;
 
-    float offset_x;
-    float offset_y;
-    
     /*
      *         ------------- 
      *         | NW | N | NE |
@@ -638,8 +637,11 @@ void deploy_agent( Agent *agent )
         default:
             offset_x = 10.0f;
             offset_y = 10.0f;
-    }
-    
+    }    
+}
+
+void deploy_agent( Agent *agent )
+{
     agent->i_position.x = gsl_rng_get( agent_rng ) % params.deployment_width + offset_x;
     agent->i_position.y = gsl_rng_get( agent_rng ) % params.deployment_height + offset_y;
     
@@ -662,9 +664,10 @@ Agent * create_agent( int id )
     agent->collided = false;
     agent->goal_reached = false;
     agent->radius = params.agent_radius;
+
     agent->velocity.x = 0.0f;
     agent->velocity.y = 0.0f;
-    
+
     deploy_agent( agent );
     
     memcpy( agent->color, agent_color, 3 * sizeof( float ) );
@@ -717,10 +720,30 @@ Obstacle * create_obstacle( int id, bool random_radius, float radius_range )
         double random = ( double ) gsl_rng_get( general_rng ) / ( double ) gsl_rng_max( general_rng );
         obstacle->radius = random * radius_range + params.obstacle_radius_min;
     } 
-    else { obstacle->radius = params.obstacle_radius; }
+    else
+    {
+        obstacle->radius = params.obstacle_radius;
+    }
+
+    float max_radius = ( params.obstacle_radius == 0 ) ? params.obstacle_radius_max : params.obstacle_radius;
+    float center_x = offset_x + params.deployment_width / 2.0f;
+    float center_y = offset_y + params.deployment_height / 2.0f;
     
-    obstacle->position.x = gsl_rng_get( obstacle_rng ) % ( params.world_width - 20 ) + 10;
-    obstacle->position.y = gsl_rng_get( obstacle_rng ) % ( params.world_height - 20 ) + 10;
+    float threshold_goal = params.range_coefficient * ( max_radius + hypotf( params.goal_width, params.goal_width ) / 2.0f );
+    float threshold_agents = max_radius + hypotf( params.deployment_width, params.deployment_height ) / 2.0f;
+    
+    float distance_to_goal = 0.0f;
+    float distance_to_agents = 0.0f;
+    
+    do
+    {
+        obstacle->position.x = gsl_rng_get( obstacle_rng ) % ( params.world_width - 20 ) + 10;
+        obstacle->position.y = gsl_rng_get( obstacle_rng ) % ( params.world_height - 20 ) + 10;
+        
+        distance_to_goal = hypotf( obstacle->position.x - goal->position.x, obstacle->position.y - goal->position.y );
+        distance_to_agents = hypotf( obstacle->position.x - center_x, obstacle->position.y - center_y );
+    }
+    while ( distance_to_goal < threshold_goal || distance_to_agents < threshold_agents );
     
     memcpy( obstacle->color, obstacle_color, 3 * sizeof( float ) );
     
@@ -1164,6 +1187,10 @@ int load_scenario( char *filename )
     // Initialize obstacles random number seed
     if ( params.obstacle_random_seed == -1 ) { gsl_rng_set( obstacle_rng, ( unsigned int ) time( NULL ) ); }
     else { gsl_rng_set( obstacle_rng, params.obstacle_random_seed ); }
+    
+    // Find agents deployment quadrant x and y offsets,
+    // i.e. the coordiantes of lower left corner of deployment quadrant
+    find_deployment_offset();
     
     // Load scenario if necessary
     if ( params.initialize_from_file )

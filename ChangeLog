@@ -1,3 +1,9 @@
+2008-03-19 21:16  anton
+
+	* ChangeLog, Makefile, config.ini, src/definitions.h, src/swarm.c,
+	  src/swarm.h, src/swarm_cli.c: - Migrated to GSL's random number
+	  generator (RANDLUX)
+
 2008-03-17 03:28  anton
 
 	* ChangeLog, Makefile, src/analysis.c, src/analysis.h,

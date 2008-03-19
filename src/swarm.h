@@ -31,6 +31,7 @@
 int read_config_file( char *p_filename );
 void output_simulation_parameters( FILE *output );
 int create_goal( void );
+void find_deployment_offset( void );
 void deploy_agent( Agent *agent );
 Agent *create_agent( int id );
 int create_swarm( void );
