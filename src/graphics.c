@@ -193,31 +193,130 @@ inline void draw_params_stats( void )
     {
         case NEWTONIAN:
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G Force A-A: %.2f", params.G_agent_agent );
+            sprintf( label, "G Forces:" );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "G A-A: %.2f", params.G_agent_agent );
             draw_string( label );
             
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G Force A-O: %.2f", params.G_agent_obstacle );
+            sprintf( label, "G A-O: %.2f", params.G_agent_obstacle );
             draw_string( label );
             
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G Force A-G: %.2f", params.G_agent_goal );
+            sprintf( label, "G A-G: %.2f", params.G_agent_goal );
+            draw_string( label );
+            
+            ++line;
+            
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "p Powers:" );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "p A-A: %.2f", params.p_agent_agent );
             draw_string( label );
             
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p Power A-A: %.2f", params.p_agent_agent );
+            sprintf( label, "p A-O: %.2f", params.p_agent_obstacle );
             draw_string( label );
             
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p Power A-O: %.2f", params.p_agent_obstacle );
+            sprintf( label, "p A-G: %.2f", params.p_agent_goal );
             draw_string( label );
             
+            ++line;
+
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p Power A-G: %.2f", params.p_agent_goal );
+            sprintf( label, "Force Cutoffs:" );
             draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Max A-A: %.2f", params.max_f_agent_agent_n );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Max A-O: %.2f", params.max_f_agent_obstacle_n );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Max A-G: %.2f", params.max_f_agent_goal_n );
+            draw_string( label );
+            
             break;
             
         case LENNARD_JONES:
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Force Strengths:" );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Epsilon A-A: %.2f", params.epsilon_agent_agent );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Epsilon A-O: %.2f", params.epsilon_agent_obstacle );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Epsilon A-G: %.2f", params.epsilon_agent_goal );
+            draw_string( label );
+            
+            ++line;
+            
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Attractive Components:" );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "c A-A: %.2f", params.c_agent_agent );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "c A-O: %.2f", params.c_agent_obstacle );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "c A-G: %.2f", params.c_agent_goal );
+            draw_string( label );
+            
+            ++line;
+            
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Repulsive Components:" );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "d A-A: %.2f", params.c_agent_agent );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "d A-O: %.2f", params.c_agent_obstacle );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "d A-G: %.2f", params.c_agent_goal );
+            draw_string( label );
+            
+            ++line;
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Force Cutoffs:" );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Max A-A: %.2f", params.max_f_agent_agent_lj );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Max A-O: %.2f", params.max_f_agent_obstacle_lj );
+            draw_string( label );
+
+            glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
+            sprintf( label, "Max A-G: %.2f", params.max_f_agent_goal_lj );
+            draw_string( label );
+            
             break;
     }
     
@@ -262,38 +361,54 @@ inline void draw_instructions( void )
     
     glColor3f( 0.0f, 0.0f, 0.0f );
     
-    glRasterPos2i( screen_offset, -3 * screen_offset - line * line_offset );
-    sprintf( label, "'S' -- Start/Stop the simualtion" );
+    glRasterPos2i( screen_offset, -screen_offset - line * line_offset );
+    sprintf( label, "'S' or 's' -- Start/Stop the simualtion" );
     draw_string( label );
     
-    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
-    sprintf( label, "'R' -- Restart the simulation" );
+    glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'R' or 'r' -- Restart the simulation" );
     draw_string( label );
 
-    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
+    glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'PageUp' -- Increase timer delay (slower)" );
     draw_string( label );
 
-    glRasterPos2i( screen_offset, -3 * screen_offset - ( ++line * line_offset ) );
+    glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'PageDown' -- Decrease timer delay (faster)" );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'C' or 'c' -- Show/hide agent connectivity" );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'Q' or 'q' -- Quit the simulation" );
     draw_string( label );
     
     line = 1;
     
-    glRasterPos2i( screen_offset + 300, -3 * screen_offset - line * line_offset );
-    sprintf( label, "'I' -- Change object increment/decrement" );
+    glRasterPos2i( screen_offset + 300, -screen_offset - line * line_offset );
+    sprintf( label, "'I' or 'i' -- Change object increment/decrement" );
     draw_string( label );
     
-    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
-    sprintf( label, "'A' -- Selects agent # to be incremented/decremented" );
+    glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'A' or 'a' -- Selects agent # to be incremented/decremented" );
     draw_string( label );
     
-    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
+    glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'O' or 'o' -- Selects obstacle # to be incremented/decremented" );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'UP' -- Increments # of objects" );
     draw_string( label );
     
-    glRasterPos2i( screen_offset + 300, -3 * screen_offset - ( ++line * line_offset ) );
+    glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'DOWN' -- Decrements # of objects" );
+    draw_string( label );
+    
+    glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
+    sprintf( label, "'D' / 'L' -- Save/Load current scenario" );
     draw_string( label );
     
     if ( running )

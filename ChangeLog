@@ -1,3 +1,8 @@
+2008-03-19 23:40  anton
+
+	* ChangeLog, src/swarm.c, src/swarm.h: - Obstacles now won't
+	  overlap goal or agent deployment quadrant
+
 2008-03-19 21:16  anton
 
 	* ChangeLog, Makefile, config.ini, src/definitions.h, src/swarm.c,
