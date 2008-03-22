@@ -23,6 +23,8 @@
 
 #include <stdbool.h>
 
+#define VERSION "v0.6.0"
+
 typedef enum e_viewmode
 {
     CLI,

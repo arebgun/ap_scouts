@@ -230,7 +230,7 @@ void run_cli( int argc, char **argv )
 
 void print_usage( char *program_name )
 {
-    printf( "Robotic Swarm Simulator (C with GLUT/OpenGL) v0.5.0.\n" );
+    printf( "Robotic Swarm Simulator (C with GLUT/OpenGL) %s.\n", VERSION );
     printf( "Copyright (C) 2007, 2008 Antons Rebguns <anton at cs dot uwyo dot edu>\n\n" );
     printf( "Usage: %s [scenario_1, scenario_2, ...]\n\n", program_name );
     printf( "\tscenario_1, ... - one or more configuration files\n");

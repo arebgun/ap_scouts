@@ -1,3 +1,9 @@
+2008-03-21 02:30  anton
+
+	* ChangeLog, src/graphics.c: - Added more shortcut descriptions to
+	  help
+	  - Showing all configuration settings in the params-stats sidebar
+
 2008-03-19 23:40  anton
 
 	* ChangeLog, src/swarm.c, src/swarm.h: - Obstacles now won't
@@ -273,7 +279,6 @@
 
 2007-07-27 01:32  anton
 
-	* branches, tags, ., config.ini, src, src/robotic_swarm.c: Initial
-	  commit. Simulator has GUI mode fully working, need to add CLI
-	  (batch).
+	* ., config.ini, src, src/robotic_swarm.c: Initial commit.
+	  Simulator has GUI mode fully working, need to add CLI (batch).
 
