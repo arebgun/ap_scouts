@@ -1178,15 +1178,15 @@ int load_scenario( char *filename )
 
     // Initialize goal random number seed
     if ( params.goal_random_seed == -1 ) { gsl_rng_set( goal_rng, ( unsigned int ) time( NULL ) ); }
-    else { gsl_rng_set( goal_rng, params.goal_random_seed ); }
+    else { gsl_rng_set( goal_rng, ( unsigned long int ) params.goal_random_seed ); }
     
     // Initialize agents random number seed
     if ( params.agent_random_seed == -1 ) { gsl_rng_set( agent_rng, ( unsigned int ) time( NULL ) ); }
-    else { gsl_rng_set( agent_rng, ( unsigned int ) params.agent_random_seed ); }
+    else { gsl_rng_set( agent_rng, ( unsigned long int ) params.agent_random_seed ); }
     
     // Initialize obstacles random number seed
     if ( params.obstacle_random_seed == -1 ) { gsl_rng_set( obstacle_rng, ( unsigned int ) time( NULL ) ); }
-    else { gsl_rng_set( obstacle_rng, params.obstacle_random_seed ); }
+    else { gsl_rng_set( obstacle_rng, ( unsigned long int ) params.obstacle_random_seed ); }
     
     // Find agents deployment quadrant x and y offsets,
     // i.e. the coordiantes of lower left corner of deployment quadrant
@@ -1264,11 +1264,6 @@ void restart_simulation( void )
     
     // Reset statistics
     reset_statistics();
-    
-    // initialize random number generators for all objects
-    gsl_rng_set( goal_rng, 0 );
-    gsl_rng_set( obstacle_rng, 0 );
-    gsl_rng_set( agent_rng, 0 );
     
     for ( i = 0; i < params.agent_number; ++i )
     {

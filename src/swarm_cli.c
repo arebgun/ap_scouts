@@ -98,8 +98,8 @@ void run_cli( int argc, char **argv )
             
             double small_p = 0.0;
     
-            gsl_rng_set( agent_rng, ( unsigned int ) time( NULL ) );
-            gsl_rng_set( general_rng, ( unsigned int ) time( NULL ) );
+            gsl_rng_set( agent_rng, ( unsigned long int ) time( NULL ) );
+            gsl_rng_set( general_rng, ( unsigned long int ) time( NULL ) );
             
             for ( i = 0; i < params.runs_number; ++i )
             {
