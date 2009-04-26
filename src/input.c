@@ -1,18 +1,18 @@
 /*
  * This file is part of Robotic Swarm Simulator.
- * 
- * Copyright (C) 2007, 2008 Antons Rebguns <anton at cs dot uwyo dot edu>.
- * 
+ *
+ * Copyright (C) 2007, 2008, 2009 Antons Rebguns.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or (at
  * your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
  * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
  * for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
@@ -99,7 +99,6 @@ void process_normal_keys( unsigned char key, int x, int y )
     }
     else if ( key == 'q' || key == 'Q' )
     {
-        free_memory();
         exit( EXIT_SUCCESS );
     }
 }
@@ -112,7 +111,7 @@ void process_special_keys( int key, int x, int y )
             ++params.timer_delay_ms;
             glutPostRedisplay();
             break;
-            
+
         case GLUT_KEY_PAGE_DOWN:
             if ( params.timer_delay_ms > 1 )
             {
@@ -120,7 +119,7 @@ void process_special_keys( int key, int x, int y )
                 glutPostRedisplay();
             }
             break;
-        
+
         case GLUT_KEY_UP:
             if ( cur_sel_index == 0 )
             {
@@ -136,7 +135,7 @@ void process_special_keys( int key, int x, int y )
             }
             glutPostRedisplay();
             break;
-            
+
         case GLUT_KEY_DOWN:
             if ( cur_sel_index == 0 )
             {
@@ -163,16 +162,16 @@ void process_mouse_buttons( int button, int state, int x, int y )
         {
             x = x - stats_area_width;
             y = params.world_height - y;
-            
+
             int i;
-            
+
             for ( i = 0; i < params.obstacle_number; ++i )
             {
                 int radius = obstacles[i]->radius;
-                
+
                 float x_o = obstacles[i]->position.x;
                 float y_o = obstacles[i]->position.y;
-                 
+
                 if ( ( x >= x_o - radius ) && ( x <= x_o + radius ) &&
                      ( y >= y_o - radius ) && ( y <= y_o + radius ) )
                 {
@@ -204,14 +203,14 @@ void process_mouse_active_motion( int x, int y )
     {
         Obstacle *obs = obstacles[selected_obstacle_id];
         Vector2f *obs_pos = &( obs->position );
-        
+
         obs_pos->x = x - stats_area_width;
         obs_pos->y = params.world_height - y;
-        
+
         // prevent moving obstacle to the information and statistics area
         if ( obs_pos->x - obs->radius < 0.0f ) { obs_pos->x = obs->radius; }
         if ( obs_pos->y - obs->radius < 0.0f ) { obs_pos->y = obs->radius; }
-        
+
         glutPostRedisplay();
     }
 }

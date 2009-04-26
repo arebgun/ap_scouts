@@ -1,18 +1,18 @@
 /*
  * This file is part of Robotic Swarm Simulator.
- * 
- * Copyright (C) 2007, 2008 Antons Rebguns <anton at cs dot uwyo dot edu>.
- * 
+ *
+ * Copyright (C) 2007, 2008, 2009 Antons Rebguns.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or (at
  * your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
  * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
  * for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
@@ -56,23 +56,23 @@ void initialize_graphics( void )
 void draw_all( void )
 {
     int i;
-    
+
     glClear( GL_COLOR_BUFFER_BIT );
-    
+
     draw_goal( goal );
-    
+
     for ( i = 0; i < params.obstacle_number; ++i )
     {
         draw_obstacle( obstacles[i] );
     }
-    
+
     if ( show_connectivity ) { draw_agent_connectivity(); }
 
     for( i = 0; i < params.agent_number; ++i )
     {
         draw_agent( agents[i] );
     }
-    
+
     draw_params_stats();
     draw_instructions();
 
@@ -82,7 +82,7 @@ void draw_all( void )
 inline void draw_string( char *s )
 {
     int i;
-    
+
     for ( i = 0; i < strlen( s ); ++i )
     {
         glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
@@ -106,7 +106,7 @@ inline void draw_agent( Agent *agent )
     {
         glPointSize( agent->radius );
         glColor3fv( agent->color );
-    
+
         glBegin( GL_POINTS );
             glVertex2f( agent->position.x, agent->position.y );
         glEnd();
@@ -116,14 +116,14 @@ inline void draw_agent( Agent *agent )
 inline void draw_agent_connectivity( void )
 {
     int i, j;
-    
+
     glColor3fv( agent_color_conn );
 
     for ( i = 0; i < params.agent_number; ++i )
     {
         Agent *a1 = agents[i];
         Vector2f a1_pos = a1->position;
-        
+
         for ( j = i; j < params.agent_number; ++j )
         {
             Agent *a2 = agents[j];
@@ -162,19 +162,19 @@ inline void draw_obstacle( Obstacle *obstacle )
 inline void draw_params_stats( void )
 {
     // Draw simulation parameters on screen
-    
+
     char label[100];
     int line = 1;
     int line_offset = 13;
     int screen_offset_x = 10 - stats_area_width;
     int screen_offset_y = 10;
-    
+
     glColor3f( 0.7f, 0.0f, 0.6f );
-    
+
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - line * line_offset );
     sprintf( label, "Agent #: %d", params.agent_number );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
     sprintf( label, "Obstacle #: %d", params.obstacle_number );
     draw_string( label );
@@ -182,14 +182,14 @@ inline void draw_params_stats( void )
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
     sprintf( label, "Timer Delay: %d", params.timer_delay_ms );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
     sprintf( label, "Max Velocity: %.2f", params.max_V );
     draw_string( label );
-    
+
     ++line;
-    
-    switch ( params.force_law )    
+
+    switch ( params.force_law )
     {
         case NEWTONIAN:
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
@@ -197,35 +197,35 @@ inline void draw_params_stats( void )
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G A-A: %.2f", params.G_agent_agent );
+            sprintf( label, "G A-A: %.2f", params.fl_params.G_agent_agent );
             draw_string( label );
-            
+
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G A-O: %.2f", params.G_agent_obstacle );
+            sprintf( label, "G A-O: %.2f", params.fl_params.G_agent_obstacle );
             draw_string( label );
-            
+
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "G A-G: %.2f", params.G_agent_goal );
+            sprintf( label, "G A-G: %.2f", params.fl_params.G_agent_goal );
             draw_string( label );
-            
+
             ++line;
-            
+
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
             sprintf( label, "p Powers:" );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p A-A: %.2f", params.p_agent_agent );
+            sprintf( label, "p A-A: %.2f", params.fl_params.p_agent_agent );
             draw_string( label );
-            
+
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p A-O: %.2f", params.p_agent_obstacle );
+            sprintf( label, "p A-O: %.2f", params.fl_params.p_agent_obstacle );
             draw_string( label );
-            
+
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "p A-G: %.2f", params.p_agent_goal );
+            sprintf( label, "p A-G: %.2f", params.fl_params.p_agent_goal );
             draw_string( label );
-            
+
             ++line;
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
@@ -233,72 +233,72 @@ inline void draw_params_stats( void )
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Max A-A: %.2f", params.max_f_agent_agent_n );
+            sprintf( label, "Max A-A: %.2f", params.fl_params.max_f_agent_agent_n );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Max A-O: %.2f", params.max_f_agent_obstacle_n );
+            sprintf( label, "Max A-O: %.2f", params.fl_params.max_f_agent_obstacle_n );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Max A-G: %.2f", params.max_f_agent_goal_n );
+            sprintf( label, "Max A-G: %.2f", params.fl_params.max_f_agent_goal_n );
             draw_string( label );
-            
+
             break;
-            
+
         case LENNARD_JONES:
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
             sprintf( label, "Force Strengths:" );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Epsilon A-A: %.2f", params.epsilon_agent_agent );
+            sprintf( label, "Epsilon A-A: %.2f", params.fl_params.epsilon_agent_agent );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Epsilon A-O: %.2f", params.epsilon_agent_obstacle );
+            sprintf( label, "Epsilon A-O: %.2f", params.fl_params.epsilon_agent_obstacle );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Epsilon A-G: %.2f", params.epsilon_agent_goal );
+            sprintf( label, "Epsilon A-G: %.2f", params.fl_params.epsilon_agent_goal );
             draw_string( label );
-            
+
             ++line;
-            
+
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
             sprintf( label, "Attractive Components:" );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "c A-A: %.2f", params.c_agent_agent );
+            sprintf( label, "c A-A: %.2f", params.fl_params.c_agent_agent );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "c A-O: %.2f", params.c_agent_obstacle );
+            sprintf( label, "c A-O: %.2f", params.fl_params.c_agent_obstacle );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "c A-G: %.2f", params.c_agent_goal );
+            sprintf( label, "c A-G: %.2f", params.fl_params.c_agent_goal );
             draw_string( label );
-            
+
             ++line;
-            
+
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
             sprintf( label, "Repulsive Components:" );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "d A-A: %.2f", params.c_agent_agent );
+            sprintf( label, "d A-A: %.2f", params.fl_params.d_agent_agent );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "d A-O: %.2f", params.c_agent_obstacle );
+            sprintf( label, "d A-O: %.2f", params.fl_params.d_agent_obstacle );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "d A-G: %.2f", params.c_agent_goal );
+            sprintf( label, "d A-G: %.2f", params.fl_params.d_agent_goal );
             draw_string( label );
-            
+
             ++line;
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
@@ -306,34 +306,34 @@ inline void draw_params_stats( void )
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Max A-A: %.2f", params.max_f_agent_agent_lj );
+            sprintf( label, "Max A-A: %.2f", params.fl_params.max_f_agent_agent_lj );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Max A-O: %.2f", params.max_f_agent_obstacle_lj );
+            sprintf( label, "Max A-O: %.2f", params.fl_params.max_f_agent_obstacle_lj );
             draw_string( label );
 
             glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-            sprintf( label, "Max A-G: %.2f", params.max_f_agent_goal_lj );
+            sprintf( label, "Max A-G: %.2f", params.fl_params.max_f_agent_goal_lj );
             draw_string( label );
-            
+
             break;
     }
-    
+
     ++line;
-    
+
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
     sprintf( label, "Reached Goal #: %d", stats.reached_goal );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
     sprintf( label, "Reach Ratio: %.2f%%", stats.reach_ratio * 100.0f );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
     sprintf( label, "Collisions: %d", stats.collisions );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
     sprintf( label, "Collision Ratio: %.2f%%", stats.collision_ratio * 100.0f );
     draw_string( label );
@@ -341,9 +341,9 @@ inline void draw_params_stats( void )
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
     sprintf( label, "Time Step: %d", stats.time_step );
     draw_string( label );
-    
+
     glColor3f( 0.0f, 0.0f, 0.0f );
-    
+
     glBegin( GL_LINES );
         glVertex2f( 0.0f, 0.0f );
         glVertex2f( 0.0f, params.world_height );
@@ -353,18 +353,18 @@ inline void draw_params_stats( void )
 inline void draw_instructions( void )
 {
     // Draw simulation instructions (help)
-    
+
     char label[100];
     int line = 1;
     int line_offset = 13;
     int screen_offset = 10;
-    
+
     glColor3f( 0.0f, 0.0f, 0.0f );
-    
+
     glRasterPos2i( screen_offset, -screen_offset - line * line_offset );
-    sprintf( label, "'S' or 's' -- Start/Stop the simualtion" );
+    sprintf( label, "'S' or 's' -- Start/Stop the simulation" );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'R' or 'r' -- Restart the simulation" );
     draw_string( label );
@@ -376,41 +376,41 @@ inline void draw_instructions( void )
     glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'PageDown' -- Decrease timer delay (faster)" );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'C' or 'c' -- Show/hide agent connectivity" );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'Q' or 'q' -- Quit the simulation" );
     draw_string( label );
-    
+
     line = 1;
-    
+
     glRasterPos2i( screen_offset + 300, -screen_offset - line * line_offset );
     sprintf( label, "'I' or 'i' -- Change object increment/decrement" );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'A' or 'a' -- Selects agent # to be incremented/decremented" );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'O' or 'o' -- Selects obstacle # to be incremented/decremented" );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'UP' -- Increments # of objects" );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'DOWN' -- Decrements # of objects" );
     draw_string( label );
-    
+
     glRasterPos2i( screen_offset + 300, -screen_offset - ( ++line * line_offset ) );
     sprintf( label, "'D' / 'L' -- Save/Load current scenario" );
     draw_string( label );
-    
+
     if ( running )
     {
         glColor3f( 0.0f, 0.5f, 0.0f );
@@ -425,12 +425,12 @@ inline void draw_instructions( void )
         sprintf( label, "STOPPED" );
         draw_string( label );
     }
-    
+
     glColor3f( 0.0f, 0.0f, 0.0f );
     glRasterPos2i( params.world_width - 170, -help_area_height + line_offset );
     sprintf( label, "%s [%3d]", selections[cur_sel_index], increments[cur_inc_index] );
     draw_string( label );
-    
+
     glBegin( GL_LINES );
         glVertex2f( 0.0f, 0.0f );
         glVertex2f( params.world_width, 0.0f );
