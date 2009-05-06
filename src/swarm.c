@@ -21,6 +21,7 @@
 #include <float.h>
 #include <limits.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +32,7 @@
 
 #include "definitions.h"
 #include "swarm.h"
+#include "threading.h"
 
 gsl_rng *general_rng;
 gsl_rng *goal_rng;
@@ -65,10 +67,6 @@ int read_config_file( char *p_filename )
             else if ( strcasecmp( "world_height", parameter ) == 0 )
             {
                 params.world_height = atoi( value );
-            }
-            else if ( strcasecmp( "timer_delay_ms", parameter ) == 0 )
-            {
-                params.timer_delay_ms = atoi( value );
             }
             else if ( strcasecmp( "goal_random_seed", parameter ) == 0 )
             {
@@ -393,7 +391,6 @@ void output_simulation_parameters( FILE *output )
 
     fprintf( output, "# world_width = %d\n", params.world_width );
     fprintf( output, "# world_height = %d\n", params.world_height );
-    fprintf( output, "# timer_delay_ms = %d\n", params.timer_delay_ms );
     fprintf( output, "# goal_random_seed = %d\n", params.goal_random_seed );
     fprintf( output, "# goal_width = %.2f\n", params.goal_width );
     fprintf( output, "# goal_mass = %.2f\n", params.goal_mass );
@@ -934,7 +931,6 @@ void initialize_simulation( void )
     // in case some information is missing from config file
     params.world_width = 800;
     params.world_height = 600;
-    params.timer_delay_ms = 8;
     params.goal_random_seed = 0;
     params.goal_width = 15.0f;
     params.goal_mass = 10.0f;
@@ -1010,7 +1006,6 @@ int save_scenario( char *filename )
         fprintf( config, "world_height             %d    # Simulation area height\n", params.world_height );
         fprintf( config, "\n" );
 
-        fprintf( config, "timer_delay_ms           %d    # Controls simulation speed\n", params.timer_delay_ms );
         fprintf( config, "\n" );
 
         // Goal parameters
@@ -1554,7 +1549,7 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 
                 // agent-obstacle interactions, repulsive component only
                 case OBSTACLE:
-                    if ( distance_to_obj <= 10 )//params.range_coefficient * params.R ) // TODO: add parameter for this
+                    if ( distance_to_obj <= 10 ) // TODO: add parameter for this
                     {
                         epsilon = agent_fl_params.epsilon_agent_obstacle;
                         d = agent_fl_params.d_agent_obstacle;
@@ -1594,123 +1589,155 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
     return f;
 }
 
-void move_agents( void )
+void *move_agents( void *thread_data )
 {
-    int i, j;
+    ThreadData *td = (ThreadData *) thread_data;
+    printf( "Thread %d controlling %d agents.\n", td->thread_id, td->agent_number );
 
-    for ( i = 0; i < params.agent_number; ++i )
+    while ( true )
     {
-        Agent *agent = agents[i];
+        int j, k;
 
-        Vector2f agent_pos = agent->position;
-        Vector2f goal_pos = goal->position;
-
-        double force_x = 0.0f;
-        double force_y = 0.0f;
-
-        agent->velocity.x *= params.friction_coefficient;
-        agent->velocity.y *= params.friction_coefficient;
-
-        /************************** Calculate force between an obstacle and an agent ***********************/
-        if ( params.enable_agent_obstacle_f )
+        if ( !running )
         {
+            pthread_mutex_lock( &mutex_system );
+            pthread_cond_wait( &cond_system, &mutex_system );
+            pthread_mutex_unlock( &mutex_system );
+        }
+
+        for ( k = 0; k < td->agent_number; ++k )
+        {
+            int i = td->agent_ids[k];
+
+            Agent *agent = agents[i];
+
+            Vector2f agent_pos = agent->position;
+            Vector2f goal_pos = goal->position;
+
+            double force_x = 0.0f;
+            double force_y = 0.0f;
+
+            agent->velocity.x *= params.friction_coefficient;
+            agent->velocity.y *= params.friction_coefficient;
+
+            /************************** Calculate force between an obstacle and an agent ***********************/
+            if ( params.enable_agent_obstacle_f )
+            {
+                for ( j = 0; j < params.obstacle_number; ++j )
+                {
+                    Obstacle *obs = obstacles[j];
+                    Vector2f obs_pos = obs->position;
+
+                    float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
+                    double net_force = calculate_force( agent, obs, OBSTACLE );
+
+                    force_x += net_force * cos( angle_to_obstacle );
+                    force_y += net_force * sin( angle_to_obstacle );
+                }
+            }
+            /****************************************************************************************************/
+
+            /************************** Calculate force between agents *************************************************/
+            if ( params.enable_agent_agent_f )
+            {
+                for ( j = 0; j < params.agent_number; ++j )
+                {
+                    Agent *agent2 = agents[j];
+                    Vector2f agent2_pos = agent2->position;
+
+                    float angle_to_agent2 = atan2( agent2_pos.y - agent_pos.y, agent2_pos.x - agent_pos.x );
+                    double net_force = calculate_force( agent, agent2, AGENT );
+
+                    force_x += net_force * cos( angle_to_agent2 );
+                    force_y += net_force * sin( angle_to_agent2 );
+                }
+            }
+            /***********************************************************************************************************/
+
+            /********************** Calculate force between the goal and an agent *************************/
+            if ( params.enable_agent_goal_f )
+            {
+                float angle_to_goal = atan2( goal_pos.y - agent_pos.y, goal_pos.x - agent_pos.x );
+                double net_force = calculate_force( agent, goal, GOAL );
+
+                force_x += net_force * cos( angle_to_goal );
+                force_y += net_force * sin( angle_to_goal );
+            }
+            /**********************************************************************************************/
+
+            agent->n_velocity = agent->velocity;
+
+            // update agent velocity vector
+            agent->n_velocity.x += force_x / agent->mass;
+            agent->n_velocity.y += force_y / agent->mass;
+
+            float velocity_magnitude = hypotf( agent->n_velocity.x, agent->n_velocity.y );
+
+            // check if new velocity exceeds the maximum
+            if ( velocity_magnitude > params.max_V )
+            {
+                agent->n_velocity.x = ( agent->n_velocity.x * params.max_V ) / velocity_magnitude;
+                agent->n_velocity.y = ( agent->n_velocity.y * params.max_V ) / velocity_magnitude;
+            }
+
+            agent->n_position = agent->position;
+
+            // update agent position
+            agent->n_position.x += agent->n_velocity.x;
+            agent->n_position.y += agent->n_velocity.y;
+
+            // calculate number of agent-obstacle collisions
             for ( j = 0; j < params.obstacle_number; ++j )
             {
                 Obstacle *obs = obstacles[j];
                 Vector2f obs_pos = obs->position;
 
-                float angle_to_obstacle = atan2( obs_pos.y - agent_pos.y, obs_pos.x - agent_pos.x );
-                double net_force = calculate_force( agent, obs, OBSTACLE );
+                float distance_to_obs = hypotf( agent_pos.x - obs_pos.x, agent_pos.y - obs_pos.y );
+                distance_to_obs -= obs->radius;
 
-                force_x += net_force * cos( angle_to_obstacle );
-                force_y += net_force * sin( angle_to_obstacle );
+                if ( !agent->collided &&
+                     distance_to_obs <= obs->radius &&
+                     fabs( agent_pos.x - obs_pos.x ) <= obs->radius &&
+                     fabs( agent_pos.y - obs_pos.y ) <= obs->radius )
+                {
+                    agent->collided = true;
+                    memcpy( agent->color, agent_color_coll, 3 * sizeof( float ) );
+
+                    pthread_mutex_lock( &mutex );
+                    ++stats.collisions;
+                    stats.collision_ratio = ( float ) stats.collisions / ( float ) params.agent_number;
+                    pthread_mutex_unlock( &mutex );
+                }
             }
         }
-        /****************************************************************************************************/
 
-        /************************** Calculate force between agents *************************************************/
-        if ( params.enable_agent_agent_f )
+        barrier();
+
+        // move all agents in lock step
+        for ( k = 0; k < td->agent_number; ++k )
         {
-            for ( j = 0; j < params.agent_number; ++j )
-            {
-                Agent *agent2 = agents[j];
-                Vector2f agent2_pos = agent2->position;
+            int i = td->agent_ids[k];
 
-                float angle_to_agent2 = atan2( agent2_pos.y - agent_pos.y, agent2_pos.x - agent_pos.x );
-                double net_force = calculate_force( agent, agent2, AGENT );
+            agents[i]->velocity.x = agents[i]->n_velocity.x;
+            agents[i]->velocity.y = agents[i]->n_velocity.y;
 
-                force_x += net_force * cos( angle_to_agent2 );
-                force_y += net_force * sin( angle_to_agent2 );
-            }
-        }
-        /***********************************************************************************************************/
-
-        /********************** Calculate force between the goal and an agent *************************/
-        if ( params.enable_agent_goal_f )
-        {
-            float angle_to_goal = atan2( goal_pos.y - agent_pos.y, goal_pos.x - agent_pos.x );
-            double net_force = calculate_force( agent, goal, GOAL );
-
-            force_x += net_force * cos( angle_to_goal );
-            force_y += net_force * sin( angle_to_goal );
-        }
-        /**********************************************************************************************/
-
-        agent->n_velocity = agent->velocity;
-
-        // update agent velocity vector
-        agent->n_velocity.x += force_x / agent->mass;
-        agent->n_velocity.y += force_y / agent->mass;
-
-        float velocity_magnitude = hypotf( agent->n_velocity.x, agent->n_velocity.y );
-
-        // check if new velocity exceeds the maximum
-        if ( velocity_magnitude > params.max_V )
-        {
-            agent->n_velocity.x = ( agent->n_velocity.x * params.max_V ) / velocity_magnitude;
-            agent->n_velocity.y = ( agent->n_velocity.y * params.max_V ) / velocity_magnitude;
+            agents[i]->position.x = agents[i]->n_position.x;
+            agents[i]->position.y = agents[i]->n_position.y;
         }
 
-        agent->n_position = agent->position;
+        pthread_mutex_lock( &mutex );
+        ++active_threads;
 
-        // update agent position
-        agent->n_position.x += agent->n_velocity.x;
-        agent->n_position.y += agent->n_velocity.y;
-
-        // calculate number of agent-obstacle collisions
-        for ( j = 0; j < params.obstacle_number; ++j )
+        if ( active_threads == MAX_THREADS )
         {
-            Obstacle *obs = obstacles[j];
-            Vector2f obs_pos = obs->position;
-
-            float distance_to_obs = hypotf( agent_pos.x - obs_pos.x, agent_pos.y - obs_pos.y );
-            distance_to_obs -= obs->radius;
-
-            if ( !agent->collided &&
-                 distance_to_obs <= obs->radius &&
-                 fabs( agent_pos.x - obs_pos.x ) <= obs->radius &&
-                 fabs( agent_pos.y - obs_pos.y ) <= obs->radius )
-            {
-                agent->collided = true;
-                memcpy( agent->color, agent_color_coll, 3 * sizeof( float ) );
-
-                ++stats.collisions;
-                stats.collision_ratio = ( float ) stats.collisions / ( float ) params.agent_number;
-            }
+            active_threads = 0;
+            ++stats.time_step;
         }
+
+        pthread_mutex_unlock( &mutex );
     }
 
-    // move all agents in lock step
-    for ( i = 0; i < params.agent_number; ++i )
-    {
-        agents[i]->velocity.x = agents[i]->n_velocity.x;
-        agents[i]->velocity.y = agents[i]->n_velocity.y;
-
-        agents[i]->position.x = agents[i]->n_position.x;
-        agents[i]->position.y = agents[i]->n_position.y;
-    }
-
-    ++stats.time_step;
+    pthread_exit( NULL );
 }
 
 void update_reach( void )

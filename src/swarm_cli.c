@@ -116,7 +116,7 @@ void run_cli( int argc, char **argv )
 
                     while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
                     {
-                        move_agents();
+                        //move_agents();
                     }
 
                     update_reach();
@@ -187,7 +187,7 @@ void run_cli( int argc, char **argv )
 
                             while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
                             {
-                                move_agents();
+                                //move_agents();
                             }
 
                             update_reach();

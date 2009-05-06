@@ -181,7 +181,6 @@ typedef struct s_params
 {
     int world_width;
     int world_height;
-    int timer_delay_ms;
 
     int goal_random_seed;
     float goal_width;

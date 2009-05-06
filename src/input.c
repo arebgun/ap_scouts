@@ -18,6 +18,7 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 
 #include <GL/glut.h>
@@ -25,12 +26,20 @@
 #include "graphics.h"
 #include "input.h"
 #include "swarm.h"
+#include "threading.h"
 
 void process_normal_keys( unsigned char key, int x, int y )
 {
     if ( key == 's' || key == 'S' )
     {
         running = !running;
+
+        if ( running )
+        {
+            pthread_mutex_lock( &mutex_system );
+            pthread_cond_broadcast( &cond_system );
+            pthread_mutex_unlock( &mutex_system );
+        }
         glutPostRedisplay();
     }
     else if ( key == 'r' || key == 'R' )
@@ -107,19 +116,6 @@ void process_special_keys( int key, int x, int y )
 {
     switch ( key )
     {
-        case GLUT_KEY_PAGE_UP:
-            ++params.timer_delay_ms;
-            glutPostRedisplay();
-            break;
-
-        case GLUT_KEY_PAGE_DOWN:
-            if ( params.timer_delay_ms > 1 )
-            {
-                --params.timer_delay_ms;
-                glutPostRedisplay();
-            }
-            break;
-
         case GLUT_KEY_UP:
             if ( cur_sel_index == 0 )
             {

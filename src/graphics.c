@@ -180,7 +180,7 @@ inline void draw_params_stats( void )
     draw_string( label );
 
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );
-    sprintf( label, "Timer Delay: %d", params.timer_delay_ms );
+    sprintf( label, "Timer Delay: %d", 0 );
     draw_string( label );
 
     glRasterPos2i( screen_offset_x, params.world_height - screen_offset_y - ( ++line * line_offset ) );

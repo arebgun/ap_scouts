@@ -49,7 +49,7 @@ void restart_simulation( void );
 int change_agent_number( int agent_number );
 int change_obstacle_number( int obstacle_number );
 float calculate_force( Agent *agent, void *object, ObjectType obj_type );
-void move_agents( void );
+void *move_agents( void *thread_data );
 void update_reach(void);
 
 extern gsl_rng *general_rng;

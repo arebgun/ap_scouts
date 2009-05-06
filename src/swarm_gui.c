@@ -18,6 +18,7 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "GL/gl.h"
@@ -27,18 +28,22 @@
 #include "input.h"
 #include "swarm.h"
 #include "swarm_gui.h"
+#include "threading.h"
 
 void run_gui( int time )
 {
     if ( running )
     {
-        if ( stats.time_step < params.time_limit ) { move_agents(); }
-        else { update_reach(); }
+        if ( stats.time_step >= params.time_limit )
+        {
+            update_reach();
+            running = false;
+        }
 
         glutPostRedisplay();
     }
 
-    glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
+    glutTimerFunc( 0, run_gui, stats.time_step );
 }
 
 void print_usage( char *program_name )
@@ -60,6 +65,37 @@ int main( int argc, char **argv )
 
     if ( load_scenario( argv[1] ) != 0 ) { return EXIT_FAILURE; }
 
+    initialize_threading();
+
+    // create threads and put on hold
+    int extra = params.agent_number % MAX_THREADS;
+    int num_per_cpu = ( params.agent_number - extra ) / MAX_THREADS;
+
+    int i, j;
+
+    for ( i = 0; i < MAX_THREADS; ++i )
+    {
+        thread_data[i].thread_id = i;
+
+        if ( i == MAX_THREADS - 1 ) { thread_data[i].agent_number = num_per_cpu + extra; }
+        else { thread_data[i].agent_number = num_per_cpu; }
+
+        thread_data[i].agent_ids = calloc( thread_data[i].agent_number, sizeof(int) );
+
+        for ( j = 0; j < thread_data[i].agent_number; ++j )
+        {
+            thread_data[i].agent_ids[j] = i * num_per_cpu + j;
+        }
+
+        printf( "Creating thread %d: begin\n", i );
+        pthread_create( &threads[i], &attr, move_agents, (void *) &thread_data[i] );
+        printf( "Creating thread %d: end\n", i );
+    }
+
+    pthread_attr_destroy( &attr );
+
+    printf( "Thread creation complete.\n" );
+
     glutInit( &argc, argv );
     glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB );
     glutInitWindowSize( params.world_width + stats_area_width, params.world_height + help_area_height );
@@ -77,7 +113,7 @@ int main( int argc, char **argv )
     glutEntryFunc( process_mouse_entry );
     glutMotionFunc( process_mouse_active_motion );
 
-    glutTimerFunc( params.timer_delay_ms, run_gui, stats.time_step );
+    glutTimerFunc( 0, run_gui, stats.time_step );
 
     glutMainLoop();
 

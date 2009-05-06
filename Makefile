@@ -24,7 +24,7 @@ CFLAGS = -Wall
 
 config_editor_cflags = $(CFLAGS) `pkg-config --cflags gtk+-2.0`
 
-common_libs        = -lgsl -lgslcblas
+common_libs        = -lgsl -lgslcblas -lpthread
 analysis_libs      = $(common_libs) -lm
 config_editor_libs = `pkg-config --libs gtk+-2.0`
 swarm_gui_libs     = $(common_libs) -lglut
@@ -32,8 +32,8 @@ swarm_cli_libs     = $(common_libs) -lm
 
 analysis_obj      = analysis.o
 config_editor_obj = config_editor.o
-swarm_gui_obj     = definitions.o graphics.o input.o swarm.o swarm_gui.o
-swarm_cli_obj     = definitions.o swarm.o swarm_cli.o
+swarm_gui_obj     = definitions.o threading.o graphics.o input.o swarm.o swarm_gui.o
+swarm_cli_obj     = definitions.o threading.o swarm.o swarm_cli.o
 
 all: analysis config-editor swarm-gui swarm-cli
 
@@ -59,6 +59,7 @@ analysis.o: analysis.h
 config_editor.o: config_editor.c
 	$(CC) $(config_editor_cflags) -c $^ -o $@
 definitions.o: definitions.h
+threading.o: threading.h
 graphcis.o: definitions.h graphics.h
 input.o: graphics.h input.h swarm.h
 swarm.o: definitions.h swarm.h
