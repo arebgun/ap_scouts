@@ -24,11 +24,46 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include <gsl/gsl_rng.h>
 
 #include "swarm.h"
 #include "swarm_cli.h"
+#include "threading.h"
+
+void create_update_threads( bool update_data_only )
+{
+    int i, j;
+
+    // create threads and put on hold
+    int extra = params.agent_number % MAX_THREADS;
+    int num_per_cpu = ( params.agent_number - extra ) / MAX_THREADS;
+
+    for ( i = 0; i < MAX_THREADS; ++i )
+    {
+        thread_data[i].thread_id = i;
+
+        if ( i == MAX_THREADS - 1 ) { thread_data[i].agent_number = num_per_cpu + extra; }
+        else { thread_data[i].agent_number = num_per_cpu; }
+
+        if ( thread_data[i].agent_number != 0 )
+        {
+            if ( thread_data[i].agent_ids != NULL ) { free( thread_data[i].agent_ids ); }
+            thread_data[i].agent_ids = calloc( thread_data[i].agent_number, sizeof(int) );
+        }
+
+        for ( j = 0; j < thread_data[i].agent_number; ++j )
+        {
+            thread_data[i].agent_ids[j] = i * num_per_cpu + j;
+        }
+
+        if ( !update_data_only ) { pthread_create( &threads[i], &attr, move_agents, (void *) &thread_data[i] ); }
+    }
+
+    pthread_attr_destroy(&attr);
+}
 
 void run_cli( int argc, char **argv )
 {
@@ -42,7 +77,13 @@ void run_cli( int argc, char **argv )
 
     for ( e = 0; e < env_number; ++e )
     {
+        double start_time = getcputime();
+        double start_time_tod = getclocktime();
+
         if ( load_scenario( environments[e] ) == -1 ) { exit( EXIT_FAILURE ); }
+
+        initialize_threading();
+        create_update_threads( false );
 
         char *raw_filename = NULL;
 
@@ -101,9 +142,11 @@ void run_cli( int argc, char **argv )
             gsl_rng_set( agent_rng, ( unsigned long int ) time( NULL ) );
             gsl_rng_set( general_rng, ( unsigned long int ) time( NULL ) );
 
-            for ( i = 0; i < params.runs_number; ++i )
+            create_update_threads( true );
+
+            if ( params.run_simulation )
             {
-                if ( params.run_simulation )
+                for ( i = 0; i < params.runs_number; ++i )
                 {
                     restart_simulation();
 
@@ -114,14 +157,31 @@ void run_cli( int argc, char **argv )
                         deploy_agent( agents[agent] );
                     }
 
-                    while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-                    {
-                        //move_agents();
-                    }
+                    running = true;
+
+                    pthread_mutex_lock( &mutex_system );
+                    pthread_cond_broadcast( &cond_system );
+                    pthread_mutex_unlock( &mutex_system );
+
+                    pthread_mutex_lock( &mutex_finished );
+                    pthread_cond_wait( &cond_finished, &mutex_finished );
+                    pthread_mutex_unlock( &mutex_finished );
 
                     update_reach();
+
+                    for ( j = 0; j <= stats.reached_goal; ++j )
+                    {
+                        big_P_prime[j] += increment;
+                    }
+
+                    small_p += stats.reach_ratio;
+
+                    if ( i % 10 == 0 ) { printf( "\ti = %d, \tcurrent p = %.2f, \taverage p = %.2f\n", i, stats.reach_ratio, small_p / ( i + 1 ) ); }
                 }
-                else
+            }
+            else
+            {
+                for ( i = 0; i < params.runs_number; ++i )
                 {
                     reset_statistics();
 
@@ -132,16 +192,16 @@ void run_cli( int argc, char **argv )
                     }
 
                     stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
+
+                    for ( j = 0; j <= stats.reached_goal; ++j )
+                    {
+                        big_P_prime[j] += increment;
+                    }
+
+                    small_p += stats.reach_ratio;
+
+                    if ( i % 10 == 0 ) { printf( "\ti = %d, \tcurrent p = %.2f, \taverage p = %.2f\n", i, stats.reach_ratio, small_p / ( i + 1 ) ); }
                 }
-
-                for ( j = 0; j <= stats.reached_goal; ++j )
-                {
-                    big_P_prime[j] += increment;
-                }
-
-                small_p += stats.reach_ratio;
-
-                if ( i % 10 == 0 ) { printf( "\ti = %d, \tcurrent p = %.2f, \taverage p = %.2f\n", i, stats.reach_ratio, small_p / ( i + 1 ) ); }
             }
 
             small_p /= params.runs_number;
@@ -172,9 +232,11 @@ void run_cli( int argc, char **argv )
                     gsl_rng_set( agent_rng, ( unsigned int ) time( NULL ) );
                     gsl_rng_set( general_rng, ( unsigned int ) time( NULL ) );
 
-                    for ( j = 0; j < params.runs_number; ++j )
+                    create_update_threads( true );
+
+                    if ( params.run_simulation )
                     {
-                        if ( params.run_simulation )
+                        for ( j = 0; j < params.runs_number; ++j )
                         {
                             restart_simulation();
 
@@ -185,14 +247,31 @@ void run_cli( int argc, char **argv )
                                 deploy_agent( agents[agent] );
                             }
 
-                            while ( stats.reached_goal != params.agent_number && stats.time_step < params.time_limit )
-                            {
-                                //move_agents();
-                            }
+                            running = true;
+
+                            pthread_mutex_lock( &mutex_system );
+                            pthread_cond_broadcast( &cond_system );
+                            pthread_mutex_unlock( &mutex_system );
+
+                            pthread_mutex_lock( &mutex_finished );
+                            pthread_cond_wait( &cond_finished, &mutex_finished );
+                            pthread_mutex_unlock( &mutex_finished );
 
                             update_reach();
+
+                            fprintf( p_raw_results, "%g\n", stats.reach_ratio );
+
+                            // print current status/progress to standard output
+                            if ( j % 100 == 0 )
+                            {
+                                printf( "j = %d, n = %d, k = %d, a = %.2f, b = %.2f\n",
+                                         j, params.n_array[n], params.k_array[k], params.alpha_array[ab], params.beta_array[ab] );
+                            }
                         }
-                        else
+                    }
+                    else
+                    {
+                        for ( j = 0; j < params.runs_number; ++j )
                         {
                             reset_statistics();
 
@@ -205,15 +284,15 @@ void run_cli( int argc, char **argv )
                             }
 
                             stats.reach_ratio = ( float ) stats.reached_goal / ( float ) params.agent_number;
-                        }
 
-                        fprintf( p_raw_results, "%g\n", stats.reach_ratio );
+                            fprintf( p_raw_results, "%g\n", stats.reach_ratio );
 
-                        // print current status/progress to standard output
-                        if ( j % 100 == 0 )
-                        {
-                            printf( "j = %d, n = %d, k = %d, a = %.2f, b = %.2f\n",
-                                     j, params.n_array[n], params.k_array[k], params.alpha_array[ab], params.beta_array[ab] );
+                            // print current status/progress to standard output
+                            if ( j % 100 == 0 )
+                            {
+                                printf( "j = %d, n = %d, k = %d, a = %.2f, b = %.2f\n",
+                                         j, params.n_array[n], params.k_array[k], params.alpha_array[ab], params.beta_array[ab] );
+                            }
                         }
                     }
 
@@ -221,11 +300,42 @@ void run_cli( int argc, char **argv )
                     fflush( p_raw_results );
                 }
             }
+
+            double end_time = getcputime();
+            double end_time_tod = getclocktime();
+
+            printf( "[%d] %.9lf seconds of processing CPU\n", e, ( end_time - start_time ) );
+            printf( "[%d] %.9lf seconds of processing WALL\n", e, ( end_time_tod - start_time_tod ) );
         }
 
         fclose( p_results );
         fclose( p_raw_results );
     }
+}
+
+double getcputime( void )
+{
+    struct timeval tim;
+    struct rusage ru;
+
+    getrusage( RUSAGE_SELF, &ru );
+
+    tim = ru.ru_utime;
+    double t = (double) tim.tv_sec;
+
+    tim = ru.ru_stime;
+    t += (double) tim.tv_sec;
+
+    return t;
+}
+
+double getclocktime( void )
+{
+    struct timeval tim;
+
+    gettimeofday( &tim, NULL );
+
+    return tim.tv_sec;
 }
 
 void print_usage( char *program_name )

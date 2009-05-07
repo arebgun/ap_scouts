@@ -22,6 +22,8 @@
 #define SWARM_CLI_H_
 
 void run_cli( int argc, char **argv );
+double getcputime( void );
+double getclocktime( void );
 void print_usage( char *program_name );
 int main( int argc, char **argv );
 

@@ -32,18 +32,8 @@
 
 void run_gui( int time )
 {
-    if ( running )
-    {
-        if ( stats.time_step >= params.time_limit )
-        {
-            update_reach();
-            running = false;
-        }
-
-        glutPostRedisplay();
-    }
-
-    glutTimerFunc( 0, run_gui, stats.time_step );
+    if ( running ) { glutPostRedisplay(); }
+    glutTimerFunc( 1, run_gui, stats.time_step );
 }
 
 void print_usage( char *program_name )
@@ -113,7 +103,7 @@ int main( int argc, char **argv )
     glutEntryFunc( process_mouse_entry );
     glutMotionFunc( process_mouse_active_motion );
 
-    glutTimerFunc( 0, run_gui, stats.time_step );
+    glutTimerFunc( 1, run_gui, stats.time_step );
 
     glutMainLoop();
 

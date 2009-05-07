@@ -55,6 +55,8 @@ int read_config_file( char *p_filename )
 
     if ( p_config != NULL )
     {
+        printf( "Reading configuration file: [%s]\n", p_filename );
+
         char parameter[100];
         char value[100];
 
@@ -1296,6 +1298,7 @@ void restart_simulation( void )
 
     running = false;
 
+    pthread_mutex_lock( &mutex );
     // Reset statistics
     reset_statistics();
 
@@ -1310,6 +1313,7 @@ void restart_simulation( void )
 
         memcpy( agents[i]->color, agent_color, 3 * sizeof( float ) );
     }
+    pthread_mutex_unlock( &mutex );
 }
 
 int change_agent_number( int agent_number )
@@ -1711,7 +1715,8 @@ void *move_agents( void *thread_data )
             }
         }
 
-        barrier();
+        //barrier();
+        pthread_barrier_wait( &pt_barrier );
 
         // move all agents in lock step
         for ( k = 0; k < td->agent_number; ++k )
@@ -1732,9 +1737,22 @@ void *move_agents( void *thread_data )
         {
             active_threads = 0;
             ++stats.time_step;
+
+            if ( stats.time_step >= params.time_limit )
+            {
+                running = false;
+                update_reach();
+
+                pthread_mutex_lock( &mutex_finished );
+                pthread_cond_broadcast( &cond_finished );
+                pthread_mutex_unlock( &mutex_finished );
+            }
         }
 
         pthread_mutex_unlock( &mutex );
+
+        //barrier();
+        pthread_barrier_wait( &pt_barrier );
     }
 
     pthread_exit( NULL );

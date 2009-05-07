@@ -23,7 +23,7 @@
 
 #include <pthread.h>
 
-#define MAX_THREADS 4
+#define MAX_THREADS 2
 
 typedef struct thread_data
 {
@@ -43,11 +43,16 @@ extern pthread_mutex_t mutex_barrier;  // mutex semaphore for the barrier
 extern pthread_cond_t go;              // condition variable for leaving
 extern int at_barrier;                 // count of the number who have arrived
 
+extern pthread_barrier_t pt_barrier;
+
 extern pthread_mutex_t mutex;          // mutex for statistics updates
 extern int active_threads;             // update statistics at the end of movement
 
 extern pthread_mutex_t mutex_system;  // mutex semaphore for the barrier
 extern pthread_cond_t cond_system;              // condition variable for leaving
+
+extern pthread_mutex_t mutex_finished;  // mutex semaphore for the barrier
+extern pthread_cond_t cond_finished;              // condition variable for leaving
 
 extern ThreadData thread_data[MAX_THREADS];
 

@@ -42,7 +42,7 @@ void barrier( void )
 
 void initialize_threading( void )
 {
-    printf( "Threading system initialization: begin\n" );
+    printf( "Begin threading system initialization\n" );
 
     // set global thread attributes
     pthread_attr_init( &attr );
@@ -54,10 +54,15 @@ void initialize_threading( void )
     pthread_mutex_init( &mutex_barrier, NULL );
     pthread_cond_init( &go, NULL );
 
+    pthread_barrier_init( &pt_barrier, NULL, MAX_THREADS );
+
     pthread_mutex_init( &mutex_system, NULL );
     pthread_cond_init( &cond_system, NULL );
 
-    printf( "Threading system initialization: successful\n" );
+    pthread_mutex_init( &mutex_finished, NULL );
+    pthread_cond_init( &cond_finished, NULL );
+
+    printf( "Threading system initialization successful\n" );
 }
 
 pthread_t threads[MAX_THREADS];
@@ -67,10 +72,15 @@ pthread_mutex_t mutex_barrier;  // mutex for the barrier
 pthread_cond_t go;              // condition variable for leaving
 int at_barrier = 0;             // count of the number who have arrived
 
+pthread_barrier_t pt_barrier;
+
 pthread_mutex_t mutex;          // mutex for statistics updates
 int active_threads = 0;         // update statistics at the end of movement
 
 pthread_mutex_t mutex_system;   // mutex for the cond_system
 pthread_cond_t cond_system;     // condition variable for starting/stopping simulator
+
+pthread_mutex_t mutex_finished;  // mutex semaphore for the barrier
+pthread_cond_t cond_finished;              // condition variable for leaving
 
 ThreadData thread_data[MAX_THREADS];
