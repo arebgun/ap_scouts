@@ -18,7 +18,12 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "definitions.h"
+#include "swarm.h"
 #include "threading.h"
 
 void barrier( void )
@@ -63,6 +68,38 @@ void initialize_threading( void )
     pthread_cond_init( &cond_finished, NULL );
 
     printf( "Threading system initialization successful\n" );
+}
+
+void create_update_threads( bool update_data_only )
+{
+    int i, j;
+
+    // create threads and put on hold
+    int extra = params.agent_number % MAX_THREADS;
+    int num_per_cpu = ( params.agent_number - extra ) / MAX_THREADS;
+
+    for ( i = 0; i < MAX_THREADS; ++i )
+    {
+        thread_data[i].thread_id = i;
+
+        if ( i == MAX_THREADS - 1 ) { thread_data[i].agent_number = num_per_cpu + extra; }
+        else { thread_data[i].agent_number = num_per_cpu; }
+
+        if ( thread_data[i].agent_number != 0 )
+        {
+            if ( thread_data[i].agent_ids != NULL ) { free( thread_data[i].agent_ids ); }
+            thread_data[i].agent_ids = calloc( thread_data[i].agent_number, sizeof(int) );
+        }
+
+        for ( j = 0; j < thread_data[i].agent_number; ++j )
+        {
+            thread_data[i].agent_ids[j] = i * num_per_cpu + j;
+        }
+
+        if ( !update_data_only ) { pthread_create( &threads[i], &attr, move_agents, (void *) &thread_data[i] ); }
+    }
+
+    pthread_attr_destroy(&attr);
 }
 
 pthread_t threads[MAX_THREADS];

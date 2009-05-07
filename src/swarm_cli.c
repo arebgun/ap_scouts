@@ -25,45 +25,12 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
-#include <sys/resource.h>
 
 #include <gsl/gsl_rng.h>
 
 #include "swarm.h"
 #include "swarm_cli.h"
 #include "threading.h"
-
-void create_update_threads( bool update_data_only )
-{
-    int i, j;
-
-    // create threads and put on hold
-    int extra = params.agent_number % MAX_THREADS;
-    int num_per_cpu = ( params.agent_number - extra ) / MAX_THREADS;
-
-    for ( i = 0; i < MAX_THREADS; ++i )
-    {
-        thread_data[i].thread_id = i;
-
-        if ( i == MAX_THREADS - 1 ) { thread_data[i].agent_number = num_per_cpu + extra; }
-        else { thread_data[i].agent_number = num_per_cpu; }
-
-        if ( thread_data[i].agent_number != 0 )
-        {
-            if ( thread_data[i].agent_ids != NULL ) { free( thread_data[i].agent_ids ); }
-            thread_data[i].agent_ids = calloc( thread_data[i].agent_number, sizeof(int) );
-        }
-
-        for ( j = 0; j < thread_data[i].agent_number; ++j )
-        {
-            thread_data[i].agent_ids[j] = i * num_per_cpu + j;
-        }
-
-        if ( !update_data_only ) { pthread_create( &threads[i], &attr, move_agents, (void *) &thread_data[i] ); }
-    }
-
-    pthread_attr_destroy(&attr);
-}
 
 void run_cli( int argc, char **argv )
 {
@@ -77,7 +44,6 @@ void run_cli( int argc, char **argv )
 
     for ( e = 0; e < env_number; ++e )
     {
-        double start_time = getcputime();
         double start_time_tod = getclocktime();
 
         if ( load_scenario( environments[e] ) == -1 ) { exit( EXIT_FAILURE ); }
@@ -301,32 +267,14 @@ void run_cli( int argc, char **argv )
                 }
             }
 
-            double end_time = getcputime();
             double end_time_tod = getclocktime();
 
-            printf( "[%d] %.9lf seconds of processing CPU\n", e, ( end_time - start_time ) );
             printf( "[%d] %.9lf seconds of processing WALL\n", e, ( end_time_tod - start_time_tod ) );
         }
 
         fclose( p_results );
         fclose( p_raw_results );
     }
-}
-
-double getcputime( void )
-{
-    struct timeval tim;
-    struct rusage ru;
-
-    getrusage( RUSAGE_SELF, &ru );
-
-    tim = ru.ru_utime;
-    double t = (double) tim.tv_sec;
-
-    tim = ru.ru_stime;
-    t += (double) tim.tv_sec;
-
-    return t;
 }
 
 double getclocktime( void )

@@ -22,6 +22,7 @@
 #define THREADING_H_
 
 #include <pthread.h>
+#include <stdbool.h>
 
 #define MAX_THREADS 2
 
@@ -35,6 +36,7 @@ typedef struct thread_data
 
 void barrier( void );
 void initialize_threading( void );
+void create_update_threads( bool update_data_only );
 
 extern pthread_t threads[MAX_THREADS];
 extern pthread_attr_t attr;

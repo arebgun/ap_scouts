@@ -56,33 +56,7 @@ int main( int argc, char **argv )
     if ( load_scenario( argv[1] ) != 0 ) { return EXIT_FAILURE; }
 
     initialize_threading();
-
-    // create threads and put on hold
-    int extra = params.agent_number % MAX_THREADS;
-    int num_per_cpu = ( params.agent_number - extra ) / MAX_THREADS;
-
-    int i, j;
-
-    for ( i = 0; i < MAX_THREADS; ++i )
-    {
-        thread_data[i].thread_id = i;
-
-        if ( i == MAX_THREADS - 1 ) { thread_data[i].agent_number = num_per_cpu + extra; }
-        else { thread_data[i].agent_number = num_per_cpu; }
-
-        thread_data[i].agent_ids = calloc( thread_data[i].agent_number, sizeof(int) );
-
-        for ( j = 0; j < thread_data[i].agent_number; ++j )
-        {
-            thread_data[i].agent_ids[j] = i * num_per_cpu + j;
-        }
-
-        printf( "Creating thread %d: begin\n", i );
-        pthread_create( &threads[i], &attr, move_agents, (void *) &thread_data[i] );
-        printf( "Creating thread %d: end\n", i );
-    }
-
-    pthread_attr_destroy( &attr );
+    create_update_threads( false );
 
     printf( "Thread creation complete.\n" );
 
