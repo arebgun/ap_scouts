@@ -114,7 +114,11 @@ void run_cli( int argc, char **argv )
             {
                 for ( i = 0; i < params.runs_number; ++i )
                 {
-                    restart_simulation();
+                    pthread_mutex_lock( &mutex );
+                    {
+                        restart_simulation();
+                    }
+                    pthread_mutex_unlock( &mutex );
 
                     int agent;
 
@@ -126,11 +130,15 @@ void run_cli( int argc, char **argv )
                     running = true;
 
                     pthread_mutex_lock( &mutex_system );
-                    pthread_cond_broadcast( &cond_system );
+                    {
+                        pthread_cond_broadcast( &cond_system );
+                    }
                     pthread_mutex_unlock( &mutex_system );
 
                     pthread_mutex_lock( &mutex_finished );
-                    pthread_cond_wait( &cond_finished, &mutex_finished );
+                    {
+                        pthread_cond_wait( &cond_finished, &mutex_finished );
+                    }
                     pthread_mutex_unlock( &mutex_finished );
 
                     update_reach();
@@ -204,7 +212,11 @@ void run_cli( int argc, char **argv )
                     {
                         for ( j = 0; j < params.runs_number; ++j )
                         {
-                            restart_simulation();
+                            pthread_mutex_unlock( &mutex );
+                            {
+                                restart_simulation();
+                            }
+                            pthread_mutex_unlock( &mutex );
 
                             int agent;
 
@@ -216,11 +228,15 @@ void run_cli( int argc, char **argv )
                             running = true;
 
                             pthread_mutex_lock( &mutex_system );
-                            pthread_cond_broadcast( &cond_system );
+                            {
+                                pthread_cond_broadcast( &cond_system );
+                            }
                             pthread_mutex_unlock( &mutex_system );
 
                             pthread_mutex_lock( &mutex_finished );
-                            pthread_cond_wait( &cond_finished, &mutex_finished );
+                            {
+                                pthread_cond_wait( &cond_finished, &mutex_finished );
+                            }
                             pthread_mutex_unlock( &mutex_finished );
 
                             update_reach();

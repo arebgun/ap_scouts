@@ -37,14 +37,20 @@ void process_normal_keys( unsigned char key, int x, int y )
         if ( running )
         {
             pthread_mutex_lock( &mutex_system );
-            pthread_cond_broadcast( &cond_system );
+            {
+                pthread_cond_broadcast( &cond_system );
+            }
             pthread_mutex_unlock( &mutex_system );
         }
         glutPostRedisplay();
     }
     else if ( key == 'r' || key == 'R' )
     {
-        restart_simulation();
+        pthread_mutex_lock( &mutex );
+        {
+            restart_simulation();
+        }
+        pthread_mutex_unlock( &mutex );
         glutPostRedisplay();
     }
     else if ( key == 'i' || key == 'I' )
@@ -119,11 +125,19 @@ void process_special_keys( int key, int x, int y )
         case GLUT_KEY_UP:
             if ( cur_sel_index == 0 )
             {
-                if ( change_agent_number( params.agent_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+                pthread_mutex_lock( &mutex );
+                {
+                    if ( change_agent_number( params.agent_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+                }
+                pthread_mutex_unlock( &mutex );
             }
             else if ( cur_sel_index == 1 )
             {
-                if ( change_obstacle_number( params.obstacle_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+                pthread_mutex_lock( &mutex );
+                {
+                    if ( change_obstacle_number( params.obstacle_number + increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+                }
+                pthread_mutex_unlock( &mutex );
             }
             else
             {
@@ -135,11 +149,19 @@ void process_special_keys( int key, int x, int y )
         case GLUT_KEY_DOWN:
             if ( cur_sel_index == 0 )
             {
-                if ( change_agent_number( params.agent_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+                pthread_mutex_lock( &mutex );
+                {
+                    if ( change_agent_number( params.agent_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+                }
+                pthread_mutex_unlock( &mutex );
             }
             else if ( cur_sel_index == 1 )
             {
-                if ( change_obstacle_number( params.obstacle_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+                pthread_mutex_lock( &mutex );
+                {
+                    if ( change_obstacle_number( params.obstacle_number - increments[cur_inc_index] ) != 0 ) { exit( EXIT_FAILURE ); }
+                }
+                pthread_mutex_unlock( &mutex );
             }
             else
             {

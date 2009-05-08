@@ -1,3 +1,12 @@
+2009-05-07  Antons Rebguns  <anton@cs.arizona.edu>
+
+	* Changed threading model to "Bag of Tasks", it's faster.
+	Batch mode works as before, GUI mode still has some problems.
+
+2009-05-07  Antons Rebguns  <anton@cs.arizona.edu>
+
+	* Minor refactoring
+
 2009-05-06  Antons Rebguns  <anton@cs.arizona.edu>
 
 	* Static threading works (mostly)

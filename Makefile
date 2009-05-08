@@ -32,8 +32,8 @@ swarm_cli_libs     = $(common_libs) -lm
 
 analysis_obj      = analysis.o
 config_editor_obj = config_editor.o
-swarm_gui_obj     = definitions.o threading.o graphics.o input.o swarm.o swarm_gui.o
-swarm_cli_obj     = definitions.o threading.o swarm.o swarm_cli.o
+swarm_gui_obj     = definitions.o threading.o queue.o graphics.o input.o swarm.o swarm_gui.o
+swarm_cli_obj     = definitions.o threading.o queue.o swarm.o swarm_cli.o
 
 all: analysis config-editor swarm-gui swarm-cli
 
@@ -60,6 +60,7 @@ config_editor.o: config_editor.c
 	$(CC) $(config_editor_cflags) -c $^ -o $@
 definitions.o: definitions.h
 threading.o: threading.h
+queue.o: queue.h
 graphcis.o: definitions.h graphics.h
 input.o: graphics.h input.h swarm.h
 swarm.o: definitions.h swarm.h

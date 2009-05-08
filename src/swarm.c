@@ -1298,7 +1298,6 @@ void restart_simulation( void )
 
     running = false;
 
-    pthread_mutex_lock( &mutex );
     // Reset statistics
     reset_statistics();
 
@@ -1313,7 +1312,15 @@ void restart_simulation( void )
 
         memcpy( agents[i]->color, agent_color, 3 * sizeof( float ) );
     }
-    pthread_mutex_unlock( &mutex );
+
+    // remove all old pending tasks
+    while ( !Q_Empty( &thread_task_pool ) )
+    {
+        free( Q_DelCur( & thread_task_pool ) );
+    }
+
+    // create new tasks
+    create_update_threads( true );
 }
 
 int change_agent_number( int agent_number )
@@ -1596,7 +1603,7 @@ float calculate_force( Agent *agent, void *object, ObjectType obj_type )
 void *move_agents( void *thread_data )
 {
     ThreadData *td = (ThreadData *) thread_data;
-    printf( "Thread %d controlling %d agents.\n", td->thread_id, td->agent_number );
+    printf( "Thread %d reporting for duty.\n", td->thread_id );
 
     while ( true )
     {
@@ -1605,13 +1612,35 @@ void *move_agents( void *thread_data )
         if ( !running )
         {
             pthread_mutex_lock( &mutex_system );
-            pthread_cond_wait( &cond_system, &mutex_system );
+            {
+                pthread_cond_wait( &cond_system, &mutex_system );
+            }
             pthread_mutex_unlock( &mutex_system );
         }
 
-        for ( k = 0; k < td->agent_number; ++k )
+        while ( true )
         {
-            int i = td->agent_ids[k];
+            int i;
+
+            pthread_mutex_lock( &mutex );
+            {
+                if ( Q_Empty( &thread_task_pool ) )
+                {
+                    pthread_mutex_unlock( &mutex );
+                    break;
+                }
+
+                ThreadTask *t = (ThreadTask *) Q_PopTail( &thread_task_pool );
+
+                // remember which thread was responsible for which agent
+                // later each thread will update the same agents
+                i = t->agent_id;
+                td->agent_ids[td->agent_number] = i;
+                td->agent_number = td->agent_number + 1;
+
+                free( t );
+            }
+            pthread_mutex_unlock( &mutex );
 
             Agent *agent = agents[i];
 
@@ -1708,15 +1737,16 @@ void *move_agents( void *thread_data )
                     memcpy( agent->color, agent_color_coll, 3 * sizeof( float ) );
 
                     pthread_mutex_lock( &mutex );
-                    ++stats.collisions;
-                    stats.collision_ratio = ( float ) stats.collisions / ( float ) params.agent_number;
+                    {
+                        ++stats.collisions;
+                        stats.collision_ratio = ( float ) stats.collisions / ( float ) params.agent_number;
+                    }
                     pthread_mutex_unlock( &mutex );
                 }
             }
         }
 
-        //barrier();
-        pthread_barrier_wait( &pt_barrier );
+        pthread_barrier_wait( &lock_step_barrier );
 
         // move all agents in lock step
         for ( k = 0; k < td->agent_number; ++k )
@@ -1731,28 +1761,34 @@ void *move_agents( void *thread_data )
         }
 
         pthread_mutex_lock( &mutex );
-        ++active_threads;
-
-        if ( active_threads == MAX_THREADS )
         {
-            active_threads = 0;
-            ++stats.time_step;
+            ++active_threads;
 
-            if ( stats.time_step >= params.time_limit )
+            if ( active_threads == MAX_THREADS )
             {
-                running = false;
-                update_reach();
+                active_threads = 0;
+                ++stats.time_step;
 
-                pthread_mutex_lock( &mutex_finished );
-                pthread_cond_broadcast( &cond_finished );
-                pthread_mutex_unlock( &mutex_finished );
+                if ( stats.time_step >= params.time_limit )
+                {
+                    running = false;
+                    update_reach();
+
+                    pthread_mutex_lock( &mutex_finished );
+                    {
+                        pthread_cond_broadcast( &cond_finished );
+                    }
+                    pthread_mutex_unlock( &mutex_finished );
+                }
+                else
+                {
+                    create_update_threads( true );
+                }
             }
         }
-
         pthread_mutex_unlock( &mutex );
 
-        //barrier();
-        pthread_barrier_wait( &pt_barrier );
+        pthread_barrier_wait( &lock_step_barrier );
     }
 
     pthread_exit( NULL );
